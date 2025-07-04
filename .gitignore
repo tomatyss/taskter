@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.pyo
+*.pyd
+*.env
+venv/
+ENV/
+build/
+dist/
+.eggs/
+*.egg-info/
+
+# Flask
+instance/
+.webassets-cache
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Docker
+*.log
+docker-compose.override.yml
+
+# PostgreSQL
+*.sql
+*.dump
+
+# Environment
+.env
+.env.*
+
+# Pytest
+.cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.tox/
+
+# Static files (if generated)
+staticfiles/
+
+# Other
+*.swp
+*.swo 
