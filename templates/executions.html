@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+
+{% block title %}Agent Executions - Taskter{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2><i class="fas fa-history"></i> Agent Executions</h2>
+            <button class="btn btn-outline-secondary" onclick="loadExecutions()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <select class="form-select" id="statusFilter">
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="running">Running</option>
+            <option value="completed">Completed</option>
+            <option value="failed">Failed</option>
+            <option value="stopped">Stopped</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" id="agentFilter">
+            <option value="">All Agents</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <input type="text" class="form-control" id="taskFilter" placeholder="Search tasks...">
+    </div>
+    <div class="col-md-3">
+        <button class="btn btn-primary w-100" onclick="applyFilters()">
+            <i class="fas fa-filter"></i> Apply Filters
+        </button>
+    </div>
+</div>
+
+<div id="executionsContainer">
+    <div class="text-center">
+        <div class="spinner-border" role="status">
+            <span class="visually-hidden">Loading executions...</span>
+        </div>
+    </div>
+</div>
+
+<!-- Execution Details Modal -->
+<div class="modal fade" id="executionModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Execution Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="executionModalContent">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPage = 1;
+let totalPages = 1;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadExecutions();
+    loadAgentsForFilter();
+    
+    // Auto-refresh every 30 seconds for running executions
+    setInterval(function() {
+        if (hasRunningExecutions()) {
+            loadExecutions();
+        }
+    }, 30000);
+});
+
+function loadAgentsForFilter() {
+    fetch('/api/agents')
+        .then(response => response.json())
+        .then(agents => {
+            const select = document.getElementById('agentFilter');
+            agents.forEach(agent => {
+                const option = document.createElement('option');
+                option.value = agent.id;
+                option.textContent = agent.name;
+                select.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error loading agents:', error));
+}
+
+function loadExecutions(page = 1) {
+    currentPage = page;
+    
+    fetch(`/api/executions?page=${page}&per_page=20`)
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('executionsContainer');
+            
+            if (data.executions.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-info text-center">
+                        <i class="fas fa-info-circle fa-2x mb-3"></i>
+                        <h4>No Executions Yet</h4>
+                        <p>Agent executions will appear here when tasks are assigned to agents.</p>
+                        <a href="/agents" class="btn btn-primary">
+                            <i class="fas fa-robot"></i> Manage Agents
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+            
+            totalPages = data.pagination.pages;
+            
+            let html = '<div class="table-responsive">';
+            html += `
+                <table class="table table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Task</th>
+                            <th>Agent</th>
+                            <th>Status</th>
+                            <th>Progress</th>
+                            <th>Duration</th>
+                            <th>Started</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            data.executions.forEach(execution => {
+                const statusBadge = getStatusBadge(execution.status);
+                const duration = getDuration(execution);
+                const progress = getProgress(execution);
+                
+                html += `
+                    <tr class="${execution.status === 'running' ? 'table-warning' : ''}">
+                        <td>
+                            <strong>${execution.task_title}</strong>
+                            <br><small class="text-muted">ID: ${execution.task_id}</small>
+                        </td>
+                        <td>
+                            <i class="fas fa-robot"></i> ${execution.agent_name}
+                            <br><small class="text-muted">ID: ${execution.agent_id}</small>
+                        </td>
+                        <td>${statusBadge}</td>
+                        <td>${progress}</td>
+                        <td>${duration}</td>
+                        <td>
+                            ${execution.started_at ? 
+                                new Date(execution.started_at).toLocaleString() : 
+                                '<span class="text-muted">Not started</span>'
+                            }
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-primary" onclick="showExecutionDetails(${execution.id})">
+                                <i class="fas fa-eye"></i> Details
+                            </button>
+                            ${execution.status === 'running' ? 
+                                `<button class="btn btn-sm btn-outline-danger" onclick="stopExecution(${execution.id})">
+                                    <i class="fas fa-stop"></i> Stop
+                                </button>` : ''
+                            }
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table></div>';
+            
+            // Add pagination
+            if (totalPages > 1) {
+                html += '<nav aria-label="Executions pagination">';
+                html += '<ul class="pagination justify-content-center">';
+                
+                // Previous button
+                html += `<li class="page-item ${currentPage === 1 ? 'disabled' : ''}">`;
+                html += `<a class="page-link" href="#" onclick="loadExecutions(${currentPage - 1})">Previous</a>`;
+                html += '</li>';
+                
+                // Page numbers
+                for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+                    html += `<li class="page-item ${i === currentPage ? 'active' : ''}">`;
+                    html += `<a class="page-link" href="#" onclick="loadExecutions(${i})">${i}</a>`;
+                    html += '</li>';
+                }
+                
+                // Next button
+                html += `<li class="page-item ${currentPage === totalPages ? 'disabled' : ''}">`;
+                html += `<a class="page-link" href="#" onclick="loadExecutions(${currentPage + 1})">Next</a>`;
+                html += '</li>';
+                
+                html += '</ul></nav>';
+            }
+            
+            container.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error loading executions:', error);
+            document.getElementById('executionsContainer').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle"></i> Error loading executions. Please refresh the page.
+                </div>
+            `;
+        });
+}
+
+function getStatusBadge(status) {
+    const badges = {
+        pending: '<span class="badge bg-secondary"><i class="fas fa-clock"></i> Pending</span>',
+        running: '<span class="badge bg-warning"><i class="fas fa-spinner fa-spin"></i> Running</span>',
+        completed: '<span class="badge bg-success"><i class="fas fa-check"></i> Completed</span>',
+        failed: '<span class="badge bg-danger"><i class="fas fa-times"></i> Failed</span>',
+        stopped: '<span class="badge bg-dark"><i class="fas fa-stop"></i> Stopped</span>'
+    };
+    return badges[status] || `<span class="badge bg-light text-dark">${status}</span>`;
+}
+
+function getDuration(execution) {
+    if (!execution.started_at) return '<span class="text-muted">-</span>';
+    
+    const start = new Date(execution.started_at);
+    const end = execution.completed_at ? new Date(execution.completed_at) : new Date();
+    const duration = Math.round((end - start) / 1000); // seconds
+    
+    if (duration < 60) return `${duration}s`;
+    if (duration < 3600) return `${Math.round(duration / 60)}m`;
+    return `${Math.round(duration / 3600)}h`;
+}
+
+function getProgress(execution) {
+    if (execution.status === 'pending') return '<span class="text-muted">-</span>';
+    
+    let html = '';
+    if (execution.iterations_count > 0) {
+        html += `<small>Iterations: ${execution.iterations_count}</small><br>`;
+    }
+    if (execution.tokens_used > 0) {
+        html += `<small>Tokens: ${execution.tokens_used.toLocaleString()}</small>`;
+    }
+    
+    return html || '<span class="text-muted">-</span>';
+}
+
+function hasRunningExecutions() {
+    const table = document.querySelector('table tbody');
+    if (!table) return false;
+    
+    return Array.from(table.querySelectorAll('tr')).some(row => 
+        row.classList.contains('table-warning')
+    );
+}
+
+function showExecutionDetails(executionId) {
+    fetch(`/api/executions/${executionId}`)
+        .then(response => response.json())
+        .then(execution => {
+            const content = document.getElementById('executionModalContent');
+            
+            let html = `
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h6>Execution Information</h6>
+                        <table class="table table-sm">
+                            <tr><td><strong>ID:</strong></td><td>${execution.id}</td></tr>
+                            <tr><td><strong>Task:</strong></td><td>${execution.task_title} (ID: ${execution.task_id})</td></tr>
+                            <tr><td><strong>Agent:</strong></td><td>${execution.agent_name} (ID: ${execution.agent_id})</td></tr>
+                            <tr><td><strong>Status:</strong></td><td>${getStatusBadge(execution.status)}</td></tr>
+                            <tr><td><strong>Started:</strong></td><td>${execution.started_at ? new Date(execution.started_at).toLocaleString() : 'Not started'}</td></tr>
+                            <tr><td><strong>Completed:</strong></td><td>${execution.completed_at ? new Date(execution.completed_at).toLocaleString() : 'Not completed'}</td></tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Performance Metrics</h6>
+                        <table class="table table-sm">
+                            <tr><td><strong>Iterations:</strong></td><td>${execution.iterations_count || 0}</td></tr>
+                            <tr><td><strong>Tokens Used:</strong></td><td>${execution.tokens_used ? execution.tokens_used.toLocaleString() : 0}</td></tr>
+                            <tr><td><strong>Duration:</strong></td><td>${execution.execution_time_seconds ? execution.execution_time_seconds.toFixed(2) + 's' : 'N/A'}</td></tr>
+                        </table>
+                    </div>
+                </div>
+            `;
+            
+            if (execution.result) {
+                html += `
+                    <div class="mb-4">
+                        <h6>Result</h6>
+                        <div class="alert alert-success">
+                            <pre class="mb-0">${execution.result}</pre>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (execution.error_message) {
+                html += `
+                    <div class="mb-4">
+                        <h6>Error Message</h6>
+                        <div class="alert alert-danger">
+                            <pre class="mb-0">${execution.error_message}</pre>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            if (execution.conversation_log && execution.conversation_log.length > 0) {
+                html += `
+                    <div class="mb-4">
+                        <h6>Conversation Log</h6>
+                        <div class="conversation-log" style="max-height: 400px; overflow-y: auto;">
+                `;
+                
+                execution.conversation_log.forEach((message, index) => {
+                    const roleClass = {
+                        'system': 'bg-light',
+                        'user': 'bg-primary text-white',
+                        'assistant': 'bg-success text-white',
+                        'tool': 'bg-warning'
+                    }[message.role] || 'bg-secondary';
+                    
+                    html += `
+                        <div class="card mb-2">
+                            <div class="card-header ${roleClass} py-1">
+                                <small><strong>${message.role.toUpperCase()}</strong></small>
+                            </div>
+                            <div class="card-body py-2">
+                                <pre class="mb-0 small">${message.content || JSON.stringify(message, null, 2)}</pre>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                html += '</div></div>';
+            }
+            
+            content.innerHTML = html;
+            
+            const modal = new bootstrap.Modal(document.getElementById('executionModal'));
+            modal.show();
+        })
+        .catch(error => {
+            console.error('Error loading execution details:', error);
+            alert('Error loading execution details.');
+        });
+}
+
+function stopExecution(executionId) {
+    if (!confirm('Are you sure you want to stop this execution?')) {
+        return;
+    }
+    
+    fetch(`/api/executions/${executionId}/stop`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert('Execution stopped successfully!');
+            loadExecutions(currentPage);
+        }
+    })
+    .catch(error => {
+        console.error('Error stopping execution:', error);
+        alert('Error stopping execution. Please try again.');
+    });
+}
+
+function applyFilters() {
+    const statusFilter = document.getElementById('statusFilter').value;
+    const agentFilter = document.getElementById('agentFilter').value;
+    const taskFilter = document.getElementById('taskFilter').value;
+    
+    let url = '/api/executions?page=1&per_page=20';
+    
+    if (statusFilter) url += `&status=${statusFilter}`;
+    if (agentFilter) url += `&agent_id=${agentFilter}`;
+    if (taskFilter) url += `&task_search=${encodeURIComponent(taskFilter)}`;
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(data => {
+            // Update the display with filtered results
+            // This is a simplified version - you might want to update the loadExecutions function
+            // to handle filters properly
+            currentPage = 1;
+            loadExecutions(1);
+        })
+        .catch(error => {
+            console.error('Error applying filters:', error);
+        });
+}
+</script>
+
+<style>
+.conversation-log .card {
+    font-size: 0.875rem;
+}
+
+.conversation-log pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.table-responsive {
+    border-radius: 0.375rem;
+    overflow: hidden;
+}
+
+.pagination .page-link {
+    color: var(--bs-primary);
+}
+
+.pagination .page-item.active .page-link {
+    background-color: var(--bs-primary);
+    border-color: var(--bs-primary);
+}
+</style>
+{% endblock %}

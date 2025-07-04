@@ -51,3 +51,4 @@ staticfiles/
 # Other
 *.swp
 *.swo 
+celerybeat-schedule

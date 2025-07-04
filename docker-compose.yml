@@ -8,7 +8,6 @@ services:
       POSTGRES_PASSWORD: kanban_pass
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
     healthcheck:
@@ -17,11 +16,41 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: kanban_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migration:
+    build: .
+    container_name: kanban_migration
+    environment:
+      DATABASE_URL: postgresql://kanban_user:kanban_pass@db:5432/kanban_db
+      SECRET_KEY: your-secret-key-change-in-production
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: sh -c "python manage_migrations.py upgrade && python manage_migrations.py seed"
+    restart: "no"
+
   web:
     build: .
     container_name: kanban_web
+    env_file:
+      - .env
     environment:
       DATABASE_URL: postgresql://kanban_user:kanban_pass@db:5432/kanban_db
+      REDIS_URL: redis://redis:6379/0
       SECRET_KEY: your-secret-key-change-in-production
       FLASK_ENV: development
     ports:
@@ -29,9 +58,53 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+      migration:
+        condition: service_completed_successfully
     volumes:
       - .:/app
     restart: unless-stopped
+    command: python app.py
+
+  celery_worker:
+    build: .
+    container_name: kanban_celery_worker
+    env_file:
+      - .env
+    environment:
+      DATABASE_URL: postgresql://kanban_user:kanban_pass@db:5432/kanban_db
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: your-secret-key-change-in-production
+      FLASK_ENV: development
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    command: celery -A celery_app.celery_app worker --loglevel=info
+
+  celery_beat:
+    build: .
+    container_name: kanban_celery_beat
+    environment:
+      DATABASE_URL: postgresql://kanban_user:kanban_pass@db:5432/kanban_db
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: your-secret-key-change-in-production
+      FLASK_ENV: development
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    restart: unless-stopped
+    command: celery -A celery_app.celery_app beat --loglevel=info
 
 volumes:
   postgres_data:
+  redis_data:

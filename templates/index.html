@@ -18,10 +18,13 @@
             </div>
             <div class="kanban-body">
                 {% for task in todo_tasks %}
-                    <div class="task-card">
+                    <div class="task-card" data-task-id="{{ task.id }}">
                         <div class="task-header">
                             <h6>{{ task.title }}</h6>
                             <div class="task-actions">
+                                <button class="btn btn-sm btn-outline-info" onclick="showAgentModal({{ task.id }})" title="Assign to Agent">
+                                    <i class="fas fa-robot"></i>
+                                </button>
                                 <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-sm btn-outline-primary">
                                     <i class="fas fa-edit"></i>
                                 </a>
@@ -34,6 +37,33 @@
                         {% if task.description %}
                             <p class="task-description">{{ task.description }}</p>
                         {% endif %}
+                        
+                        <!-- Agent Assignment Info -->
+                        {% if task.assigned_agent %}
+                            <div class="agent-info mb-2">
+                                <span class="badge bg-info">
+                                    <i class="fas fa-robot"></i> {{ task.assigned_agent.name }}
+                                </span>
+                                {% if task.execution_status == 'running' %}
+                                    <span class="badge bg-warning">
+                                        <i class="fas fa-spinner fa-spin"></i> Running
+                                    </span>
+                                {% elif task.execution_status == 'completed' %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check"></i> Completed
+                                    </span>
+                                {% elif task.execution_status == 'failed' %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-times"></i> Failed
+                                    </span>
+                                {% elif task.execution_status == 'assigned' %}
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-clock"></i> Pending
+                                    </span>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                        
                         <div class="task-footer">
                             <small class="text-muted">{{ task.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
                             <div class="task-move-buttons">
@@ -159,4 +189,154 @@
         </div>
     </div>
 </div>
+
+<!-- Agent Assignment Modal -->
+<div class="modal fade" id="agentModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Assign Agent to Task</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="agentModalContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentTaskId = null;
+
+function showAgentModal(taskId) {
+    currentTaskId = taskId;
+    const modal = new bootstrap.Modal(document.getElementById('agentModal'));
+    modal.show();
+    
+    // Load agents
+    fetch('/api/agents')
+        .then(response => response.json())
+        .then(agents => {
+            const content = document.getElementById('agentModalContent');
+            if (agents.length === 0) {
+                content.innerHTML = `
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i> No agents available. 
+                        <a href="/agents" class="alert-link">Create an agent first</a>.
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '<div class="mb-3"><label class="form-label">Select an Agent:</label></div>';
+            
+            agents.forEach(agent => {
+                const statusBadge = agent.is_active ? 
+                    '<span class="badge bg-success">Active</span>' : 
+                    '<span class="badge bg-secondary">Inactive</span>';
+                
+                html += `
+                    <div class="card mb-2 ${!agent.is_active ? 'opacity-50' : ''}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="card-title">
+                                        <i class="fas fa-robot"></i> ${agent.name}
+                                        ${statusBadge}
+                                    </h6>
+                                    <p class="card-text text-muted small">${agent.description || 'No description'}</p>
+                                    <small class="text-muted">
+                                        Provider: ${agent.llm_provider} | Model: ${agent.llm_model}
+                                    </small>
+                                </div>
+                                <div>
+                                    ${agent.is_active ? 
+                                        `<button class="btn btn-primary btn-sm" onclick="assignAgent(${agent.id})">
+                                            <i class="fas fa-check"></i> Assign
+                                        </button>` :
+                                        `<button class="btn btn-secondary btn-sm" disabled>
+                                            Inactive
+                                        </button>`
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += `
+                <div class="mt-3">
+                    <button class="btn btn-outline-danger" onclick="unassignAgent()">
+                        <i class="fas fa-times"></i> Remove Agent Assignment
+                    </button>
+                </div>
+            `;
+            
+            content.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error loading agents:', error);
+            document.getElementById('agentModalContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle"></i> Error loading agents. Please try again.
+                </div>
+            `;
+        });
+}
+
+function assignAgent(agentId) {
+    fetch(`/api/tasks/${currentTaskId}/assign/${agentId}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert('Agent assigned successfully!');
+            location.reload(); // Refresh to show updated status
+        }
+    })
+    .catch(error => {
+        console.error('Error assigning agent:', error);
+        alert('Error assigning agent. Please try again.');
+    });
+    
+    bootstrap.Modal.getInstance(document.getElementById('agentModal')).hide();
+}
+
+function unassignAgent() {
+    fetch(`/api/tasks/${currentTaskId}/unassign`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            alert('Agent unassigned successfully!');
+            location.reload(); // Refresh to show updated status
+        }
+    })
+    .catch(error => {
+        console.error('Error unassigning agent:', error);
+        alert('Error unassigning agent. Please try again.');
+    });
+    
+    bootstrap.Modal.getInstance(document.getElementById('agentModal')).hide();
+}
+</script>
 {% endblock %}
