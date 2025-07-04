@@ -35,6 +35,7 @@ docker-compose.override.yml
 # Environment
 .env
 .env.*
+.venv/
 
 # Pytest
 .cache/
