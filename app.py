@@ -3,7 +3,11 @@ from flask_migrate import Migrate
 from datetime import datetime
 import os
 import logging
+from dotenv import load_dotenv
 from db import db
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')

@@ -5,10 +5,14 @@ import json
 import time
 import logging
 from typing import Dict, List, Any
+from dotenv import load_dotenv
 from models import Agent, Task, AgentExecution, utcnow
 from llm_providers import LLMProviderFactory
 from tools import tool_registry
 from db import db
+
+# Load environment variables from .env file
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 

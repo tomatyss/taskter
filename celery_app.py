@@ -4,6 +4,10 @@ Celery configuration for background task processing
 import os
 from celery import Celery
 from celery.schedules import crontab
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Create Celery app
 celery_app = Celery('taskter')

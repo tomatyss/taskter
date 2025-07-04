@@ -6,6 +6,10 @@ import json
 from abc import ABC, abstractmethod
 from typing import Dict, List
 import logging
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 logger = logging.getLogger(__name__)
 
@@ -183,12 +187,23 @@ class GeminiProvider(LLMProvider):
         except ImportError:
             raise ImportError("google-genai package is required for Gemini provider")
         
+        # Get API key from parameter or environment
         self.api_key = api_key or os.getenv('GEMINI_API_KEY')
-        if self.api_key:
+        
+        # Validate API key is available
+        if not self.api_key:
+            raise ValueError("Gemini API key is required. Please set GEMINI_API_KEY environment variable or provide api_key parameter.")
+        
+        # Log the API key status for debugging (without exposing the actual key)
+        logger.info(f"Gemini API key found: {self.api_key[:10]}...")
+        
+        # Initialize the client with explicit API key
+        try:
             self.client = genai.Client(api_key=self.api_key)
-        else:
-            # Try to use environment variable
-            self.client = genai.Client()
+            logger.info("Gemini client initialized successfully with explicit API key")
+        except Exception as e:
+            logger.error(f"Failed to initialize Gemini client: {str(e)}")
+            raise ValueError(f"Failed to initialize Gemini client. Please verify your GEMINI_API_KEY is valid. Error: {str(e)}")
         
         self.model = model
     
