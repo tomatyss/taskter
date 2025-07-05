@@ -52,7 +52,7 @@ def create_app_context():
     
     # Import the existing db instance and models
     from db import db
-    from models import Task, Agent, AgentExecution, Tool
+    from app.models import Task, Agent, AgentExecution
     
     # Create a minimal Flask app for Celery tasks
     app = Flask(__name__)
@@ -150,7 +150,7 @@ def check_pending_agent_tasks():
     Periodic task to check for pending agent tasks and start execution
     """
     with create_app_context():
-        from models import Task, Agent, AgentExecution
+        from app.models import Task, Agent, AgentExecution
         from db import db
         import logging
         
@@ -202,7 +202,7 @@ def cleanup_old_executions():
     Periodic task to cleanup old execution records
     """
     with create_app_context():
-        from models import AgentExecution
+        from app.models import AgentExecution
         from db import db
         from datetime import datetime, timedelta
         import logging

@@ -10,8 +10,9 @@ import subprocess
 from datetime import datetime
 from flask import Flask
 from flask_migrate import Migrate, upgrade, downgrade, current, history, init, migrate as create_migration
+from sqlalchemy import text
 from db import db
-from models import Task, Agent, AgentExecution, Tool
+from app.models import Task, Agent, AgentExecution
 
 def create_app():
     """Create Flask app for migration operations"""
@@ -134,39 +135,8 @@ def seed_sample_data():
             )
             db.session.add(sample_agent)
             
-            # Create sample tools
-            sample_tools = [
-                {
-                    'name': 'web_search',
-                    'display_name': 'Web Search',
-                    'description': 'Search the web for information',
-                    'input_schema': {
-                        'type': 'object',
-                        'properties': {
-                            'query': {'type': 'string', 'description': 'Search query'}
-                        },
-                        'required': ['query']
-                    }
-                },
-                {
-                    'name': 'send_email',
-                    'display_name': 'Send Email',
-                    'description': 'Send an email message',
-                    'input_schema': {
-                        'type': 'object',
-                        'properties': {
-                            'to': {'type': 'string', 'description': 'Recipient email'},
-                            'subject': {'type': 'string', 'description': 'Email subject'},
-                            'body': {'type': 'string', 'description': 'Email body'}
-                        },
-                        'required': ['to', 'subject', 'body']
-                    }
-                }
-            ]
-            
-            for tool_data in sample_tools:
-                tool = Tool(**tool_data)
-                db.session.add(tool)
+            # Note: Tool model not implemented yet in refactored structure
+            # Tools are currently managed as part of agent configuration
             
             db.session.commit()
             print("✅ Sample data seeded successfully")
@@ -185,24 +155,32 @@ def validate_migration():
         try:
             print("🔍 Validating database state...")
             
-            # Check if all tables exist
-            tables = ['task', 'agent', 'agent_execution', 'tool']
-            for table in tables:
-                try:
-                    result = db.session.execute(f"SELECT 1 FROM {table} LIMIT 1")
-                    print(f"✅ Table '{table}' exists and is accessible")
-                except Exception as e:
-                    print(f"❌ Table '{table}' validation failed: {str(e)}")
-                    return False
+            # Check if all tables exist using model queries instead of raw SQL
+            try:
+                # Test Task model
+                Task.query.limit(1).all()
+                print("✅ Table 'task' exists and is accessible")
+                
+                # Test Agent model
+                Agent.query.limit(1).all()
+                print("✅ Table 'agent' exists and is accessible")
+                
+                # Test AgentExecution model
+                AgentExecution.query.limit(1).all()
+                print("✅ Table 'agent_execution' exists and is accessible")
+                
+            except Exception as e:
+                print(f"❌ Table validation failed: {str(e)}")
+                return False
             
-            # Check foreign key relationships
+            # Check foreign key relationships using model queries
             try:
                 # Test Task -> Agent relationship
-                db.session.execute("SELECT t.id, a.name FROM task t LEFT JOIN agent a ON t.assigned_agent_id = a.id LIMIT 1")
+                Task.query.join(Agent, Task.assigned_agent_id == Agent.id, isouter=True).limit(1).all()
                 print("✅ Task -> Agent foreign key relationship working")
                 
                 # Test AgentExecution relationships
-                db.session.execute("SELECT ae.id, t.title, a.name FROM agent_execution ae LEFT JOIN task t ON ae.task_id = t.id LEFT JOIN agent a ON ae.agent_id = a.id LIMIT 1")
+                AgentExecution.query.join(Task).join(Agent).limit(1).all()
                 print("✅ AgentExecution foreign key relationships working")
                 
             except Exception as e:

@@ -3,7 +3,8 @@ Centralized configuration management with environment-specific settings
 """
 import os
 from typing import Optional, Dict, Any
-from pydantic import BaseSettings, Field, validator
+from pydantic import Field, validator
+from pydantic_settings import BaseSettings
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -20,12 +21,18 @@ class DatabaseConfig(BaseSettings):
     echo: bool = Field(default=False, env="SQLALCHEMY_ECHO")
     pool_size: int = Field(default=10, env="DATABASE_POOL_SIZE")
     max_overflow: int = Field(default=20, env="DATABASE_MAX_OVERFLOW")
+    
+    class Config:
+        extra = 'ignore'
 
 
 class RedisConfig(BaseSettings):
     """Redis configuration for Celery"""
     url: str = Field(default="redis://localhost:6379/0", env="REDIS_URL")
     password: Optional[str] = Field(default=None, env="REDIS_PASSWORD")
+    
+    class Config:
+        extra = 'ignore'
 
 
 class LLMConfig(BaseSettings):
@@ -38,6 +45,9 @@ class LLMConfig(BaseSettings):
     openai_default_model: str = Field(default="gpt-4", env="OPENAI_DEFAULT_MODEL")
     anthropic_default_model: str = Field(default="claude-3-5-sonnet-20241022", env="ANTHROPIC_DEFAULT_MODEL")
     gemini_default_model: str = Field(default="gemini-2.5-flash", env="GEMINI_DEFAULT_MODEL")
+    
+    class Config:
+        extra = 'ignore'
 
 
 class ToolConfig(BaseSettings):
@@ -49,6 +59,9 @@ class ToolConfig(BaseSettings):
     smtp_port: int = Field(default=587, env="SMTP_PORT")
     smtp_username: Optional[str] = Field(default=None, env="SMTP_USERNAME")
     smtp_password: Optional[str] = Field(default=None, env="SMTP_PASSWORD")
+    
+    class Config:
+        extra = 'ignore'
 
 
 class AgentConfig(BaseSettings):
@@ -57,6 +70,9 @@ class AgentConfig(BaseSettings):
     default_timeout: int = Field(default=300, env="AGENT_DEFAULT_TIMEOUT")  # 5 minutes
     max_tokens: int = Field(default=1000, env="AGENT_MAX_TOKENS")
     temperature: float = Field(default=0.7, env="AGENT_TEMPERATURE")
+    
+    class Config:
+        extra = 'ignore'
 
 
 class SecurityConfig(BaseSettings):
@@ -64,6 +80,9 @@ class SecurityConfig(BaseSettings):
     secret_key: str = Field(default="dev-secret-key", env="SECRET_KEY")
     jwt_secret_key: Optional[str] = Field(default=None, env="JWT_SECRET_KEY")
     jwt_expiration_hours: int = Field(default=24, env="JWT_EXPIRATION_HOURS")
+    
+    class Config:
+        extra = 'ignore'
 
 
 class LoggingConfig(BaseSettings):
@@ -76,6 +95,9 @@ class LoggingConfig(BaseSettings):
     file_path: Optional[str] = Field(default=None, env="LOG_FILE_PATH")
     max_file_size: int = Field(default=10485760, env="LOG_MAX_FILE_SIZE")  # 10MB
     backup_count: int = Field(default=5, env="LOG_BACKUP_COUNT")
+    
+    class Config:
+        extra = 'ignore'
 
 
 class AppConfig(BaseSettings):
@@ -146,6 +168,7 @@ class AppConfig(BaseSettings):
     class Config:
         env_file = '.env'
         env_file_encoding = 'utf-8'
+        extra = 'ignore'  # Allow extra fields from environment
 
 
 # Global configuration instance

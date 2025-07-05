@@ -5,7 +5,7 @@ import os
 import sys
 from flask import Flask
 from db import db
-from models import Agent, Tool
+from app.models import Agent
 
 def create_app():
     """Create Flask app for database operations"""

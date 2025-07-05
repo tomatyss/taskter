@@ -6,7 +6,8 @@ import time
 import logging
 from typing import Dict, List, Any
 from dotenv import load_dotenv
-from models import Agent, Task, AgentExecution, utcnow
+from app.models import Agent, Task, AgentExecution
+from app.models.task import utcnow
 from llm_providers import LLMProviderFactory
 from tools import tool_registry
 from db import db

@@ -38,7 +38,7 @@ class AgentExecution(db.Model):
     result = Column(Text)
     error_message = Column(Text)
     logs = Column(JSON, default=list)
-    metadata = Column(JSON, default=dict)
+    execution_metadata = Column(JSON, default=dict)
     
     # Timestamps
     created_at = Column(DateTime, default=utcnow)
@@ -67,7 +67,7 @@ class AgentExecution(db.Model):
             'result': self.result,
             'error_message': self.error_message,
             'logs': self.logs or [],
-            'metadata': self.metadata or {},
+            'metadata': self.execution_metadata or {},
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
         }
@@ -91,7 +91,7 @@ class AgentExecution(db.Model):
             result=data.get('result'),
             error_message=data.get('error_message'),
             logs=data.get('logs', []),
-            metadata=data.get('metadata', {})
+            execution_metadata=data.get('metadata', {})
         )
     
     def update_from_dict(self, data: Dict[str, Any]) -> None:
@@ -111,7 +111,7 @@ class AgentExecution(db.Model):
         if 'logs' in data:
             self.logs = data['logs']
         if 'metadata' in data:
-            self.metadata = data['metadata']
+            self.execution_metadata = data['metadata']
         
         self.updated_at = utcnow()
     
@@ -173,15 +173,15 @@ class AgentExecution(db.Model):
     
     def add_metadata(self, key: str, value: Any) -> None:
         """Add metadata to the execution"""
-        if not self.metadata:
-            self.metadata = {}
+        if not self.execution_metadata:
+            self.execution_metadata = {}
         
-        self.metadata[key] = value
+        self.execution_metadata[key] = value
         self.updated_at = utcnow()
     
     def get_metadata(self, key: str, default=None):
         """Get metadata value"""
-        return (self.metadata or {}).get(key, default)
+        return (self.execution_metadata or {}).get(key, default)
     
     def increment_llm_requests(self, tokens_used: Optional[int] = None, cost: Optional[float] = None) -> None:
         """Increment LLM request counter and update usage stats"""

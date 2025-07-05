@@ -65,7 +65,7 @@ services:
     volumes:
       - .:/app
     restart: unless-stopped
-    command: python app.py
+    command: python main.py
 
   celery_worker:
     build: .

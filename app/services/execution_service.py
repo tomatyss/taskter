@@ -8,8 +8,7 @@ from app.repositories.execution_repository import ExecutionRepository
 from app.models.execution import AgentExecution
 from app.core.constants import AgentExecutionStatus
 from app.core.exceptions import (
-    ExecutionNotFoundError, ExecutionValidationError,
-    ValidationError, ConflictError
+    ExecutionNotFoundError, ValidationError, ConflictError
 )
 from app.core.logging import get_logger
 
@@ -28,10 +27,10 @@ class ExecutionService:
         try:
             # Validate input
             if not task_id or task_id <= 0:
-                raise ExecutionValidationError("Valid task ID is required")
+                raise ValidationError("Valid task ID is required")
             
             if not agent_id or agent_id <= 0:
-                raise ExecutionValidationError("Valid agent ID is required")
+                raise ValidationError("Valid agent ID is required")
             
             # Create execution
             execution_data = {
