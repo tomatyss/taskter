@@ -26,6 +26,8 @@ An intelligent kanban board application built with Flask, PostgreSQL, and AI age
 - **Backend**: Flask (Python)
 - **Database**: PostgreSQL
 - **Frontend**: HTML, CSS, Bootstrap 5, JavaScript
+- **Validation**: Pydantic for request/response schemas
+- **Background Tasks**: Celery with Redis
 - **Containerization**: Docker & Docker Compose
 
 ## Quick Start
@@ -38,7 +40,28 @@ An intelligent kanban board application built with Flask, PostgreSQL, and AI age
    cd taskter
    ```
 
-3. Start the application:
+3. Copy the environment file and configure your API keys:
+   ```bash
+   cp .env.example .env
+   ```
+   
+   Edit `.env` and add your API keys:
+   ```bash
+   # LLM Provider API Keys (at least one required for AI features)
+   OPENAI_API_KEY=your-openai-api-key-here
+   ANTHROPIC_API_KEY=your-anthropic-api-key-here
+   GEMINI_API_KEY=your-gemini-api-key-here
+   
+   # Optional: Email configuration for send_email tool
+   SMTP_USERNAME=your-email@gmail.com
+   SMTP_PASSWORD=your-app-password
+   
+   # Optional: Google Search configuration for web_search tool
+   GOOGLE_SEARCH_API_KEY=your-google-search-api-key
+   GOOGLE_SEARCH_ENGINE_ID=your-search-engine-id
+   ```
+
+4. Start the application:
    ```bash
    docker-compose up --build
    ```
@@ -49,9 +72,9 @@ An intelligent kanban board application built with Flask, PostgreSQL, and AI age
    - Seed sample data
    - Start the web application and background services
 
-4. Open your browser and go to: http://localhost:5001
+5. Open your browser and go to: http://localhost:5001
 
-5. To stop the application:
+6. To stop the application:
    ```bash
    docker-compose down
    ```
@@ -75,68 +98,266 @@ An intelligent kanban board application built with Flask, PostgreSQL, and AI age
    - Create a user `kanban_user` with password `kanban_pass`
    - Grant all privileges to the user
 
-5. Run the application:
+5. Configure environment variables:
    ```bash
-   python app.py
+   cp .env.example .env
+   # Edit .env with your configuration
    ```
 
-## Usage
+6. Run database migrations:
+   ```bash
+   python manage_migrations.py upgrade
+   python manage_migrations.py seed
+   ```
 
-### Adding Tasks
-- Click the "Add New Task" button
-- Fill in the task title (required) and description (optional)
-- Click "Add Task"
-
-### Moving Tasks
-- Use the arrow buttons on each task card to move between columns:
-  - From "To Do" → "In Progress"
-  - From "In Progress" → "To Do" or "Done"
-  - From "Done" → "In Progress"
-
-### Editing Tasks
-- Click the edit icon (pencil) on any task card
-- Modify the title and/or description
-- Click "Save Changes"
-
-### Deleting Tasks
-- Click the delete icon (trash) on any task card
-- Confirm the deletion in the popup dialog
+7. Run the application:
+   ```bash
+   python main.py
+   ```
 
 ## Project Structure
 
 ```
 taskter/
-├── app.py                    # Main Flask application
-├── manage_migrations.py      # Database migration management
-├── models.py                 # Database models
-├── db.py                     # Database configuration
-├── requirements.txt          # Python dependencies
-├── Dockerfile               # Docker configuration
-├── docker-compose.yml       # Docker Compose configuration
-├── MIGRATION_GUIDE.md       # Migration system documentation
-├── .env                     # Environment variables
-├── .dockerignore            # Docker ignore file
-├── migrations/              # Database migration files (auto-generated)
-├── templates/               # HTML templates
-│   ├── base.html            # Base template
-│   ├── index.html           # Main kanban board
-│   └── edit_task.html       # Task editing form
-└── static/                  # Static files
-    ├── css/
-    │   └── style.css        # Custom styles
-    └── js/
-        └── script.js        # JavaScript functionality
+├── main.py                      # Main Flask application entry point
+├── manage_migrations.py         # Database migration management
+├── celery_app.py               # Celery configuration
+├── requirements.txt            # Python dependencies
+├── Dockerfile                  # Docker configuration
+├── docker-compose.yml          # Docker Compose configuration
+├── .env                        # Environment variables
+├── app/                        # Main application package
+│   ├── __init__.py
+│   ├── api/                    # API layer
+│   │   ├── __init__.py
+│   │   ├── response.py         # API response utilities
+│   │   ├── middleware/         # API middleware
+│   │   └── v1/                 # API version 1
+│   │       ├── __init__.py
+│   │       ├── tasks.py        # Task endpoints
+│   │       ├── agents.py       # Agent endpoints
+│   │       └── executions.py   # Execution endpoints
+│   ├── core/                   # Core application components
+│   │   ├── __init__.py
+│   │   ├── config.py           # Centralized configuration
+│   │   ├── constants.py        # Application constants
+│   │   ├── exceptions.py       # Custom exceptions
+│   │   └── logging.py          # Logging configuration
+│   ├── models/                 # Database models
+│   │   ├── __init__.py
+│   │   ├── task.py             # Task model
+│   │   ├── agent.py            # Agent model
+│   │   └── execution.py        # Execution model
+│   ├── schemas/                # Pydantic schemas
+│   │   ├── __init__.py
+│   │   ├── task_schemas.py     # Task request/response schemas
+│   │   ├── agent_schemas.py    # Agent request/response schemas
+│   │   └── execution_schemas.py # Execution request/response schemas
+│   ├── services/               # Business logic layer
+│   │   ├── __init__.py
+│   │   ├── task_service.py     # Task business logic
+│   │   ├── agent_service.py    # Agent business logic
+│   │   └── execution_service.py # Execution business logic
+│   ├── repositories/           # Data access layer
+│   │   ├── __init__.py
+│   │   ├── base.py             # Base repository
+│   │   ├── task_repository.py  # Task data access
+│   │   ├── agent_repository.py # Agent data access
+│   │   └── execution_repository.py # Execution data access
+│   ├── agents/                 # AI agent system
+│   │   ├── __init__.py
+│   │   ├── providers/          # LLM providers
+│   │   └── tools/              # Agent tools
+│   └── utils/                  # Utility functions
+│       └── __init__.py
+├── migrations/                 # Database migration files
+├── templates/                  # HTML templates
+│   ├── base.html
+│   ├── index.html              # Main kanban board
+│   ├── agents.html             # Agent management
+│   ├── executions.html         # Execution monitoring
+│   └── edit_task.html          # Task editing form
+├── static/                     # Static files
+│   ├── css/
+│   │   └── style.css
+│   └── js/
+│       └── script.js
+├── tests/                      # Test files
+│   ├── __init__.py
+│   ├── unit/
+│   ├── integration/
+│   └── fixtures/
+└── scripts/                    # Utility scripts
+```
+
+## API Endpoints
+
+The application provides a RESTful API with the following endpoints:
+
+### Tasks (`/api/v1/tasks`)
+- `GET /api/v1/tasks` - List tasks with filtering and pagination
+- `POST /api/v1/tasks` - Create new task
+- `GET /api/v1/tasks/{id}` - Get specific task
+- `PUT /api/v1/tasks/{id}` - Update task
+- `DELETE /api/v1/tasks/{id}` - Delete task
+- `PUT /api/v1/tasks/{id}/status` - Update task status
+- `POST /api/v1/tasks/{id}/assign` - Assign task to agent
+- `POST /api/v1/tasks/{id}/unassign` - Unassign task
+- `GET /api/v1/tasks/stats` - Get task statistics
+
+### Agents (`/api/v1/agents`)
+- `GET /api/v1/agents` - List agents with filtering
+- `POST /api/v1/agents` - Create new agent
+- `GET /api/v1/agents/{id}` - Get specific agent
+- `PUT /api/v1/agents/{id}` - Update agent
+- `DELETE /api/v1/agents/{id}` - Delete agent
+- `POST /api/v1/agents/{id}/toggle` - Toggle agent active status
+- `GET /api/v1/agents/{id}/tasks` - Get agent's assigned tasks
+- `GET /api/v1/agents/stats` - Get agent statistics
+
+### Executions (`/api/v1/executions`)
+- `GET /api/v1/executions` - List executions with filtering
+- `GET /api/v1/executions/{id}` - Get specific execution
+- `POST /api/v1/executions/{id}/cancel` - Cancel execution
+- `GET /api/v1/executions/stats` - Get execution statistics
+- `GET /api/v1/executions/running` - Get currently running executions
+
+## Usage
+
+### Basic Task Management
+
+#### Adding Tasks
+- Click the "Add New Task" button
+- Fill in the task title (required) and description (optional)
+- Click "Add Task"
+
+#### Moving Tasks
+- Use the arrow buttons on each task card to move between columns:
+  - From "To Do" → "In Progress"
+  - From "In Progress" → "To Do" or "Done"
+  - From "Done" → "In Progress"
+
+#### Editing Tasks
+- Click the edit icon (pencil) on any task card
+- Modify the title and/or description
+- Click "Save Changes"
+
+#### Deleting Tasks
+- Click the delete icon (trash) on any task card
+- Confirm the deletion in the popup dialog
+
+### AI Agent System
+
+#### Setting Up AI Agents
+
+1. **Configure API Keys**: Add your LLM provider API keys to the `.env` file
+2. **Initialize Sample Agents**: Run the initialization script to create sample agents:
+   ```bash
+   # If using Docker
+   docker-compose exec web python init_agents.py
+   
+   # If running locally
+   python init_agents.py
+   ```
+
+#### Using AI Agents
+
+**Via Web Interface:**
+1. Navigate to `/agents` to manage agents
+2. Navigate to `/executions` to monitor task executions
+3. Assign tasks to agents from the main kanban board
+
+**Via API:**
+
+**Create a new agent:**
+```bash
+curl -X POST http://localhost:5001/api/v1/agents \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Research Assistant",
+    "description": "Specialized in web research and data gathering",
+    "system_instructions": "You are a research assistant. Help users find information and summarize findings.",
+    "llm_provider": "openai",
+    "llm_model": "gpt-4",
+    "available_tools": ["web_search"],
+    "config": {
+      "temperature": 0.7,
+      "max_tokens": 1000,
+      "max_iterations": 10
+    }
+  }'
+```
+
+**Assign a task to an agent:**
+```bash
+curl -X POST http://localhost:5001/api/v1/tasks/1/assign \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id": 1}'
+```
+
+**Monitor execution:**
+```bash
+curl http://localhost:5001/api/v1/executions
+```
+
+#### Available Tools
+
+1. **Web Search Tool**: Search the web for information using Google Custom Search or DuckDuckGo
+2. **Send Email Tool**: Send emails via SMTP with customizable content
+3. **Execute Script Tool**: Run Python scripts safely with timeout and security restrictions
+
+#### LLM Providers
+
+- **OpenAI**: GPT-4, GPT-3.5-turbo models
+- **Anthropic**: Claude-3.5-sonnet and other Claude models
+- **Google Gemini**: Gemini-2.5-flash and other Gemini models
+
+## Configuration
+
+The application uses a centralized configuration system with environment variables:
+
+### Required Configuration
+```bash
+# Database
+DATABASE_URL=postgresql://kanban_user:kanban_pass@localhost:5432/kanban_db
+
+# Flask
+SECRET_KEY=your-secret-key-change-in-production
+
+# Redis (for background tasks)
+REDIS_URL=redis://localhost:6379/0
+```
+
+### Optional Configuration
+```bash
+# LLM Provider API Keys (at least one required for AI features)
+OPENAI_API_KEY=your-openai-api-key-here
+ANTHROPIC_API_KEY=your-anthropic-api-key-here
+GEMINI_API_KEY=your-gemini-api-key-here
+
+# Email Tool Configuration
+SMTP_SERVER=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+
+# Web Search Tool Configuration
+GOOGLE_SEARCH_API_KEY=your-google-search-api-key
+GOOGLE_SEARCH_ENGINE_ID=your-search-engine-id
+
+# Logging
+LOG_LEVEL=INFO
+
+# Agent Configuration
+AGENT_MAX_ITERATIONS=20
+AGENT_DEFAULT_TIMEOUT=300
+AGENT_MAX_TOKENS=1000
+AGENT_TEMPERATURE=0.7
 ```
 
 ## Database Migration System
 
-Taskter uses a robust database migration system built on Flask-Migrate (Alembic) that provides:
-
-- ✅ **Version-controlled schema changes**
-- ✅ **Automatic migration generation from model changes**
-- ✅ **Safe rollback capabilities**
-- ✅ **Database validation and backup features**
-- ✅ **Docker integration for automated deployments**
+Taskter uses a robust database migration system built on Flask-Migrate (Alembic):
 
 ### Quick Migration Commands
 
@@ -172,11 +393,7 @@ docker-compose up --build
 docker-compose run --rm migration python manage_migrations.py upgrade
 ```
 
-For detailed migration documentation, see [MIGRATION_GUIDE.md](MIGRATION_GUIDE.md).
-
 ## Database Schema
-
-The application uses the following database schema:
 
 ### Task Table
 - `id`: Primary key (auto-increment)
@@ -217,43 +434,21 @@ The application uses the following database schema:
 - `completed_at`: Execution completion timestamp
 - `created_at`: Creation timestamp
 
-### Tool Table
-- `id`: Primary key (auto-increment)
-- `name`: Tool name (unique, required)
-- `display_name`: Human-readable tool name
-- `description`: Tool description
-- `input_schema`: JSON schema for tool inputs
-- `is_active`: Boolean flag for tool status
-- `created_at`: Creation timestamp
-
-## Environment Variables
-
-The application uses the following environment variables:
-
-- `DATABASE_URL`: PostgreSQL connection string
-- `SECRET_KEY`: Flask secret key for sessions
-- `FLASK_ENV`: Flask environment (development/production)
-- `FLASK_DEBUG`: Enable/disable debug mode
-
 ## Docker Configuration
 
 ### Services
 
-1. **Database (db)**:
-   - PostgreSQL 15 Alpine
-   - Port: 5432
-   - Volume: `postgres_data` for data persistence
-   - Health check included
-
-2. **Web Application (web)**:
-   - Built from local Dockerfile
-   - Port: 5000
-   - Depends on database service
-   - Volume mount for development
+1. **Database (db)**: PostgreSQL 15 Alpine with health checks
+2. **Redis (redis)**: Redis 7 Alpine for background task queue
+3. **Migration (migration)**: Runs database migrations and seeding
+4. **Web Application (web)**: Main Flask application
+5. **Celery Worker (celery_worker)**: Background task processor
+6. **Celery Beat (celery_beat)**: Task scheduler
 
 ### Volumes
 
 - `postgres_data`: Persistent storage for PostgreSQL data
+- `redis_data`: Persistent storage for Redis data
 
 ## Development
 
@@ -266,7 +461,7 @@ The application uses the following environment variables:
 
 2. The application will automatically reload when you make changes to the code
 
-3. Access the application at http://localhost:5000
+3. Access the application at http://localhost:5001
 
 ### Database Access
 
@@ -283,10 +478,27 @@ View application logs:
 docker-compose logs web
 ```
 
-View database logs:
+View background task logs:
 ```bash
-docker-compose logs db
+docker-compose logs celery_worker
+docker-compose logs celery_beat
 ```
+
+### Adding New Features
+
+The application follows a layered architecture:
+
+1. **API Layer** (`app/api/v1/`): Handle HTTP requests and responses
+2. **Service Layer** (`app/services/`): Business logic and validation
+3. **Repository Layer** (`app/repositories/`): Data access and database operations
+4. **Model Layer** (`app/models/`): Database models and relationships
+
+When adding new features:
+1. Define database models in `app/models/`
+2. Create Pydantic schemas in `app/schemas/`
+3. Implement data access in `app/repositories/`
+4. Add business logic in `app/services/`
+5. Create API endpoints in `app/api/v1/`
 
 ## Production Deployment
 
@@ -294,189 +506,17 @@ For production deployment:
 
 1. Change the `SECRET_KEY` in the environment variables
 2. Set `FLASK_ENV=production`
-3. Consider using a reverse proxy (nginx)
-4. Set up proper SSL certificates
-5. Configure database backups
-6. Monitor application logs
-
-## AI Agent System
-
-### Overview
-
-The AI agent system allows you to create intelligent agents that can automatically execute tasks using various tools and LLM providers. Each agent has:
-
-- **Custom System Instructions**: Define the agent's role and behavior
-- **LLM Provider**: Choose from OpenAI, Anthropic, or Google Gemini
-- **Available Tools**: Select which tools the agent can use
-- **Configuration**: Set temperature, max tokens, and iteration limits
-
-### Available Tools
-
-1. **Web Search Tool**: Search the web for information using Google Custom Search or DuckDuckGo
-2. **Send Email Tool**: Send emails via SMTP with customizable content
-3. **Execute Script Tool**: Run Python scripts safely with timeout and security restrictions
-
-### LLM Providers
-
-- **OpenAI**: GPT-4, GPT-3.5-turbo models
-- **Anthropic**: Claude-3.5-sonnet and other Claude models
-- **Google Gemini**: Gemini-2.5-flash and other Gemini models
-
-### Setting Up AI Agents
-
-#### 1. Configure API Keys
-
-Copy `.env.example` to `.env` and add your API keys:
-
-```bash
-cp .env.example .env
-```
-
-Edit `.env` and add your keys:
-```bash
-OPENAI_API_KEY=your-openai-api-key-here
-ANTHROPIC_API_KEY=your-anthropic-api-key-here
-GEMINI_API_KEY=your-gemini-api-key-here
-
-# Optional: Email configuration for send_email tool
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-app-password
-
-# Optional: Google Search configuration for web_search tool
-GOOGLE_SEARCH_API_KEY=your-google-search-api-key
-GOOGLE_SEARCH_ENGINE_ID=your-search-engine-id
-```
-
-#### 2. Initialize Sample Agents
-
-Run the initialization script to create sample agents:
-
-```bash
-# If using Docker
-docker-compose exec web python init_agents.py
-
-# If running locally
-python init_agents.py
-```
-
-This creates three sample agents:
-- **Research Assistant**: Specialized in web research using OpenAI GPT-4
-- **Data Analyst**: Focused on data processing using Anthropic Claude
-- **General Assistant**: Versatile agent with all tools using Google Gemini
-
-### Using AI Agents
-
-#### Via API
-
-**List all agents:**
-```bash
-curl http://localhost:5001/api/agents
-```
-
-**Create a new agent:**
-```bash
-curl -X POST http://localhost:5001/api/agents \
-  -H "Content-Type: application/json" \
-  -d '{
-    "name": "My Custom Agent",
-    "description": "A custom agent for specific tasks",
-    "system_instructions": "You are a helpful assistant...",
-    "llm_provider": "openai",
-    "llm_model": "gpt-4",
-    "available_tools": ["web_search", "send_email"],
-    "config": {
-      "temperature": 0.7,
-      "max_tokens": 1000,
-      "max_iterations": 10
-    }
-  }'
-```
-
-**Assign a task to an agent:**
-```bash
-curl -X POST http://localhost:5001/api/tasks/1/assign/1
-```
-
-**Monitor execution:**
-```bash
-curl http://localhost:5001/api/executions
-```
-
-#### Background Processing
-
-The system uses Celery with Redis for background task processing:
-
-- **Celery Worker**: Executes agent tasks asynchronously
-- **Celery Beat**: Scheduler that checks for pending tasks every 30 seconds
-- **Redis**: Message broker and result backend
-
-### Agent Execution Flow
-
-1. **Task Assignment**: Assign a task to an agent via API or UI
-2. **Scheduler Check**: Celery Beat finds pending tasks every 30 seconds
-3. **Agent Execution**: Celery Worker starts agent execution
-4. **LLM Loop**: Agent makes decisions and uses tools iteratively
-5. **Completion**: Task marked as completed or failed with detailed logs
-
-### Monitoring and Debugging
-
-**View execution logs:**
-```bash
-# Celery worker logs
-docker-compose logs celery_worker
-
-# Celery beat logs
-docker-compose logs celery_beat
-
-# Web application logs
-docker-compose logs web
-```
-
-**Check execution details:**
-```bash
-curl http://localhost:5001/api/executions/1
-```
-
-### Security Considerations
-
-- **Script Execution**: Python scripts run with timeouts and restricted imports
-- **API Keys**: Store securely in environment variables
-- **Tool Access**: Agents only have access to explicitly assigned tools
-- **Sandboxing**: Script execution is isolated with security checks
-
-### Extending the System
-
-#### Adding New Tools
-
-1. Create a new tool class in `tools.py`:
-```python
-class MyCustomTool(Tool):
-    @property
-    def name(self) -> str:
-        return "my_custom_tool"
-    
-    # Implement other required methods...
-```
-
-2. Register the tool in `ToolRegistry`
-3. Update agent configurations to include the new tool
-
-#### Adding New LLM Providers
-
-1. Create a new provider class in `llm_providers.py`:
-```python
-class MyLLMProvider(LLMProvider):
-    def chat(self, system, messages, tools=None, **kwargs):
-        # Implement LLM integration
-        pass
-```
-
-2. Update `LLMProviderFactory` to include the new provider
+3. Configure proper database credentials
+4. Set up SSL certificates
+5. Use a reverse proxy (nginx)
+6. Configure database backups
+7. Set up monitoring and logging
 
 ## Sample Data
 
-The application includes sample tasks that are automatically created when the database is initialized:
+The application includes sample tasks and agents that are automatically created when the database is initialized:
 
+**Sample Tasks:**
 - Setup Development Environment (Done)
 - Design Database Schema (Done)
 - Implement User Authentication (In Progress)
@@ -485,6 +525,11 @@ The application includes sample tasks that are automatically created when the da
 - Write Unit Tests (To Do)
 - Deploy to Production (To Do)
 
+**Sample Agents:**
+- Research Assistant (OpenAI GPT-4)
+- Data Analyst (Anthropic Claude)
+- General Assistant (Google Gemini)
+
 ## Troubleshooting
 
 ### Common Issues
@@ -492,6 +537,7 @@ The application includes sample tasks that are automatically created when the da
 1. **Port already in use**: Change the port mapping in `docker-compose.yml`
 2. **Database connection failed**: Ensure PostgreSQL is running and credentials are correct
 3. **Permission denied**: Check file permissions and Docker daemon status
+4. **API key errors**: Verify your LLM provider API keys are correctly set in `.env`
 
 ### Reset Database
 
@@ -502,11 +548,23 @@ docker-compose down -v
 docker-compose up --build
 ```
 
+### Debugging Agent Executions
+
+Check Celery logs for agent execution details:
+```bash
+docker-compose logs celery_worker
+```
+
+Monitor executions via API:
+```bash
+curl http://localhost:5001/api/v1/executions
+```
+
 ## Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
+3. Make your changes following the established architecture
 4. Test thoroughly
 5. Submit a pull request
 
