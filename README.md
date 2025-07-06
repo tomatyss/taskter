@@ -110,7 +110,12 @@ An intelligent kanban board application built with Flask, PostgreSQL, and AI age
    python manage_migrations.py seed
    ```
 
-7. Run the application:
+7. Create an initial user:
+   ```bash
+   python scripts/setup_user.py
+   ```
+
+8. Run the application:
    ```bash
    python main.py
    ```
