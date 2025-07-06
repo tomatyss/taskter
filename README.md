@@ -319,7 +319,7 @@ The application uses a centralized configuration system with environment variabl
 ### Required Configuration
 ```bash
 # Database
-DATABASE_URL=postgresql://kanban_user:kanban_pass@localhost:5432/kanban_db
+DATABASE_URL=postgresql://taskter_user:taskter_pass@db:5432/taskter_db
 
 # Flask
 SECRET_KEY=your-secret-key-change-in-production

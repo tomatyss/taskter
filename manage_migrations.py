@@ -14,22 +14,26 @@ from sqlalchemy import text
 from db import db
 from app.models import Task, Agent, AgentExecution
 
+
 def create_app():
     """Create Flask app for migration operations"""
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://kanban_user:kanban_pass@localhost:5432/kanban_db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+        'DATABASE_URL', 'postgresql://taskter_user:taskter_pass@db:5432/taskter_db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    
+
     db.init_app(app)
     migrate = Migrate(app, db)
     return app, migrate
+
 
 def run_command(command, description):
     """Run a shell command and handle errors"""
     print(f"\n🔄 {description}...")
     try:
-        result = subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
+        result = subprocess.run(command, shell=True,
+                                check=True, capture_output=True, text=True)
         if result.stdout:
             print(result.stdout)
         print(f"✅ {description} completed successfully")
@@ -39,13 +43,15 @@ def run_command(command, description):
         print(f"Error: {e.stderr}")
         return False
 
+
 def backup_database():
     """Create a database backup before major migrations"""
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     backup_file = f"backup_taskter_{timestamp}.sql"
-    
-    db_url = os.environ.get('DATABASE_URL', 'postgresql://kanban_user:kanban_pass@localhost:5432/kanban_db')
-    
+
+    db_url = os.environ.get(
+        'DATABASE_URL', 'postgresql://taskter_user:taskter_pass@db:5432/taskter_db')
+
     # Extract connection details from DATABASE_URL
     # Format: postgresql://user:pass@host:port/dbname
     if db_url.startswith('postgresql://'):
@@ -57,28 +63,29 @@ def backup_database():
             user = user_pass[0] if len(user_pass) > 0 else 'kanban_user'
             host_port = user_host[1].split(':')
             host = host_port[0] if len(host_port) > 0 else 'localhost'
-            
+
             backup_cmd = f"pg_dump -h {host} -U {user} -d {db_name} > {backup_file}"
             if run_command(backup_cmd, f"Creating database backup: {backup_file}"):
                 print(f"📁 Backup saved as: {backup_file}")
                 return backup_file
-    
+
     print("⚠️  Could not create database backup - proceeding without backup")
     return None
+
 
 def seed_sample_data():
     """Seed the database with sample data"""
     app, _ = create_app()
-    
+
     with app.app_context():
         try:
             # Check if we already have data
             if Task.query.count() > 0:
                 print("📊 Database already contains data, skipping sample data seeding")
                 return True
-            
+
             print("🌱 Seeding sample data...")
-            
+
             # Create sample tasks
             sample_tasks = [
                 {
@@ -117,11 +124,11 @@ def seed_sample_data():
                     'status': 'todo'
                 }
             ]
-            
+
             for task_data in sample_tasks:
                 task = Task(**task_data)
                 db.session.add(task)
-            
+
             # Create sample agent
             sample_agent = Agent(
                 name='General Assistant',
@@ -134,65 +141,68 @@ def seed_sample_data():
                 is_active=True
             )
             db.session.add(sample_agent)
-            
+
             # Note: Tool model not implemented yet in refactored structure
             # Tools are currently managed as part of agent configuration
-            
+
             db.session.commit()
             print("✅ Sample data seeded successfully")
             return True
-            
+
         except Exception as e:
             print(f"❌ Error seeding sample data: {str(e)}")
             db.session.rollback()
             return False
 
+
 def validate_migration():
     """Validate the database state after migration"""
     app, _ = create_app()
-    
+
     with app.app_context():
         try:
             print("🔍 Validating database state...")
-            
+
             # Check if all tables exist using model queries instead of raw SQL
             try:
                 # Test Task model
                 Task.query.limit(1).all()
                 print("✅ Table 'task' exists and is accessible")
-                
+
                 # Test Agent model
                 Agent.query.limit(1).all()
                 print("✅ Table 'agent' exists and is accessible")
-                
+
                 # Test AgentExecution model
                 AgentExecution.query.limit(1).all()
                 print("✅ Table 'agent_execution' exists and is accessible")
-                
+
             except Exception as e:
                 print(f"❌ Table validation failed: {str(e)}")
                 return False
-            
+
             # Check foreign key relationships using model queries
             try:
                 # Test Task -> Agent relationship
-                Task.query.join(Agent, Task.assigned_agent_id == Agent.id, isouter=True).limit(1).all()
+                Task.query.join(Agent, Task.assigned_agent_id ==
+                                Agent.id, isouter=True).limit(1).all()
                 print("✅ Task -> Agent foreign key relationship working")
-                
+
                 # Test AgentExecution relationships
                 AgentExecution.query.join(Task).join(Agent).limit(1).all()
                 print("✅ AgentExecution foreign key relationships working")
-                
+
             except Exception as e:
                 print(f"❌ Foreign key validation failed: {str(e)}")
                 return False
-            
+
             print("✅ Database validation completed successfully")
             return True
-            
+
         except Exception as e:
             print(f"❌ Database validation failed: {str(e)}")
             return False
+
 
 def main():
     """Main migration management function"""
@@ -221,10 +231,10 @@ Examples:
   python manage_migrations.py seed
         """)
         return
-    
+
     command = sys.argv[1].lower()
     app, migrate_obj = create_app()
-    
+
     with app.app_context():
         if command == 'init':
             print("🚀 Initializing migration repository...")
@@ -233,7 +243,7 @@ Examples:
                 print("✅ Migration repository initialized")
             except Exception as e:
                 print(f"❌ Initialization failed: {str(e)}")
-        
+
         elif command == 'migrate':
             if len(sys.argv) < 3:
                 print("❌ Please provide a migration message")
@@ -245,7 +255,7 @@ Examples:
                 print("✅ Migration created successfully")
             except Exception as e:
                 print(f"❌ Migration creation failed: {str(e)}")
-        
+
         elif command == 'upgrade':
             print("⬆️  Applying migrations...")
             try:
@@ -254,7 +264,7 @@ Examples:
                 validate_migration()
             except Exception as e:
                 print(f"❌ Migration upgrade failed: {str(e)}")
-        
+
         elif command == 'downgrade':
             revision = sys.argv[2] if len(sys.argv) > 2 else '-1'
             print(f"⬇️  Rolling back to revision: {revision}")
@@ -264,30 +274,30 @@ Examples:
                 validate_migration()
             except Exception as e:
                 print(f"❌ Rollback failed: {str(e)}")
-        
+
         elif command == 'current':
             print("📍 Current migration revision:")
             try:
                 current()
             except Exception as e:
                 print(f"❌ Could not get current revision: {str(e)}")
-        
+
         elif command == 'history':
             print("📚 Migration history:")
             try:
                 history()
             except Exception as e:
                 print(f"❌ Could not get migration history: {str(e)}")
-        
+
         elif command == 'validate':
             validate_migration()
-        
+
         elif command == 'seed':
             seed_sample_data()
-        
+
         elif command == 'backup':
             backup_database()
-        
+
         elif command == 'reset':
             print("⚠️  WARNING: This will delete ALL data in the database!")
             confirm = input("Type 'CONFIRM' to proceed: ")
@@ -301,9 +311,10 @@ Examples:
                     print(f"❌ Database reset failed: {str(e)}")
             else:
                 print("❌ Reset cancelled")
-        
+
         else:
             print(f"❌ Unknown command: {command}")
+
 
 if __name__ == "__main__":
     main()
