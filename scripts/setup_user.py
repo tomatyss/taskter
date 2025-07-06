@@ -7,7 +7,7 @@ from db import db
 from app.models.user import User
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://kanban_user:kanban_pass@localhost:5432/kanban_db')
+app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://taskter_user:taskter_pass@db:5432/taskter_db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 
