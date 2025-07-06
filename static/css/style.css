@@ -216,32 +216,114 @@ body {
     background-color: #f8f9fa;
 }
 
+/* Improved scrollbar for conversation log */
+.conversation-log::-webkit-scrollbar {
+    width: 8px;
+}
+
+.conversation-log::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.conversation-log::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.conversation-log::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+
 .conversation-log .message {
     margin-bottom: 10px;
     padding: 8px 12px;
     border-radius: 6px;
     font-family: 'Courier New', monospace;
     font-size: 0.85em;
+    line-height: 1.4;
 }
 
 .conversation-log .message.system {
     background-color: #e9ecef;
     border-left: 4px solid #6c757d;
+    color: #212529;
 }
 
 .conversation-log .message.user {
-    background-color: #cff4fc;
-    border-left: 4px solid #0dcaf0;
+    background-color: #0d6efd;
+    border-left: 4px solid #0a58ca;
+    color: #ffffff;
 }
 
 .conversation-log .message.assistant {
-    background-color: #d1e7dd;
-    border-left: 4px solid #198754;
+    background-color: #198754;
+    border-left: 4px solid #146c43;
+    color: #ffffff;
 }
 
 .conversation-log .message.tool {
-    background-color: #fff3cd;
-    border-left: 4px solid #ffc107;
+    background-color: #ffc107;
+    border-left: 4px solid #ffca2c;
+    color: #212529;
+}
+
+/* Enhanced conversation log card styling for modal */
+.conversation-log .card {
+    margin-bottom: 8px;
+    border: 1px solid #dee2e6;
+    font-size: 0.875rem;
+}
+
+.conversation-log .card-header {
+    padding: 6px 12px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.conversation-log .card-header.bg-light {
+    background-color: #f8f9fa !important;
+    color: #495057 !important;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.conversation-log .card-header.bg-primary {
+    background-color: #0d6efd !important;
+    color: #ffffff !important;
+    border-bottom: 1px solid #0a58ca;
+}
+
+.conversation-log .card-header.bg-success {
+    background-color: #198754 !important;
+    color: #ffffff !important;
+    border-bottom: 1px solid #146c43;
+}
+
+.conversation-log .card-header.bg-warning {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+    border-bottom: 1px solid #ffca2c;
+}
+
+.conversation-log .card-body {
+    padding: 10px 12px;
+    background-color: #ffffff;
+}
+
+.conversation-log .card-body pre {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', 'Consolas', 'Courier New', monospace;
+    font-size: 0.8rem;
+    line-height: 1.5;
+    color: #212529;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
 }
 
 /* Tool Selection Styles */
