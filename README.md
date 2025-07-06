@@ -572,7 +572,7 @@ curl http://localhost:5001/api/v1/executions
 
 All pull requests automatically run the test suite via GitHub Actions. The
 workflow defined in `.github/workflows/test.yml` installs dependencies from
-`requirements.txt` and executes `pytest`.
+`requirements.txt` and also installs `pytest` before executing the tests.
 
 ## Preview Deployments
 
