@@ -88,6 +88,8 @@ class AgentExecutor:
                 # Optionally move task to 'done' status
                 if result.get('task_completed', False):
                     task.status = 'done'
+                if result.get('task_blocked', False):
+                    task.status = 'blocked'
             else:
                 task.execution_status = 'failed'
             
@@ -210,6 +212,18 @@ class AgentExecutor:
                             "iterations": iteration + 1,
                             "total_tokens": total_tokens,
                             "task_completed": True
+                        }
+
+                    # Check if task is blocked
+                    if self._is_task_blocked(response):
+                        return {
+                            "success": True,
+                            "result": "Task marked as blocked",
+                            "conversation": conversation_history,
+                            "iterations": iteration + 1,
+                            "total_tokens": total_tokens,
+                            "task_completed": False,
+                            "task_blocked": True
                         }
                     
                     # Check for explicit stop
@@ -364,6 +378,16 @@ Please analyze the task and create a plan to complete it, then execute that plan
         
         content_lower = content.lower()
         return any(indicator.lower() in content_lower for indicator in completion_indicators)
+
+    def _is_task_blocked(self, response: Dict) -> bool:
+        """Check if the task should be marked as blocked"""
+        from app.core.constants import TASK_BLOCKED_INDICATORS
+        content = response.get('content', '')
+        if not content:
+            return False
+
+        content_lower = content.lower()
+        return any(ind.lower() in content_lower for ind in TASK_BLOCKED_INDICATORS)
     
     def stop_execution(self, execution_id: int) -> Dict[str, Any]:
         """Stop a running execution"""

@@ -366,9 +366,24 @@ class TaskService:
         """Validate if status transition is allowed"""
         # Define valid transitions
         valid_transitions = {
-            TaskStatus.TODO.value: [TaskStatus.IN_PROGRESS.value, TaskStatus.DONE.value],
-            TaskStatus.IN_PROGRESS.value: [TaskStatus.TODO.value, TaskStatus.DONE.value],
-            TaskStatus.DONE.value: [TaskStatus.TODO.value, TaskStatus.IN_PROGRESS.value]
+            TaskStatus.TODO.value: [
+                TaskStatus.IN_PROGRESS.value,
+                TaskStatus.BLOCKED.value,
+                TaskStatus.DONE.value
+            ],
+            TaskStatus.IN_PROGRESS.value: [
+                TaskStatus.TODO.value,
+                TaskStatus.DONE.value,
+                TaskStatus.BLOCKED.value
+            ],
+            TaskStatus.BLOCKED.value: [
+                TaskStatus.TODO.value,
+                TaskStatus.IN_PROGRESS.value
+            ],
+            TaskStatus.DONE.value: [
+                TaskStatus.TODO.value,
+                TaskStatus.IN_PROGRESS.value
+            ]
         }
         
         return new_status in valid_transitions.get(current_status, [])

@@ -41,12 +41,15 @@ def index():
         status='todo').order_by(Task.created_at.desc()).all()
     in_progress_tasks = Task.query.filter_by(
         status='in_progress').order_by(Task.created_at.desc()).all()
+    blocked_tasks = Task.query.filter_by(
+        status='blocked').order_by(Task.created_at.desc()).all()
     done_tasks = Task.query.filter_by(
         status='done').order_by(Task.created_at.desc()).all()
 
     return render_template('index.html',
                            todo_tasks=todo_tasks,
                            in_progress_tasks=in_progress_tasks,
+                           blocked_tasks=blocked_tasks,
                            done_tasks=done_tasks)
 
 
@@ -69,7 +72,7 @@ def add_task():
 
 @app.route('/move_task/<int:task_id>/<status>')
 def move_task(task_id, status):
-    if status not in ['todo', 'in_progress', 'done']:
+    if status not in ['todo', 'in_progress', 'blocked', 'done']:
         flash('Invalid status!', 'error')
         return redirect(url_for('index'))
 

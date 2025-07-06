@@ -5,7 +5,7 @@ An intelligent kanban board application built with Flask, PostgreSQL, and AI age
 ## Features
 
 ### Core Kanban Features
-- **Three-column Kanban Board**: To Do, In Progress, Done
+- **Four-column Kanban Board**: To Do, In Progress, Blocked, Done
 - **Task Management**: Create, edit, delete, and move tasks between columns
 - **Server-driven UI**: All interactions handled server-side with full page refreshes
 - **PostgreSQL Database**: Persistent data storage
@@ -233,8 +233,9 @@ The application provides a RESTful API with the following endpoints:
 
 #### Moving Tasks
 - Use the arrow buttons on each task card to move between columns:
-  - From "To Do" → "In Progress"
-  - From "In Progress" → "To Do" or "Done"
+  - From "To Do" → "In Progress" or "Blocked"
+  - From "In Progress" → "To Do", "Blocked", or "Done"
+  - From "Blocked" → "In Progress"
   - From "Done" → "In Progress"
 
 #### Editing Tasks
@@ -399,7 +400,7 @@ docker-compose run --rm migration python manage_migrations.py upgrade
 - `id`: Primary key (auto-increment)
 - `title`: Task title (required, max 200 characters)
 - `description`: Task description (optional, text)
-- `status`: Task status ('todo', 'in_progress', 'done')
+- `status`: Task status ('todo', 'in_progress', 'blocked', 'done')
 - `created_at`: Creation timestamp
 - `updated_at`: Last update timestamp
 - `assigned_agent_id`: Foreign key to Agent table (optional)
