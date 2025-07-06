@@ -568,6 +568,29 @@ curl http://localhost:5001/api/v1/executions
 4. Test thoroughly
 5. Submit a pull request
 
+## Continuous Integration
+
+All pull requests automatically run the test suite via GitHub Actions. The
+workflow defined in `.github/workflows/test.yml` installs dependencies from
+`requirements.txt` and executes `pytest`.
+
+## Preview Deployments
+
+To manually test a feature branch in Google Cloud Run, push a tag beginning with
+`deploy-` to the branch:
+
+```bash
+git tag deploy-my-feature
+git push origin deploy-my-feature
+```
+
+The `deploy.yml` workflow builds a container image and deploys it to Cloud Run.
+Configure the following repository secrets for authentication:
+
+- `GCP_PROJECT` – your Google Cloud project ID
+- `GCP_REGION` – the Cloud Run region
+- `GCP_SA_KEY` – JSON service account key with deploy permissions
+
 ## License
 
 This project is open source and available under the MIT License.
