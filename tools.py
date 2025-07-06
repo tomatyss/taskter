@@ -62,6 +62,14 @@ class Tool(ABC):
             "description": self.description,
             "input_schema": self.input_schema
         }
+    
+    def to_gemini_format(self) -> Dict:
+        """Convert tool to Gemini function declaration format"""
+        return {
+            "name": self.name,
+            "description": self.description,
+            "parameters": self.input_schema
+        }
 
 class WebSearchTool(Tool):
     """Tool for performing web searches"""
@@ -262,8 +270,8 @@ class SendEmailTool(Tool):
             # Add body
             msg.attach(MIMEText(body, 'plain'))
             
-            # Connect to server and send email
-            server = smtplib.SMTP(self.smtp_server, self.smtp_port)
+            # Connect to server and send email with timeout
+            server = smtplib.SMTP(self.smtp_server, self.smtp_port, timeout=10)
             server.starttls()
             server.login(self.smtp_username, self.smtp_password)
             
@@ -444,6 +452,15 @@ class ToolRegistry:
             tool = self.get_tool(name)
             if tool:
                 tools.append(tool.to_anthropic_format())
+        return tools
+    
+    def get_tools_gemini_format(self, tool_names: List[str]) -> List[Dict]:
+        """Get tools in Gemini function declaration format"""
+        tools = []
+        for name in tool_names:
+            tool = self.get_tool(name)
+            if tool:
+                tools.append(tool.to_gemini_format())
         return tools
 
 # Global tool registry instance

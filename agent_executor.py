@@ -280,8 +280,11 @@ Please analyze the task and create a plan to complete it, then execute that plan
             return tool_registry.get_tools_openai_format(tool_names)
         elif provider_name == "anthropic":
             return tool_registry.get_tools_anthropic_format(tool_names)
+        elif provider_name == "gemini":
+            return tool_registry.get_tools_gemini_format(tool_names)
         else:
-            # For Gemini and others, use OpenAI format as fallback
+            # For unknown providers, use OpenAI format as fallback
+            logger.warning(f"Unknown provider '{provider_name}', using OpenAI format as fallback")
             return tool_registry.get_tools_openai_format(tool_names)
     
     def _execute_tool_call(self, tool_call: Dict) -> Dict[str, Any]:
