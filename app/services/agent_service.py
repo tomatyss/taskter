@@ -50,14 +50,16 @@ class AgentService:
             
             # Validate provider
             if not self._is_provider_supported(llm_provider):
-                raise AgentValidationError(f"Unsupported LLM provider: {llm_provider.value}")
+                provider_value = llm_provider.value if hasattr(llm_provider, 'value') else str(llm_provider)
+                raise AgentValidationError(f"Unsupported LLM provider: {provider_value}")
             
             # Create agent
+            provider_value = llm_provider.value if hasattr(llm_provider, 'value') else str(llm_provider)
             agent_data = {
                 'name': name.strip(),
                 'description': description.strip() if description else None,
                 'system_instructions': system_instructions.strip(),
-                'llm_provider': llm_provider.value,
+                'llm_provider': provider_value,
                 'llm_model': llm_model.strip(),
                 'llm_api_key': llm_api_key,
                 'available_tools': available_tools or [],
@@ -142,8 +144,10 @@ class AgentService:
                 update_data['system_instructions'] = system_instructions.strip()
             if llm_provider is not None:
                 if not self._is_provider_supported(llm_provider):
-                    raise AgentValidationError(f"Unsupported LLM provider: {llm_provider.value}")
-                update_data['llm_provider'] = llm_provider.value
+                    provider_value = llm_provider.value if hasattr(llm_provider, 'value') else str(llm_provider)
+                    raise AgentValidationError(f"Unsupported LLM provider: {provider_value}")
+                provider_value = llm_provider.value if hasattr(llm_provider, 'value') else str(llm_provider)
+                update_data['llm_provider'] = provider_value
             if llm_model is not None:
                 update_data['llm_model'] = llm_model.strip()
             if llm_api_key is not None:
@@ -401,8 +405,12 @@ class AgentService:
         """Get recently created agents"""
         return self.agent_repo.get_recent_agents(limit)
     
-    def _is_provider_supported(self, provider: LLMProvider) -> bool:
+    def _is_provider_supported(self, provider) -> bool:
         """Check if the LLM provider is supported"""
-        # This could be extended to check against available providers
-        # For now, we'll accept all enum values as supported
-        return isinstance(provider, LLMProvider)
+        # Handle both string and enum inputs
+        if isinstance(provider, LLMProvider):
+            return True
+        elif isinstance(provider, str):
+            # Check if the string matches any of the enum values
+            return provider in [p.value for p in LLMProvider]
+        return False

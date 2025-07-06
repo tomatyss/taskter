@@ -20,6 +20,9 @@ def register_blueprints(app):
     
     # Register main API blueprint (for any shared routes)
     app.register_blueprint(api_v1)
+    
+    # Register legacy API blueprint for backward compatibility
+    app.register_blueprint(legacy_api)
 
 
 # Health check endpoint for the API
@@ -70,3 +73,47 @@ def api_info():
             }
         }
     )
+
+
+# Create legacy API blueprint for compatibility
+legacy_api = Blueprint('legacy_api', __name__, url_prefix='/api')
+
+# Create compatibility routes for legacy API paths
+from flask import redirect, request
+
+# Redirect /api/agents to /api/v1/agents
+@legacy_api.route('/agents', defaults={'path': ''}, methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
+@legacy_api.route('/agents/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
+def redirect_agents(path):
+    """Redirect legacy /api/agents paths to /api/v1/agents"""
+    if path:
+        return redirect(f'/api/v1/agents/{path}', code=307)  # 307 preserves method and body
+    else:
+        # Preserve query parameters
+        if request.query_string:
+            return redirect(f'/api/v1/agents?{request.query_string.decode()}', code=307)
+        return redirect('/api/v1/agents', code=307)
+
+# Redirect /api/tasks to /api/v1/tasks  
+@legacy_api.route('/tasks', defaults={'path': ''}, methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
+@legacy_api.route('/tasks/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
+def redirect_tasks(path):
+    """Redirect legacy /api/tasks paths to /api/v1/tasks"""
+    if path:
+        return redirect(f'/api/v1/tasks/{path}', code=307)
+    else:
+        if request.query_string:
+            return redirect(f'/api/v1/tasks?{request.query_string.decode()}', code=307)
+        return redirect('/api/v1/tasks', code=307)
+
+# Redirect /api/executions to /api/v1/executions
+@legacy_api.route('/executions', defaults={'path': ''}, methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
+@legacy_api.route('/executions/<path:path>', methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])
+def redirect_executions(path):
+    """Redirect legacy /api/executions paths to /api/v1/executions"""
+    if path:
+        return redirect(f'/api/v1/executions/{path}', code=307)
+    else:
+        if request.query_string:
+            return redirect(f'/api/v1/executions?{request.query_string.decode()}', code=307)
+        return redirect('/api/v1/executions', code=307)

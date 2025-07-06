@@ -84,9 +84,10 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadAgentsForFilter() {
-    fetch('/api/agents')
+    fetch('/api/v1/agents')
         .then(response => response.json())
-        .then(agents => {
+        .then(data => {
+            const agents = data.data ? data.data.agents : data.agents || [];
             const select = document.getElementById('agentFilter');
             agents.forEach(agent => {
                 const option = document.createElement('option');
@@ -101,12 +102,13 @@ function loadAgentsForFilter() {
 function loadExecutions(page = 1) {
     currentPage = page;
     
-    fetch(`/api/executions?page=${page}&per_page=20`)
+    fetch(`/api/v1/executions?page=${page}&per_page=20`)
         .then(response => response.json())
-        .then(data => {
+        .then(response => {
+            const data = response.data;
             const container = document.getElementById('executionsContainer');
             
-            if (data.executions.length === 0) {
+            if (!data.executions || data.executions.length === 0) {
                 container.innerHTML = `
                     <div class="alert alert-info text-center">
                         <i class="fas fa-info-circle fa-2x mb-3"></i>
@@ -263,9 +265,10 @@ function hasRunningExecutions() {
 }
 
 function showExecutionDetails(executionId) {
-    fetch(`/api/executions/${executionId}`)
+    fetch(`/api/v1/executions/${executionId}`)
         .then(response => response.json())
-        .then(execution => {
+        .then(response => {
+            const execution = response.data;
             const content = document.getElementById('executionModalContent');
             
             let html = `
@@ -360,7 +363,7 @@ function stopExecution(executionId) {
         return;
     }
     
-    fetch(`/api/executions/${executionId}/stop`, {
+    fetch(`/api/v1/executions/${executionId}/cancel`, {
         method: 'POST'
     })
     .then(response => response.json())
@@ -383,7 +386,7 @@ function applyFilters() {
     const agentFilter = document.getElementById('agentFilter').value;
     const taskFilter = document.getElementById('taskFilter').value;
     
-    let url = '/api/executions?page=1&per_page=20';
+    let url = '/api/v1/executions?page=1&per_page=20';
     
     if (statusFilter) url += `&status=${statusFilter}`;
     if (agentFilter) url += `&agent_id=${agentFilter}`;

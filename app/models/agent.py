@@ -122,7 +122,29 @@ class Agent(db.Model):
     
     def can_execute_tasks(self) -> bool:
         """Check if agent can execute tasks"""
-        return self.is_active and self.llm_api_key is not None
+        return self.is_active and self.has_api_key_available()
+    
+    def has_api_key_available(self) -> bool:
+        """Check if agent has API key available (either set on agent or in environment)"""
+        import os
+        
+        # Check if agent has its own API key
+        if self.llm_api_key:
+            return True
+        
+        # Check environment variables based on provider
+        env_key_map = {
+            'openai': 'OPENAI_API_KEY',
+            'anthropic': 'ANTHROPIC_API_KEY', 
+            'gemini': 'GEMINI_API_KEY'
+        }
+        
+        env_key = env_key_map.get(self.llm_provider.lower())
+        if env_key:
+            env_value = os.getenv(env_key)
+            return env_value is not None and env_value.strip() != ''
+        
+        return False
     
     def has_tool(self, tool_name: str) -> bool:
         """Check if agent has a specific tool"""
@@ -226,8 +248,8 @@ class Agent(db.Model):
         if not self.llm_model:
             issues.append("LLM model is required")
         
-        if self.is_active and not self.llm_api_key:
-            issues.append("API key is required for active agents")
+        if self.is_active and not self.has_api_key_available():
+            issues.append("API key is required for active agents (either set on agent or in environment)")
         
         return issues
     
