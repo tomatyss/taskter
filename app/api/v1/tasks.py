@@ -41,29 +41,31 @@ def list_tasks():
                 error_code="INVALID_STATUS"
             )
         
-        # Get tasks
-        filters = {}
+        # Get tasks by status or all tasks
         if status:
-            filters['status'] = status
-            
-        result = task_service.get_tasks_paginated(
-            page=page,
-            per_page=per_page,
-            filters=filters
-        )
+            status_enum = TaskStatus(status)
+            tasks = task_service.get_tasks_by_status(status_enum)
+        else:
+            # Get all tasks from repository directly
+            tasks = task_service.task_repo.get_all()
         
         # Convert to response format
-        tasks_data = [task_to_response(task) for task in result.items]
+        tasks_data = [task_to_response(task) for task in tasks]
+        
+        # Simple pagination (for now)
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        paginated_tasks = tasks[start_idx:end_idx]
         
         response_data = {
-            "tasks": [task.dict() for task in tasks_data],
+            "tasks": [task.dict() for task in [task_to_response(task) for task in paginated_tasks]],
             "pagination": {
-                "page": result.page,
-                "per_page": result.per_page,
-                "total": result.total,
-                "pages": result.pages,
-                "has_next": result.has_next,
-                "has_prev": result.has_prev
+                "page": page,
+                "per_page": per_page,
+                "total": len(tasks),
+                "pages": (len(tasks) + per_page - 1) // per_page,
+                "has_next": end_idx < len(tasks),
+                "has_prev": page > 1
             }
         }
         
@@ -80,7 +82,7 @@ def list_tasks():
 def create_task(data: TaskCreate):
     """Create a new task"""
     try:
-        task = task_service.create_task(data)
+        task = task_service.create_task(data.title, data.description)
         task_data = task_to_response(task)
         
         logger.info(f"Created task {task.id}: {task.title}")
@@ -120,7 +122,7 @@ def get_task(task_id: int):
 def update_task(data: TaskUpdate, task_id: int):
     """Update a specific task"""
     try:
-        task = task_service.update_task(task_id, data)
+        task = task_service.update_task(task_id, data.title, data.description)
         task_data = task_to_response(task)
         
         logger.info(f"Updated task {task_id}")
@@ -163,7 +165,8 @@ def delete_task(task_id: int):
 def update_task_status(data: TaskStatusUpdate, task_id: int):
     """Update task status"""
     try:
-        task = task_service.update_task_status(task_id, data.status)
+        status_enum = TaskStatus(data.status)
+        task = task_service.move_task_to_status(task_id, status_enum)
         task_data = task_to_response(task)
         
         logger.info(f"Updated task {task_id} status to {data.status}")
@@ -177,6 +180,55 @@ def update_task_status(data: TaskStatusUpdate, task_id: int):
         return APIResponse.not_found("Task")
     except Exception as e:
         logger.error(f"Error updating task {task_id} status: {str(e)}")
+        return APIResponse.internal_error()
+
+
+@tasks_bp.route('/<int:task_id>/assign/<int:agent_id>', methods=['POST'])
+@handle_service_exceptions
+def assign_task_simple(task_id: int, agent_id: int):
+    """Assign a task to an agent (simple URL-based endpoint)"""
+    try:
+        # Get the task and agent
+        task = task_service.get_task_by_id(task_id)
+        if not task:
+            return APIResponse.not_found("Task")
+        
+        agent = agent_service.get_agent_by_id(agent_id)
+        if not agent:
+            return APIResponse.not_found("Agent")
+        
+        if not agent.is_active:
+            return APIResponse.error(
+                message="Agent is not active",
+                error_code="AGENT_NOT_ACTIVE"
+            )
+        
+        # Check if task is already running
+        if task.execution_status == 'running':
+            return APIResponse.error(
+                message="Task is currently running",
+                error_code="TASK_RUNNING"
+            )
+        
+        # Assign the task
+        updated_task = task_service.assign_task_to_agent(task_id, agent_id)
+        task_data = task_to_response(updated_task)
+        
+        logger.info(f"Assigned task {task_id} to agent {agent_id}")
+        
+        return APIResponse.success(
+            data=task_data.dict(),
+            message=f'Task "{task.title}" assigned to agent "{agent.name}"'
+        )
+        
+    except TaskNotFoundError:
+        return APIResponse.not_found("Task")
+    except AgentNotFoundError:
+        return APIResponse.not_found("Agent")
+    except AgentNotActiveError as e:
+        return APIResponse.error(str(e), "AGENT_NOT_ACTIVE")
+    except Exception as e:
+        logger.error(f"Error assigning task {task_id}: {str(e)}")
         return APIResponse.internal_error()
 
 
@@ -246,7 +298,7 @@ def unassign_task(task_id: int):
             )
         
         # Unassign the task
-        updated_task = task_service.unassign_task(task_id)
+        updated_task = task_service.unassign_task_from_agent(task_id)
         task_data = task_to_response(updated_task)
         
         logger.info(f"Unassigned task {task_id}")

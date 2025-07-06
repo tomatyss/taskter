@@ -66,6 +66,7 @@
                                 <label for="agentApiKey" class="form-label">API Key (Optional)</label>
                                 <input type="password" class="form-control" id="agentApiKey" 
                                        placeholder="Leave empty to use environment variables">
+                                <small class="text-muted">Uses environment variables if not provided</small>
                             </div>
                         </div>
                     </div>
@@ -204,8 +205,9 @@ function updateModelOptions(selectId, provider) {
 function loadAgents() {
     fetch('/api/agents')
         .then(response => response.json())
-        .then(agents => {
+        .then(data => {
             const container = document.getElementById('agentsContainer');
+            const agents = data.data ? data.data.agents : data.agents || [];
             
             if (agents.length === 0) {
                 container.innerHTML = `
@@ -299,14 +301,16 @@ document.getElementById('createAgentForm').addEventListener('submit', function(e
     const selectedTools = Array.from(document.querySelectorAll('#toolsContainer input:checked'))
         .map(input => input.value);
     
+    const apiKey = document.getElementById('agentApiKey').value;
     const agentData = {
         name: document.getElementById('agentName').value,
         description: document.getElementById('agentDescription').value,
         system_instructions: document.getElementById('agentInstructions').value,
         llm_provider: document.getElementById('agentProvider').value,
         llm_model: document.getElementById('agentModel').value,
-        llm_api_key: document.getElementById('agentApiKey').value || null,
+        llm_api_key: apiKey || null,
         available_tools: selectedTools,
+        is_active: true, // Create as active by default (will use env vars if no API key)
         config: {
             temperature: parseFloat(document.getElementById('agentTemperature').value),
             max_tokens: parseInt(document.getElementById('agentMaxTokens').value),
@@ -324,7 +328,9 @@ document.getElementById('createAgentForm').addEventListener('submit', function(e
     .then(response => response.json())
     .then(data => {
         if (data.error) {
-            alert('Error: ' + data.error);
+            alert('Error: ' + (data.error.message || data.error));
+        } else if (!data.success) {
+            alert('Error: ' + (data.message || 'Unknown error occurred'));
         } else {
             alert('Agent created successfully!');
             bootstrap.Modal.getInstance(document.getElementById('createAgentModal')).hide();
@@ -343,7 +349,8 @@ function editAgent(agentId) {
     
     fetch(`/api/agents/${agentId}`)
         .then(response => response.json())
-        .then(agent => {
+        .then(data => {
+            const agent = data.data || data;
             // Populate edit form with agent data
             const content = document.getElementById('editAgentContent');
             content.innerHTML = `

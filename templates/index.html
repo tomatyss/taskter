@@ -222,7 +222,8 @@ function showAgentModal(taskId) {
     // Load agents
     fetch('/api/agents')
         .then(response => response.json())
-        .then(agents => {
+        .then(data => {
+            const agents = data.data ? data.data.agents : data.agents || [];
             const content = document.getElementById('agentModalContent');
             if (agents.length === 0) {
                 content.innerHTML = `

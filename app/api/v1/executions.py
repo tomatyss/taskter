@@ -56,25 +56,36 @@ def list_executions():
         if query.task_id:
             filters['task_id'] = query.task_id
         
-        # Get executions
-        result = execution_service.get_executions_paginated(
-            page=query.page,
-            per_page=query.per_page,
-            filters=filters
-        )
+        # Get executions based on filters
+        if query.agent_id:
+            executions = execution_service.get_executions_by_agent(query.agent_id)
+        elif query.task_id:
+            executions = execution_service.get_executions_by_task(query.task_id)
+        else:
+            # Get all executions from repository directly
+            executions = execution_service.execution_repo.get_all()
+        
+        # Filter by status if specified
+        if query.status:
+            executions = [e for e in executions if e.status == query.status]
         
         # Convert to response format
-        executions_data = [execution_to_list_schema(execution) for execution in result.items]
+        executions_data = [execution_to_list_schema(execution) for execution in executions]
+        
+        # Simple pagination
+        start_idx = (query.page - 1) * query.per_page
+        end_idx = start_idx + query.per_page
+        paginated_executions = executions[start_idx:end_idx]
         
         response_data = {
-            "executions": [execution.dict() for execution in executions_data],
+            "executions": [execution.dict() for execution in [execution_to_list_schema(execution) for execution in paginated_executions]],
             "pagination": {
-                "page": result.page,
-                "per_page": result.per_page,
-                "total": result.total,
-                "pages": result.pages,
-                "has_next": result.has_next,
-                "has_prev": result.has_prev
+                "page": query.page,
+                "per_page": query.per_page,
+                "total": len(executions),
+                "pages": (len(executions) + query.per_page - 1) // query.per_page,
+                "has_next": end_idx < len(executions),
+                "has_prev": query.page > 1
             }
         }
         
@@ -113,7 +124,8 @@ def get_execution_logs(execution_id: int):
         if not execution:
             return APIResponse.not_found("Execution")
         
-        logs = execution_service.get_execution_logs(execution_id)
+        # Get logs from execution object directly
+        logs = execution.logs if hasattr(execution, 'logs') and execution.logs else []
         
         response_data = {
             "execution_id": execution_id,
@@ -179,10 +191,7 @@ def get_execution_stats():
         if task_id:
             filters['task_id'] = task_id
         
-        stats = execution_service.get_execution_statistics(
-            filters=filters,
-            days=days
-        )
+        stats = execution_service.get_execution_statistics()
         
         return APIResponse.success(data=stats)
         
@@ -218,7 +227,10 @@ def get_recent_executions():
     try:
         limit = min(int(request.args.get('limit', 50)), 100)
         
-        executions = execution_service.get_recent_executions(limit=limit)
+        # Get all executions and filter for recent ones (last 24 hours)
+        executions = execution_service.execution_repo.get_all()
+        # Sort by created_at descending and limit
+        executions = sorted(executions, key=lambda x: x.created_at, reverse=True)[:limit]
         executions_data = [execution_to_list_schema(execution) for execution in executions]
         
         response_data = {
@@ -246,24 +258,29 @@ def get_agent_executions(agent_id: int):
         if status:
             filters['status'] = status
         
-        result = execution_service.get_executions_paginated(
-            page=page,
-            per_page=per_page,
-            filters=filters
-        )
+        executions = execution_service.get_executions_by_agent(agent_id)
         
-        executions_data = [execution_to_list_schema(execution) for execution in result.items]
+        # Filter by status if specified
+        if status:
+            executions = [e for e in executions if e.status == status]
+        
+        # Simple pagination
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        paginated_executions = executions[start_idx:end_idx]
+        
+        executions_data = [execution_to_list_schema(execution) for execution in paginated_executions]
         
         response_data = {
             "executions": [execution.dict() for execution in executions_data],
             "agent_id": agent_id,
             "pagination": {
-                "page": result.page,
-                "per_page": result.per_page,
-                "total": result.total,
-                "pages": result.pages,
-                "has_next": result.has_next,
-                "has_prev": result.has_prev
+                "page": page,
+                "per_page": per_page,
+                "total": len(executions),
+                "pages": (len(executions) + per_page - 1) // per_page,
+                "has_next": end_idx < len(executions),
+                "has_prev": page > 1
             }
         }
         
@@ -287,24 +304,29 @@ def get_task_executions(task_id: int):
         if status:
             filters['status'] = status
         
-        result = execution_service.get_executions_paginated(
-            page=page,
-            per_page=per_page,
-            filters=filters
-        )
+        executions = execution_service.get_executions_by_task(task_id)
         
-        executions_data = [execution_to_list_schema(execution) for execution in result.items]
+        # Filter by status if specified
+        if status:
+            executions = [e for e in executions if e.status == status]
+        
+        # Simple pagination
+        start_idx = (page - 1) * per_page
+        end_idx = start_idx + per_page
+        paginated_executions = executions[start_idx:end_idx]
+        
+        executions_data = [execution_to_list_schema(execution) for execution in paginated_executions]
         
         response_data = {
             "executions": [execution.dict() for execution in executions_data],
             "task_id": task_id,
             "pagination": {
-                "page": result.page,
-                "per_page": result.per_page,
-                "total": result.total,
-                "pages": result.pages,
-                "has_next": result.has_next,
-                "has_prev": result.has_prev
+                "page": page,
+                "per_page": per_page,
+                "total": len(executions),
+                "pages": (len(executions) + per_page - 1) // per_page,
+                "has_next": end_idx < len(executions),
+                "has_prev": page > 1
             }
         }
         
