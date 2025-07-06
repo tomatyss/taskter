@@ -41,6 +41,16 @@ body {
     box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
+.clickable-card {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.clickable-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
 .task-header {
     display: flex;
     justify-content: space-between;

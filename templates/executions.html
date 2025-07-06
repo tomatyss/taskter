@@ -317,11 +317,28 @@ function showExecutionDetails(executionId) {
                 `;
             }
             
+            // Add tabs for different log types
+            html += `
+                <div class="mb-4">
+                    <ul class="nav nav-tabs" id="logTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="conversation-tab" data-bs-toggle="tab" data-bs-target="#conversation" type="button" role="tab">
+                                Conversation Log
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="tools-tab" data-bs-toggle="tab" data-bs-target="#tools" type="button" role="tab">
+                                Tool Logs
+                            </button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="logTabContent">
+                        <div class="tab-pane fade show active" id="conversation" role="tabpanel">
+            `;
+            
             if (execution.conversation_log && execution.conversation_log.length > 0) {
                 html += `
-                    <div class="mb-4">
-                        <h6>Conversation Log</h6>
-                        <div class="conversation-log" style="max-height: 400px; overflow-y: auto;">
+                    <div class="conversation-log mt-3" style="max-height: 400px; overflow-y: auto;">
                 `;
                 
                 execution.conversation_log.forEach((message, index) => {
@@ -344,13 +361,35 @@ function showExecutionDetails(executionId) {
                     `;
                 });
                 
-                html += '</div></div>';
+                html += '</div>';
+            } else {
+                html += '<div class="alert alert-info mt-3">No conversation logs available.</div>';
             }
+            
+            html += `
+                        </div>
+                        <div class="tab-pane fade" id="tools" role="tabpanel">
+                            <div id="toolLogsContainer" class="mt-3">
+                                <div class="text-center">
+                                    <div class="spinner-border spinner-border-sm" role="status">
+                                        <span class="visually-hidden">Loading tool logs...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
             
             content.innerHTML = html;
             
             const modal = new bootstrap.Modal(document.getElementById('executionModal'));
             modal.show();
+            
+            // Add event listener for tool logs tab
+            document.getElementById('tools-tab').addEventListener('click', function() {
+                loadToolLogs(executionId);
+            });
         })
         .catch(error => {
             console.error('Error loading execution details:', error);
@@ -379,6 +418,198 @@ function stopExecution(executionId) {
         console.error('Error stopping execution:', error);
         alert('Error stopping execution. Please try again.');
     });
+}
+
+function loadToolLogs(executionId) {
+    const container = document.getElementById('toolLogsContainer');
+    
+    fetch(`/api/v1/executions/${executionId}/tool-logs`)
+        .then(response => response.json())
+        .then(response => {
+            const toolLogs = response.data.tool_logs || [];
+            
+            if (toolLogs.length === 0) {
+                container.innerHTML = '<div class="alert alert-info">No tool logs available for this execution.</div>';
+                return;
+            }
+            
+            let html = `
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6>Tool Execution Logs (${toolLogs.length} entries)</h6>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-outline-secondary" onclick="filterToolLogs('${executionId}', '')">All</button>
+                            <button type="button" class="btn btn-outline-success" onclick="filterToolLogs('${executionId}', 'completed')">Success</button>
+                            <button type="button" class="btn btn-outline-danger" onclick="filterToolLogs('${executionId}', 'failed')">Failed</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tool-logs" style="max-height: 400px; overflow-y: auto;">
+            `;
+            
+            toolLogs.forEach((log, index) => {
+                const statusClass = {
+                    'started': 'bg-info',
+                    'completed': 'bg-success',
+                    'failed': 'bg-danger',
+                    'error': 'bg-danger'
+                }[log.status] || 'bg-secondary';
+                
+                const timestamp = new Date(log.timestamp).toLocaleString();
+                const executionTime = log.execution_time ? `${log.execution_time.toFixed(3)}s` : 'N/A';
+                
+                html += `
+                    <div class="card mb-2 tool-log-entry" data-status="${log.status}">
+                        <div class="card-header ${statusClass} text-white py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${log.tool_name}</strong>
+                                    <span class="badge bg-light text-dark ms-2">${log.status.toUpperCase()}</span>
+                                </div>
+                                <small>${timestamp}</small>
+                            </div>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="small mb-1">Arguments:</h6>
+                                    <pre class="small mb-2 bg-light p-2 rounded">${JSON.stringify(log.arguments, null, 2)}</pre>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        <strong class="small">Execution Time:</strong> 
+                                        <span class="badge bg-secondary">${executionTime}</span>
+                                    </div>
+                `;
+                
+                if (log.result) {
+                    const resultClass = log.result.success ? 'bg-success' : 'bg-danger';
+                    html += `
+                        <h6 class="small mb-1">Result:</h6>
+                        <div class="alert ${resultClass} alert-sm py-2">
+                            <pre class="small mb-0">${JSON.stringify(log.result, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+                
+                html += `
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error loading tool logs:', error);
+            container.innerHTML = '<div class="alert alert-danger">Error loading tool logs. Please try again.</div>';
+        });
+}
+
+function filterToolLogs(executionId, status) {
+    const container = document.getElementById('toolLogsContainer');
+    container.innerHTML = `
+        <div class="text-center">
+            <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Loading filtered tool logs...</span>
+            </div>
+        </div>
+    `;
+    
+    let url = `/api/v1/executions/${executionId}/tool-logs`;
+    if (status) {
+        url += `?status=${status}`;
+    }
+    
+    fetch(url)
+        .then(response => response.json())
+        .then(response => {
+            const toolLogs = response.data.tool_logs || [];
+            
+            if (toolLogs.length === 0) {
+                const message = status ? `No ${status} tool logs found.` : 'No tool logs available.';
+                container.innerHTML = `<div class="alert alert-info">${message}</div>`;
+                return;
+            }
+            
+            // Reuse the same rendering logic as loadToolLogs
+            let html = `
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6>Tool Execution Logs (${toolLogs.length} entries${status ? ` - ${status}` : ''})</h6>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn ${!status ? 'btn-secondary' : 'btn-outline-secondary'}" onclick="filterToolLogs('${executionId}', '')">All</button>
+                            <button type="button" class="btn ${status === 'completed' ? 'btn-success' : 'btn-outline-success'}" onclick="filterToolLogs('${executionId}', 'completed')">Success</button>
+                            <button type="button" class="btn ${status === 'failed' ? 'btn-danger' : 'btn-outline-danger'}" onclick="filterToolLogs('${executionId}', 'failed')">Failed</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="tool-logs" style="max-height: 400px; overflow-y: auto;">
+            `;
+            
+            toolLogs.forEach((log, index) => {
+                const statusClass = {
+                    'started': 'bg-info',
+                    'completed': 'bg-success',
+                    'failed': 'bg-danger',
+                    'error': 'bg-danger'
+                }[log.status] || 'bg-secondary';
+                
+                const timestamp = new Date(log.timestamp).toLocaleString();
+                const executionTime = log.execution_time ? `${log.execution_time.toFixed(3)}s` : 'N/A';
+                
+                html += `
+                    <div class="card mb-2 tool-log-entry" data-status="${log.status}">
+                        <div class="card-header ${statusClass} text-white py-2">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${log.tool_name}</strong>
+                                    <span class="badge bg-light text-dark ms-2">${log.status.toUpperCase()}</span>
+                                </div>
+                                <small>${timestamp}</small>
+                            </div>
+                        </div>
+                        <div class="card-body py-2">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="small mb-1">Arguments:</h6>
+                                    <pre class="small mb-2 bg-light p-2 rounded">${JSON.stringify(log.arguments, null, 2)}</pre>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-2">
+                                        <strong class="small">Execution Time:</strong> 
+                                        <span class="badge bg-secondary">${executionTime}</span>
+                                    </div>
+                `;
+                
+                if (log.result) {
+                    const resultClass = log.result.success ? 'bg-success' : 'bg-danger';
+                    html += `
+                        <h6 class="small mb-1">Result:</h6>
+                        <div class="alert ${resultClass} alert-sm py-2">
+                            <pre class="small mb-0">${JSON.stringify(log.result, null, 2)}</pre>
+                        </div>
+                    `;
+                }
+                
+                html += `
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            container.innerHTML = html;
+        })
+        .catch(error => {
+            console.error('Error loading filtered tool logs:', error);
+            container.innerHTML = '<div class="alert alert-danger">Error loading tool logs. Please try again.</div>';
+        });
 }
 
 function applyFilters() {

@@ -142,6 +142,39 @@ def get_execution_logs(execution_id: int):
         return APIResponse.internal_error()
 
 
+@executions_bp.route('/<int:execution_id>/tool-logs', methods=['GET'])
+@handle_service_exceptions
+def get_execution_tool_logs(execution_id: int):
+    """Get execution tool logs"""
+    try:
+        execution = execution_service.get_execution_by_id(execution_id)
+        if not execution:
+            return APIResponse.not_found("Execution")
+        
+        # Get tool logs from execution object
+        tool_logs = execution.get_tool_logs() if hasattr(execution, 'get_tool_logs') else []
+        
+        # Get optional status filter
+        status_filter = request.args.get('status')
+        if status_filter:
+            tool_logs = [log for log in tool_logs if log.get('status') == status_filter]
+        
+        response_data = {
+            "execution_id": execution_id,
+            "tool_logs": tool_logs,
+            "total_entries": len(tool_logs),
+            "status_filter": status_filter
+        }
+        
+        return APIResponse.success(data=response_data)
+        
+    except ExecutionNotFoundError:
+        return APIResponse.not_found("Execution")
+    except Exception as e:
+        logger.error(f"Error getting execution {execution_id} tool logs: {str(e)}")
+        return APIResponse.internal_error()
+
+
 @executions_bp.route('/<int:execution_id>/cancel', methods=['POST'])
 @handle_service_exceptions
 def cancel_execution(execution_id: int):
