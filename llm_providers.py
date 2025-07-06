@@ -184,8 +184,12 @@ class GeminiProvider(LLMProvider):
     def __init__(self, api_key: str = None, model: str = "gemini-2.5-flash"):
         try:
             from google import genai
+            from google.genai import types
         except ImportError:
             raise ImportError("google-genai package is required for Gemini provider")
+        
+        # Store the types module for later use
+        self.types = types
         
         # Get API key from parameter or environment
         self.api_key = api_key or os.getenv('GEMINI_API_KEY')
@@ -207,64 +211,96 @@ class GeminiProvider(LLMProvider):
         
         self.model = model
     
+    def _convert_tools_to_gemini_format(self, tools: List[Dict]) -> List[Dict]:
+        """Convert OpenAI-style tools to Gemini function declarations"""
+        function_declarations = []
+        
+        for tool in tools:
+            if tool.get('type') == 'function':
+                func = tool.get('function', {})
+                function_declarations.append({
+                    "name": func.get('name', ''),
+                    "description": func.get('description', ''),
+                    "parameters": func.get('parameters', {})
+                })
+        
+        return function_declarations
+    
+    def _format_conversation_for_gemini(self, system: str, messages: List[Dict]) -> str:
+        """Format conversation history for Gemini"""
+        formatted_content = f"System Instructions: {system}\n\n"
+        
+        # Add conversation history
+        for msg in messages:
+            role = msg.get('role', 'user')
+            content = msg.get('content', '')
+            if content:  # Skip empty messages
+                if role == 'tool':
+                    # Format tool results
+                    formatted_content += f"Tool Result: {content}\n"
+                else:
+                    formatted_content += f"{role.title()}: {content}\n"
+        
+        return formatted_content
+    
     def chat(self, system: str, messages: List[Dict], tools: List[Dict] = None, **kwargs) -> Dict:
         try:
             # Format content for Gemini
-            formatted_content = f"System Instructions: {system}\n\n"
+            formatted_content = self._format_conversation_for_gemini(system, messages)
             
-            # Add conversation history
-            for msg in messages:
-                role = msg.get('role', 'user')
-                content = msg.get('content', '')
-                if content:  # Skip empty messages
-                    formatted_content += f"{role.title()}: {content}\n"
+            # Prepare request parameters
+            request_params = {
+                "model": self.model,
+                "contents": formatted_content
+            }
             
-            # Add tool information if available
+            # Add tools if provided
             if tools:
-                tool_descriptions = []
-                for tool in tools:
-                    func = tool.get('function', {})
-                    name = func.get('name', 'unknown')
-                    desc = func.get('description', 'No description')
-                    tool_descriptions.append(f"- {name}: {desc}")
-                
-                formatted_content += f"\nAvailable tools:\n" + "\n".join(tool_descriptions)
-                formatted_content += "\n\nIf you need to use a tool, respond with: TOOL_CALL: tool_name(arguments)"
+                function_declarations = self._convert_tools_to_gemini_format(tools)
+                if function_declarations:
+                    gemini_tools = self.types.Tool(function_declarations=function_declarations)
+                    config = self.types.GenerateContentConfig(tools=[gemini_tools])
+                    request_params["config"] = config
             
             # Make API call
-            response = self.client.models.generate_content(
-                model=self.model,
-                contents=formatted_content
-            )
+            response = self.client.models.generate_content(**request_params)
             
-            # Parse tool calls from response text (simple parsing)
+            # Extract response data
             tool_calls = []
-            content = response.text
+            content = ""
             
-            if content and "TOOL_CALL:" in content:
-                # Simple tool call parsing - in production, you'd want more robust parsing
-                lines = content.split('\n')
-                for line in lines:
-                    if line.strip().startswith('TOOL_CALL:'):
-                        tool_part = line.replace('TOOL_CALL:', '').strip()
-                        if '(' in tool_part and ')' in tool_part:
-                            tool_name = tool_part.split('(')[0].strip()
-                            args_part = tool_part.split('(', 1)[1].rsplit(')', 1)[0]
+            # Check if response has candidates
+            if response.candidates and len(response.candidates) > 0:
+                candidate = response.candidates[0]
+                
+                if candidate.content and candidate.content.parts:
+                    for part in candidate.content.parts:
+                        # Check for function calls
+                        if hasattr(part, 'function_call') and part.function_call:
+                            function_call = part.function_call
                             tool_calls.append({
                                 "id": f"call_{len(tool_calls)}",
                                 "type": "function",
                                 "function": {
-                                    "name": tool_name,
-                                    "arguments": args_part
+                                    "name": function_call.name,
+                                    "arguments": json.dumps(dict(function_call.args))
                                 }
                             })
+                        
+                        # Check for text content
+                        elif hasattr(part, 'text') and part.text:
+                            content += part.text
+            
+            # Fallback to response.text if no parts found
+            if not content and not tool_calls:
+                content = getattr(response, 'text', '')
             
             return {
-                "content": content,
+                "content": content if content else None,
                 "tool_calls": tool_calls,
                 "finish_reason": "stop",
                 "usage": {
-                    "prompt_tokens": 0,  # Gemini doesn't provide token counts in the same way
+                    "prompt_tokens": 0,  # Gemini doesn't provide detailed token counts
                     "completion_tokens": 0,
                     "total_tokens": 0
                 }
