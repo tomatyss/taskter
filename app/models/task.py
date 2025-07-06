@@ -1,13 +1,17 @@
 """
 Task model with enhanced functionality
 """
+from __future__ import annotations
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON
+from typing import Optional, Dict, Any, TYPE_CHECKING
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
 
 from db import db
 from app.core.constants import TaskStatus, ExecutionStatus
+
+if TYPE_CHECKING:
+    from app.models.execution import AgentExecution
 
 
 def utcnow():

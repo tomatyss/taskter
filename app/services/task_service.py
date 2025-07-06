@@ -2,16 +2,15 @@
 Task service layer for business logic
 """
 from typing import List, Optional, Dict, Any
-from datetime import datetime
 
 from app.repositories.task_repository import TaskRepository
 from app.models.task import Task
-from app.core.constants import TaskStatus, ExecutionStatus, API_MESSAGES, ERROR_MESSAGES
+from app.core.constants import TaskStatus, ExecutionStatus, ERROR_MESSAGES
 from app.core.exceptions import (
     TaskNotFoundError, TaskValidationError, TaskStatusError,
-    ValidationError, ConflictError
+    ConflictError
 )
-from app.core.logging import get_logger, log_database_operation
+from app.core.logging import get_logger
 
 logger = get_logger(__name__)
 

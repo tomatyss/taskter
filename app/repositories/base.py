@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from typing import TypeVar, Generic, List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy import and_, or_, desc, asc
+from sqlalchemy import desc, asc
 
 from app.core.exceptions import DatabaseError, NotFoundError
 from app.core.logging import get_logger, log_database_operation

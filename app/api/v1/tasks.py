@@ -8,8 +8,7 @@ from app.services.task_service import TaskService
 from app.services.agent_service import AgentService
 from app.schemas import (
     TaskCreate, TaskUpdate, TaskStatusUpdate,
-    task_to_response, tasks_to_list_response,
-    TaskAssignmentSchema
+    task_to_response, TaskAssignmentSchema
 )
 from app.core.exceptions import TaskNotFoundError, AgentNotFoundError, AgentNotActiveError
 from app.core.constants import TaskStatus

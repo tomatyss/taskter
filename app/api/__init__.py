@@ -1,7 +1,3 @@
-"""
-API module initialization.
-"""
-
-from flask import Blueprint
+"""API module initialization."""
 
 # This module contains the API blueprints and related functionality

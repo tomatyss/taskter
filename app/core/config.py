@@ -1,7 +1,6 @@
 """
 Centralized configuration management with environment-specific settings
 """
-import os
 from typing import Optional, Dict, Any
 from pydantic import Field, validator
 from pydantic_settings import BaseSettings

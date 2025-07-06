@@ -3,7 +3,7 @@ Execution repository implementation
 """
 from typing import List, Optional, Dict, Any
 from datetime import datetime, timedelta
-from sqlalchemy import desc, asc, func
+from sqlalchemy import desc
 
 from app.repositories.base import BaseRepository, PaginatedResult, paginate_query
 from app.models.execution import AgentExecution

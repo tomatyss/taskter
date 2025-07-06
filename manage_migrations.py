@@ -5,12 +5,10 @@ Provides additional migration utilities beyond Flask-Migrate
 """
 import os
 import sys
-import json
 import subprocess
 from datetime import datetime
 from flask import Flask
 from flask_migrate import Migrate, upgrade, downgrade, current, history, init, migrate as create_migration
-from sqlalchemy import text
 from db import db
 from app.models import Task, Agent, AgentExecution
 

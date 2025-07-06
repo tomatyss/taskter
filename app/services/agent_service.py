@@ -2,11 +2,10 @@
 Agent service layer for business logic
 """
 from typing import List, Optional, Dict, Any
-from datetime import datetime
 
 from app.repositories.agent_repository import AgentRepository
 from app.models.agent import Agent
-from app.core.constants import LLMProvider, API_MESSAGES, ERROR_MESSAGES
+from app.core.constants import LLMProvider
 from app.core.exceptions import (
     AgentNotFoundError, AgentValidationError, AgentNotActiveError,
     ValidationError, ConflictError

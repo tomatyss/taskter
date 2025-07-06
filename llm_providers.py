@@ -42,7 +42,6 @@ class OpenAIProvider(LLMProvider):
     
     def __init__(self, api_key: str = None, model: str = "gpt-4"):
         try:
-            import openai
             from openai import OpenAI
         except ImportError:
             raise ImportError("openai package is required for OpenAI provider")
@@ -228,7 +227,7 @@ class GeminiProvider(LLMProvider):
                     desc = func.get('description', 'No description')
                     tool_descriptions.append(f"- {name}: {desc}")
                 
-                formatted_content += f"\nAvailable tools:\n" + "\n".join(tool_descriptions)
+                formatted_content += "\nAvailable tools:\n" + "\n".join(tool_descriptions)
                 formatted_content += "\n\nIf you need to use a tool, respond with: TOOL_CALL: tool_name(arguments)"
             
             # Make API call

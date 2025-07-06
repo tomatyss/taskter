@@ -2,7 +2,7 @@
 Task repository implementation
 """
 from typing import List, Optional, Dict, Any
-from sqlalchemy import desc, asc
+from sqlalchemy import desc
 
 from app.repositories.base import BaseRepository, PaginatedResult, paginate_query
 from app.models.task import Task

@@ -2,9 +2,12 @@ from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_migrate import Migrate
 from datetime import datetime
 import os
+import sys
 import logging
 from dotenv import load_dotenv
 from db import db
+from app.models import Task
+from app.api.v1 import register_blueprints
 
 # Load environment variables from .env file
 load_dotenv()
@@ -21,15 +24,8 @@ logger = logging.getLogger(__name__)
 db.init_app(app)
 migrate = Migrate(app, db)
 
-from app.models import Task, Agent, AgentExecution
-from celery_app import execute_agent_task_async
-
-# Register API blueprints
-import sys
-import os
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-from app.api.v1 import register_blueprints
 register_blueprints(app)
 
 # Routes

@@ -2,7 +2,6 @@
 Execution service layer for business logic
 """
 from typing import List, Optional, Dict, Any
-from datetime import datetime, timedelta
 
 from app.repositories.execution_repository import ExecutionRepository
 from app.models.execution import AgentExecution

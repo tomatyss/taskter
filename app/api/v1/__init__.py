@@ -2,7 +2,7 @@
 API v1 blueprint registration and initialization.
 """
 
-from flask import Blueprint
+from flask import Blueprint, redirect, request
 from app.api.v1.tasks import tasks_bp
 from app.api.v1.agents import agents_bp
 from app.api.v1.executions import executions_bp
@@ -79,7 +79,6 @@ def api_info():
 legacy_api = Blueprint('legacy_api', __name__, url_prefix='/api')
 
 # Create compatibility routes for legacy API paths
-from flask import redirect, request
 
 # Redirect /api/agents to /api/v1/agents
 @legacy_api.route('/agents', defaults={'path': ''}, methods=['GET', 'POST', 'PUT', 'DELETE', 'PATCH'])

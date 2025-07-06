@@ -52,7 +52,6 @@ def create_app_context():
     
     # Import the existing db instance and models
     from db import db
-    from app.models import Task, Agent, AgentExecution
     
     # Create a minimal Flask app for Celery tasks
     app = Flask(__name__)
