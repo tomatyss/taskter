@@ -1,24 +1,24 @@
 services:
   db:
     image: postgres:15-alpine
-    container_name: kanban_postgres
+    container_name: taskter_postgres
     environment:
-      POSTGRES_DB: kanban_db
-      POSTGRES_USER: kanban_user
-      POSTGRES_PASSWORD: kanban_pass
+      POSTGRES_DB: taskter_db
+      POSTGRES_USER: taskter_user
+      POSTGRES_PASSWORD: taskter_pass
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U kanban_user -d kanban_db"]
+      test: ["CMD-SHELL", "pg_isready -U taskter_user -d taskter_db"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    container_name: kanban_redis
+    container_name: taskter_redis
     ports:
       - "6379:6379"
     volumes:
@@ -31,9 +31,9 @@ services:
 
   migration:
     build: .
-    container_name: kanban_migration
+    container_name: taskter_migration
     environment:
-      DATABASE_URL: postgresql://kanban_user:kanban_pass@db:5432/kanban_db
+      DATABASE_URL: postgresql://taskter_user:taskter_pass@db:5432/taskter_db
       SECRET_KEY: your-secret-key-change-in-production
     depends_on:
       db:
@@ -45,11 +45,11 @@ services:
 
   web:
     build: .
-    container_name: kanban_web
+    container_name: taskter_web
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://kanban_user:kanban_pass@db:5432/kanban_db
+      DATABASE_URL: postgresql://taskter_user:taskter_pass@db:5432/taskter_db
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: your-secret-key-change-in-production
       FLASK_ENV: development
@@ -69,11 +69,11 @@ services:
 
   celery_worker:
     build: .
-    container_name: kanban_celery_worker
+    container_name: taskter_celery_worker
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://kanban_user:kanban_pass@db:5432/kanban_db
+      DATABASE_URL: postgresql://taskter_user:taskter_pass@db:5432/taskter_db
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: your-secret-key-change-in-production
       FLASK_ENV: development
@@ -89,9 +89,9 @@ services:
 
   celery_beat:
     build: .
-    container_name: kanban_celery_beat
+    container_name: taskter_celery_beat
     environment:
-      DATABASE_URL: postgresql://kanban_user:kanban_pass@db:5432/kanban_db
+      DATABASE_URL: postgresql://taskter_user:taskter_pass@db:5432/taskter_db
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: your-secret-key-change-in-production
       FLASK_ENV: development

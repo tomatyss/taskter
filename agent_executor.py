@@ -57,8 +57,7 @@ class AgentExecutor:
                 task_id=task_id,
                 agent_id=agent_id,
                 status='running',
-                started_at=utcnow(),
-                conversation_log=[]
+                started_at=utcnow()
             )
             db.session.add(execution)
             db.session.commit()
@@ -198,8 +197,7 @@ class AgentExecutor:
                             })
                     
                     # Update execution log
-                    execution.conversation_log = conversation_history
-                    execution.iterations_count = iteration + 1
+                    execution.logs = json.dumps(conversation_history)
                     execution.tokens_used = total_tokens
                     db.session.commit()
                     
