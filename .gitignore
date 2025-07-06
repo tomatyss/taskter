@@ -35,6 +35,8 @@ docker-compose.override.yml
 # Environment
 .env
 .env.*
+# Allow an example env file for reference
+!.env.example
 .venv/
 
 # Pytest
