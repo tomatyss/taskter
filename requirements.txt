@@ -1,5 +1,5 @@
 Flask==2.3.3
-Flask-SQLAlchemy==3.0.5
+Flask-SQLAlchemy==3.1.1
 Flask-Migrate==4.0.5
 psycopg2-binary==2.9.7
 python-dotenv==1.0.0
