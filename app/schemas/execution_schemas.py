@@ -70,6 +70,18 @@ class PaginatedExecutionResponseSchema(BaseModel):
 # Utility functions for converting models to schemas
 def execution_to_response_schema(execution) -> ExecutionResponseSchema:
     """Convert AgentExecution model to ExecutionResponseSchema"""
+    # Parse logs if it's a JSON string, otherwise use as-is
+    conversation_log = []
+    if execution.logs:
+        if isinstance(execution.logs, str):
+            import json
+            try:
+                conversation_log = json.loads(execution.logs)
+            except json.JSONDecodeError:
+                conversation_log = []
+        elif isinstance(execution.logs, list):
+            conversation_log = execution.logs
+    
     return ExecutionResponseSchema(
         id=execution.id,
         task_id=execution.task_id,
@@ -77,11 +89,11 @@ def execution_to_response_schema(execution) -> ExecutionResponseSchema:
         agent_id=execution.agent_id,
         agent_name=execution.agent.name if execution.agent else None,
         status=execution.status,
-        conversation_log=execution.conversation_log or [],
+        conversation_log=conversation_log,
         result=execution.result,
         error_message=execution.error_message,
-        iterations_count=execution.iterations_count,
-        tokens_used=execution.tokens_used,
+        iterations_count=len(conversation_log) if conversation_log else 0,
+        tokens_used=execution.tokens_used or 0,
         execution_time_seconds=execution.execution_time_seconds,
         started_at=execution.started_at,
         completed_at=execution.completed_at,
@@ -91,6 +103,19 @@ def execution_to_response_schema(execution) -> ExecutionResponseSchema:
 
 def execution_to_list_schema(execution) -> ExecutionListResponseSchema:
     """Convert AgentExecution model to ExecutionListResponseSchema"""
+    # Calculate iterations count from logs
+    iterations_count = 0
+    if execution.logs:
+        if isinstance(execution.logs, str):
+            import json
+            try:
+                conversation_log = json.loads(execution.logs)
+                iterations_count = len(conversation_log) if conversation_log else 0
+            except json.JSONDecodeError:
+                iterations_count = 0
+        elif isinstance(execution.logs, list):
+            iterations_count = len(execution.logs)
+    
     return ExecutionListResponseSchema(
         id=execution.id,
         task_id=execution.task_id,
@@ -98,8 +123,8 @@ def execution_to_list_schema(execution) -> ExecutionListResponseSchema:
         agent_id=execution.agent_id,
         agent_name=execution.agent.name if execution.agent else None,
         status=execution.status,
-        iterations_count=execution.iterations_count,
-        tokens_used=execution.tokens_used,
+        iterations_count=iterations_count,
+        tokens_used=execution.tokens_used or 0,
         execution_time_seconds=execution.execution_time_seconds,
         started_at=execution.started_at,
         completed_at=execution.completed_at,
