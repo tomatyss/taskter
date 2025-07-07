@@ -40,7 +40,7 @@ class LLMProvider(ABC):
 class OpenAIProvider(LLMProvider):
     """OpenAI GPT provider"""
     
-    def __init__(self, api_key: str = None, model: str = "gpt-4"):
+    def __init__(self, api_key: str = None, model: str = "gpt-4.1"):
         try:
             import openai
             from openai import OpenAI
@@ -110,7 +110,7 @@ class OpenAIProvider(LLMProvider):
 class AnthropicProvider(LLMProvider):
     """Anthropic Claude provider"""
     
-    def __init__(self, api_key: str = None, model: str = "claude-3-5-sonnet-20241022"):
+    def __init__(self, api_key: str = None, model: str = "claude-sonnet-4"):
         try:
             import anthropic
         except ImportError:
@@ -181,7 +181,7 @@ class AnthropicProvider(LLMProvider):
 class GeminiProvider(LLMProvider):
     """Google Gemini provider"""
     
-    def __init__(self, api_key: str = None, model: str = "gemini-2.5-flash"):
+    def __init__(self, api_key: str = None, model: str = "gemini-2.5-pro"):
         try:
             from google import genai
             from google.genai import types
@@ -358,13 +358,13 @@ class LLMProviderFactory:
         provider_name = provider_name.lower()
         
         if provider_name == "openai":
-            default_model = model or "gpt-4"
+            default_model = model or "gpt-4.1"
             return OpenAIProvider(api_key, default_model)
         elif provider_name == "anthropic":
-            default_model = model or "claude-3-5-sonnet-20241022"
+            default_model = model or "claude-sonnet-4"
             return AnthropicProvider(api_key, default_model)
         elif provider_name == "gemini":
-            default_model = model or "gemini-2.5-flash"
+            default_model = model or "gemini-2.5-pro"
             return GeminiProvider(api_key, default_model)
         else:
             raise ValueError(f"Unsupported provider: {provider_name}")
@@ -378,7 +378,57 @@ class LLMProviderFactory:
     def get_default_models() -> Dict[str, str]:
         """Get default models for each provider"""
         return {
-            "openai": "gpt-4",
-            "anthropic": "claude-3-5-sonnet-20241022",
-            "gemini": "gemini-2.5-flash"
+            "openai": "gpt-4.1",
+            "anthropic": "claude-sonnet-4",
+            "gemini": "gemini-2.5-pro"
+        }
+    
+    @staticmethod
+    def get_available_models() -> Dict[str, List[str]]:
+        """Get all available models for each provider"""
+        return {
+            "openai": [
+                "gpt-4.1",      # Flagship GPT model for complex tasks
+                "gpt-4o",       # Fast, intelligent, flexible GPT model
+                "o4-mini",      # Faster, more affordable reasoning model
+                "o3",           # Our most powerful reasoning model
+                "o3-pro",       # Version of o3 with more compute for better responses
+                "o3-mini",      # A small model alternative to o3
+                "o1",           # Previous full o-series reasoning model
+                "o1-pro"        # Version of o1 with more compute for better responses
+            ],
+            "anthropic": [
+                "claude-opus-4",     # Most capable model
+                "claude-sonnet-4",   # Balanced performance and speed
+                "claude-3-7-sonnet", # Enhanced version with improved capabilities
+                "claude-3-5-haiku",  # Fast and cost-effective
+                "claude-3-5-sonnet", # High quality, natural conversational audio
+                "claude-3-haiku"     # Fastest model for simple tasks
+            ],
+            "gemini": [
+                "gemini-2.5-pro",   # Enhanced thinking and reasoning, multimodal understanding
+                "gemini-2.5-flash", # Adaptive thinking, cost efficiency
+                "gemini-2.0-flash"  # Next generation features, speed, and realtime streaming
+            ]
+        }
+    
+    @staticmethod
+    def get_models_for_provider(provider_name: str) -> List[str]:
+        """Get available models for a specific provider"""
+        available_models = LLMProviderFactory.get_available_models()
+        return available_models.get(provider_name.lower(), [])
+    
+    @staticmethod
+    def is_valid_model(provider_name: str, model: str) -> bool:
+        """Check if a model is valid for a specific provider"""
+        available_models = LLMProviderFactory.get_models_for_provider(provider_name)
+        return model in available_models
+    
+    @staticmethod
+    def get_model_info() -> Dict[str, any]:
+        """Get comprehensive model information"""
+        return {
+            "providers": LLMProviderFactory.get_available_providers(),
+            "default_models": LLMProviderFactory.get_default_models(),
+            "available_models": LLMProviderFactory.get_available_models()
         }

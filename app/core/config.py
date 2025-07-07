@@ -45,11 +45,11 @@ class LLMConfig(BaseSettings):
 
     # Default models
     openai_default_model: str = Field(
-        default="gpt-4", env="OPENAI_DEFAULT_MODEL")
+        default="gpt-4.1", env="OPENAI_DEFAULT_MODEL")
     anthropic_default_model: str = Field(
-        default="claude-3-5-sonnet-20241022", env="ANTHROPIC_DEFAULT_MODEL")
+        default="claude-sonnet-4", env="ANTHROPIC_DEFAULT_MODEL")
     gemini_default_model: str = Field(
-        default="gemini-2.5-flash", env="GEMINI_DEFAULT_MODEL")
+        default="gemini-2.5-pro", env="GEMINI_DEFAULT_MODEL")
 
     class Config:
         extra = 'ignore'

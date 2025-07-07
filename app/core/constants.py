@@ -67,9 +67,36 @@ class Environment(str, Enum):
 
 # Default models for each provider
 DEFAULT_MODELS = {
-    LLMProvider.OPENAI: "gpt-4",
-    LLMProvider.ANTHROPIC: "claude-3-5-sonnet-20241022",
-    LLMProvider.GEMINI: "gemini-2.5-flash"
+    LLMProvider.OPENAI: "gpt-4.1",
+    LLMProvider.ANTHROPIC: "claude-sonnet-4",
+    LLMProvider.GEMINI: "gemini-2.5-pro"
+}
+
+# Available models for each provider
+AVAILABLE_MODELS = {
+    LLMProvider.OPENAI: [
+        "gpt-4.1",      # Flagship GPT model for complex tasks
+        "gpt-4o",       # Fast, intelligent, flexible GPT model
+        "o4-mini",      # Faster, more affordable reasoning model
+        "o3",           # Our most powerful reasoning model
+        "o3-pro",       # Version of o3 with more compute for better responses
+        "o3-mini",      # A small model alternative to o3
+        "o1",           # Previous full o-series reasoning model
+        "o1-pro"        # Version of o1 with more compute for better responses
+    ],
+    LLMProvider.ANTHROPIC: [
+        "claude-opus-4",     # Most capable model
+        "claude-sonnet-4",   # Balanced performance and speed
+        "claude-3-7-sonnet", # Enhanced version with improved capabilities
+        "claude-3-5-haiku",  # Fast and cost-effective
+        "claude-3-5-sonnet", # High quality, natural conversational audio
+        "claude-3-haiku"     # Fastest model for simple tasks
+    ],
+    LLMProvider.GEMINI: [
+        "gemini-2.5-pro",   # Enhanced thinking and reasoning, multimodal understanding
+        "gemini-2.5-flash", # Adaptive thinking, cost efficiency
+        "gemini-2.0-flash"  # Next generation features, speed, and realtime streaming
+    ]
 }
 
 # API response messages
@@ -165,3 +192,39 @@ ALLOWED_SCRIPT_IMPORTS = {
     "requests", "urllib", "base64", "hashlib", "uuid", "re",
     "collections", "itertools", "functools", "operator"
 }
+
+
+# Utility functions for model management
+def get_available_models_for_provider(provider: str) -> list:
+    """Get list of available models for a specific provider"""
+    provider_enum = LLMProvider(provider.lower())
+    return AVAILABLE_MODELS.get(provider_enum, [])
+
+
+def get_default_model_for_provider(provider: str) -> str:
+    """Get default model for a specific provider"""
+    provider_enum = LLMProvider(provider.lower())
+    return DEFAULT_MODELS.get(provider_enum, "")
+
+
+def is_valid_model_for_provider(provider: str, model: str) -> bool:
+    """Check if a model is valid for a specific provider"""
+    available_models = get_available_models_for_provider(provider)
+    return model in available_models
+
+
+def get_all_available_models() -> dict:
+    """Get all available models organized by provider"""
+    return {
+        provider.value: models 
+        for provider, models in AVAILABLE_MODELS.items()
+    }
+
+
+def get_model_info() -> dict:
+    """Get comprehensive model information including defaults and available models"""
+    return {
+        "providers": [provider.value for provider in LLMProvider],
+        "default_models": {provider.value: model for provider, model in DEFAULT_MODELS.items()},
+        "available_models": get_all_available_models()
+    }
