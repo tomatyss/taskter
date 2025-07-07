@@ -1,6 +1,6 @@
 Flask==2.3.3
 Flask-SQLAlchemy==3.1.1
-Flask-Migrate==4.0.5
+Flask-Migrate==4.1.0
 psycopg2-binary==2.9.10
 python-dotenv==1.1.1
 requests==2.32.4
