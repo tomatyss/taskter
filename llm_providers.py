@@ -245,55 +245,77 @@ class GeminiProvider(LLMProvider):
     
     def chat(self, system: str, messages: List[Dict], tools: List[Dict] = None, **kwargs) -> Dict:
         try:
-            # Format content for Gemini
+            # Format content for Gemini - combine system and messages
             formatted_content = self._format_conversation_for_gemini(system, messages)
             
-            # Prepare request parameters
+            logger.info(f"Gemini request content: {formatted_content[:200]}...")
+            
+            # Prepare base request parameters following Google docs pattern
             request_params = {
                 "model": self.model,
                 "contents": formatted_content
             }
             
-            # Add tools if provided
+            # Add tools configuration if provided (following Google docs exactly)
             if tools:
                 function_declarations = self._convert_tools_to_gemini_format(tools)
                 if function_declarations:
+                    logger.info(f"Gemini function declarations: {len(function_declarations)} tools")
+                    
+                    # Create tools and config exactly as in Google docs
                     gemini_tools = self.types.Tool(function_declarations=function_declarations)
                     config = self.types.GenerateContentConfig(tools=[gemini_tools])
                     request_params["config"] = config
             
-            # Make API call
+            logger.info(f"Making Gemini API call with model: {self.model}")
+            
+            # Make API call following Google docs pattern
             response = self.client.models.generate_content(**request_params)
             
-            # Extract response data
+            logger.info("Gemini API call successful, parsing response...")
+            
+            # Initialize response data
             tool_calls = []
             content = ""
             
-            # Check if response has candidates
-            if response.candidates and len(response.candidates) > 0:
+            # Parse response following Google docs pattern
+            if hasattr(response, 'candidates') and response.candidates:
                 candidate = response.candidates[0]
+                logger.info(f"Found candidate with content: {hasattr(candidate, 'content')}")
                 
-                if candidate.content and candidate.content.parts:
-                    for part in candidate.content.parts:
-                        # Check for function calls
-                        if hasattr(part, 'function_call') and part.function_call:
-                            function_call = part.function_call
-                            tool_calls.append({
-                                "id": f"call_{len(tool_calls)}",
-                                "type": "function",
-                                "function": {
-                                    "name": function_call.name,
-                                    "arguments": json.dumps(dict(function_call.args))
-                                }
-                            })
+                if hasattr(candidate, 'content') and candidate.content:
+                    if hasattr(candidate.content, 'parts') and candidate.content.parts:
+                        logger.info(f"Found {len(candidate.content.parts)} content parts")
                         
-                        # Check for text content
-                        elif hasattr(part, 'text') and part.text:
-                            content += part.text
+                        for i, part in enumerate(candidate.content.parts):
+                            logger.info(f"Processing part {i}: {type(part)}")
+                            
+                            # Check for function calls (following Google docs)
+                            if hasattr(part, 'function_call') and part.function_call:
+                                function_call = part.function_call
+                                logger.info(f"Found function call: {function_call.name}")
+                                
+                                # Convert function call to standard format
+                                tool_calls.append({
+                                    "id": f"call_{len(tool_calls)}",
+                                    "type": "function",
+                                    "function": {
+                                        "name": function_call.name,
+                                        "arguments": json.dumps(dict(function_call.args))
+                                    }
+                                })
+                            
+                            # Check for text content
+                            elif hasattr(part, 'text') and part.text:
+                                content += part.text
+                                logger.info(f"Found text content: {len(part.text)} chars")
             
-            # Fallback to response.text if no parts found
-            if not content and not tool_calls:
-                content = getattr(response, 'text', '')
+            # Fallback to response.text if available
+            if not content and not tool_calls and hasattr(response, 'text'):
+                content = response.text
+                logger.info("Using fallback response.text")
+            
+            logger.info(f"Gemini response parsed - Content: {bool(content)}, Tool calls: {len(tool_calls)}")
             
             return {
                 "content": content if content else None,
@@ -308,6 +330,10 @@ class GeminiProvider(LLMProvider):
             
         except Exception as e:
             logger.error(f"Gemini API error: {str(e)}")
+            logger.error(f"Error type: {type(e)}")
+            if hasattr(e, 'response'):
+                logger.error(f"Response status: {getattr(e.response, 'status_code', 'unknown')}")
+                logger.error(f"Response text: {getattr(e.response, 'text', 'unknown')}")
             raise
     
     def get_provider_name(self) -> str:
