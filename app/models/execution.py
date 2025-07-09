@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any, List
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Float
 from sqlalchemy.orm import relationship
 
-from db import db
+from app.models.base import Base
 from app.core.constants import AgentExecutionStatus
 
 
@@ -14,7 +14,7 @@ def utcnow():
     return datetime.now(timezone.utc)
 
 
-class AgentExecution(db.Model):
+class AgentExecution(Base):
     """Agent execution model with enhanced methods"""
     
     __tablename__ = 'agent_execution'
