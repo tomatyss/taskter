@@ -1,7 +1,7 @@
 """Add tool_logs column to agent_execution table
 
 Revision ID: add_tool_logs_column
-Revises: 8b82368f9352
+Revises: d1c5b2fd5d8a
 Create Date: 2025-07-06 17:50:30.000000
 
 """
@@ -11,7 +11,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = 'add_tool_logs_column'
-down_revision = '8b82368f9352'
+down_revision = 'd1c5b2fd5d8a'
 branch_labels = None
 depends_on = None
 
