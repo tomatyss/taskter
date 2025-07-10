@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 
-from db import db
+from app.models.base import Base
 from app.core.constants import TaskStatus, ExecutionStatus
 
 
@@ -14,7 +14,7 @@ def utcnow():
     return datetime.now(timezone.utc)
 
 
-class Task(db.Model):
+class Task(Base):
     """Task model with enhanced methods"""
     
     __tablename__ = 'task'

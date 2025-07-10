@@ -186,7 +186,7 @@ class AgentExecutor:
                     if response.get('tool_calls'):
                         tool_results = []
                         for tool_call in response['tool_calls']:
-                            tool_result = self._execute_tool_call(tool_call)
+                            tool_result = self._execute_tool_call(tool_call, execution)
                             tool_results.append(tool_result)
                             
                             # Add tool result to conversation
@@ -287,37 +287,99 @@ Please analyze the task and create a plan to complete it, then execute that plan
             logger.warning(f"Unknown provider '{provider_name}', using OpenAI format as fallback")
             return tool_registry.get_tools_openai_format(tool_names)
     
-    def _execute_tool_call(self, tool_call: Dict) -> Dict[str, Any]:
+    def _execute_tool_call(self, tool_call: Dict, execution: AgentExecution = None) -> Dict[str, Any]:
         """Execute a tool call and return the result"""
+        tool_start_time = time.time()
         try:
             function = tool_call.get('function', {})
             tool_name = function.get('name', '')
             arguments_str = function.get('arguments', '{}')
             
-            # Parse arguments
+            logger.info(f"Executing tool call: {tool_call}")
+            logger.info(f"Tool name: {tool_name}")
+            logger.info(f"Arguments string: {arguments_str}")
+            
+            # Parse arguments with better error handling
             try:
-                arguments = json.loads(arguments_str) if arguments_str else {}
-            except json.JSONDecodeError:
+                if isinstance(arguments_str, str):
+                    arguments = json.loads(arguments_str) if arguments_str else {}
+                elif isinstance(arguments_str, dict):
+                    # Already parsed (might happen with some providers)
+                    arguments = arguments_str
+                else:
+                    # Handle simple argument format for Gemini
+                    arguments = self._parse_simple_arguments(str(arguments_str))
+            except json.JSONDecodeError as e:
+                logger.warning(f"JSON decode error for arguments '{arguments_str}': {e}")
                 # Handle simple argument format for Gemini
                 arguments = self._parse_simple_arguments(arguments_str)
             
+            logger.info(f"Parsed arguments: {arguments}")
             logger.info(f"Executing tool: {tool_name} with args: {arguments}")
+            
+            # Log tool execution start
+            if execution:
+                execution.add_tool_log_entry(
+                    tool_name=tool_name,
+                    arguments=arguments,
+                    status='started',
+                    timestamp=utcnow()
+                )
+                db.session.commit()
             
             # Execute the tool
             result = tool_registry.execute_tool(tool_name, **arguments)
             
+            # Calculate execution time
+            tool_execution_time = time.time() - tool_start_time
+            
+            logger.info(f"Tool execution result: {result}")
+            
+            # Log tool execution completion
+            if execution:
+                execution.add_tool_log_entry(
+                    tool_name=tool_name,
+                    arguments=arguments,
+                    status='completed' if result.get('success') else 'failed',
+                    result=result,
+                    execution_time=tool_execution_time,
+                    timestamp=utcnow()
+                )
+                db.session.commit()
+            
+            logger.info(f"Tool {tool_name} executed in {tool_execution_time:.2f}s with result: {result.get('success', False)}")
+            
             return {
                 "tool_name": tool_name,
                 "arguments": arguments,
-                "result": result
+                "result": result,
+                "execution_time": tool_execution_time
             }
             
         except Exception as e:
+            tool_execution_time = time.time() - tool_start_time
             logger.error(f"Tool execution error: {str(e)}")
+            logger.error(f"Tool call that failed: {tool_call}")
+            
+            error_result = {"success": False, "error": str(e)}
+            
+            # Log tool execution error
+            if execution:
+                execution.add_tool_log_entry(
+                    tool_name=tool_call.get('function', {}).get('name', 'unknown'),
+                    arguments=arguments if 'arguments' in locals() else {},
+                    status='error',
+                    result=error_result,
+                    execution_time=tool_execution_time,
+                    timestamp=utcnow()
+                )
+                db.session.commit()
+            
             return {
                 "tool_name": tool_call.get('function', {}).get('name', 'unknown'),
-                "arguments": {},
-                "result": {"success": False, "error": str(e)}
+                "arguments": arguments if 'arguments' in locals() else {},
+                "result": error_result,
+                "execution_time": tool_execution_time
             }
     
     def _parse_simple_arguments(self, args_str: str) -> Dict[str, Any]:

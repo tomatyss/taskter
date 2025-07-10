@@ -6,7 +6,7 @@ from typing import Optional, Dict, Any, List
 from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, JSON
 from sqlalchemy.orm import relationship
 
-from db import db
+from app.models.base import Base
 from app.core.constants import LLMProvider
 
 
@@ -14,7 +14,7 @@ def utcnow():
     return datetime.now(timezone.utc)
 
 
-class Agent(db.Model):
+class Agent(Base):
     """Agent model with enhanced methods"""
     
     __tablename__ = 'agent'

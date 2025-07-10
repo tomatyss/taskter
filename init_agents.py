@@ -7,19 +7,22 @@ from flask import Flask
 from db import db
 from app.models import Agent
 
+
 def create_app():
     """Create Flask app for database operations"""
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key')
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL', 'postgresql://kanban_user:kanban_pass@localhost:5432/kanban_db')
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get(
+        'DATABASE_URL', 'postgresql://taskter_user:taskter_pass@db:5432/taskter_db')
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    
+
     db.init_app(app)
     return app
 
+
 def init_sample_agents():
     """Initialize sample agents"""
-    
+
     # Research Agent
     research_agent = Agent(
         name="Research Assistant",
@@ -44,7 +47,7 @@ Be thorough, accurate, and helpful in your research. When you have completed the
         },
         is_active=True
     )
-    
+
     # Data Analysis Agent
     data_agent = Agent(
         name="Data Analyst",
@@ -71,7 +74,7 @@ When you have completed the task successfully, respond with "TASK_COMPLETED"."""
         },
         is_active=True
     )
-    
+
     # General Assistant Agent
     general_agent = Agent(
         name="General Assistant",
@@ -104,34 +107,36 @@ When you have completed the task successfully, respond with "TASK_COMPLETED"."""
         },
         is_active=True
     )
-    
+
     return [research_agent, data_agent, general_agent]
+
 
 def main():
     """Main function to initialize agents"""
     app = create_app()
-    
+
     with app.app_context():
         try:
             # Create tables if they don't exist
             db.create_all()
-            
+
             # Check if agents already exist
             existing_agents = Agent.query.count()
             if existing_agents > 0:
-                print(f"Found {existing_agents} existing agents. Skipping initialization.")
+                print(
+                    f"Found {existing_agents} existing agents. Skipping initialization.")
                 return
-            
+
             # Create sample agents
             agents = init_sample_agents()
-            
+
             for agent in agents:
                 db.session.add(agent)
                 print(f"Created agent: {agent.name}")
-            
+
             db.session.commit()
             print(f"\nSuccessfully initialized {len(agents)} sample agents!")
-            
+
             # Print agent details
             print("\nAgent Details:")
             print("-" * 50)
@@ -142,10 +147,11 @@ def main():
                 print(f"Model: {agent.llm_model}")
                 print(f"Tools: {', '.join(agent.available_tools)}")
                 print("-" * 50)
-                
+
         except Exception as e:
             print(f"Error initializing agents: {str(e)}")
             sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

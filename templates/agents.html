@@ -170,23 +170,53 @@
 </div>
 
 <script>
-const modelOptions = {
-    openai: ['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo'],
-    anthropic: ['claude-3-5-sonnet-20241022', 'claude-3-haiku-20240307', 'claude-3-opus-20240229'],
-    gemini: ['gemini-2.5-flash', 'gemini-1.5-pro', 'gemini-1.0-pro']
-};
-
+let modelOptions = {};
 let currentEditAgentId = null;
 
-// Load agents on page load
+// Load agents and models on page load
 document.addEventListener('DOMContentLoaded', function() {
-    loadAgents();
+    loadModels().then(() => {
+        loadAgents();
+    });
     
     // Setup provider change handler
     document.getElementById('agentProvider').addEventListener('change', function() {
         updateModelOptions('agentModel', this.value);
     });
 });
+
+// Load available models from API
+async function loadModels() {
+    try {
+        const response = await fetch('/api/v1/agents/models');
+        const data = await response.json();
+        
+        if (data.success && data.data.providers) {
+            // Convert API response to the format expected by the frontend
+            modelOptions = {};
+            for (const [provider, info] of Object.entries(data.data.providers)) {
+                modelOptions[provider] = info.models;
+            }
+            console.log('Loaded models:', modelOptions);
+        } else {
+            console.error('Failed to load models:', data);
+            // Fallback to hardcoded models if API fails
+            modelOptions = {
+                openai: ['gpt-4.1', 'gpt-4o', 'o4-mini', 'o3', 'o3-pro', 'o3-mini', 'o1', 'o1-pro'],
+                anthropic: ['claude-opus-4', 'claude-sonnet-4', 'claude-3-7-sonnet', 'claude-3-5-haiku', 'claude-3-5-sonnet', 'claude-3-haiku'],
+                gemini: ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash']
+            };
+        }
+    } catch (error) {
+        console.error('Error loading models:', error);
+        // Fallback to hardcoded models if API fails
+        modelOptions = {
+            openai: ['gpt-4.1', 'gpt-4o', 'o4-mini', 'o3', 'o3-pro', 'o3-mini', 'o1', 'o1-pro'],
+            anthropic: ['claude-opus-4', 'claude-sonnet-4', 'claude-3-7-sonnet', 'claude-3-5-haiku', 'claude-3-5-sonnet', 'claude-3-haiku'],
+            gemini: ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash']
+        };
+    }
+}
 
 function updateModelOptions(selectId, provider) {
     const modelSelect = document.getElementById(selectId);

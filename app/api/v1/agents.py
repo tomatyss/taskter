@@ -271,6 +271,47 @@ def list_providers():
         return APIResponse.internal_error()
 
 
+@agents_bp.route('/models', methods=['GET'])
+@handle_service_exceptions
+def list_models():
+    """List available models for all providers or a specific provider"""
+    try:
+        provider_filter = request.args.get('provider')
+        
+        if provider_filter:
+            # Get models for specific provider
+            models = LLMProviderFactory.get_models_for_provider(provider_filter)
+            default_model = LLMProviderFactory.get_default_models().get(provider_filter)
+            
+            response_data = {
+                "provider": provider_filter,
+                "models": models,
+                "default_model": default_model,
+                "count": len(models)
+            }
+        else:
+            # Get all models for all providers
+            all_models = LLMProviderFactory.get_available_models()
+            default_models = LLMProviderFactory.get_default_models()
+            
+            response_data = {
+                "providers": {
+                    provider: {
+                        "models": models,
+                        "default_model": default_models.get(provider),
+                        "count": len(models)
+                    }
+                    for provider, models in all_models.items()
+                }
+            }
+        
+        return APIResponse.success(data=response_data)
+        
+    except Exception as e:
+        logger.error(f"Error listing models: {str(e)}")
+        return APIResponse.internal_error()
+
+
 @agents_bp.route('/<int:agent_id>/stats', methods=['GET'])
 @handle_service_exceptions
 def get_agent_stats(agent_id: int):

@@ -314,7 +314,7 @@ The migration system uses these environment variables:
 
 ```bash
 # Database connection
-DATABASE_URL=postgresql://kanban_user:kanban_pass@localhost:5432/kanban_db
+DATABASE_URL=postgresql://taskter_user:taskter_pass@db:5432/taskter_db
 
 # Flask configuration
 SECRET_KEY=your-secret-key

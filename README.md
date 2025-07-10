@@ -324,7 +324,7 @@ The application uses a centralized configuration system with environment variabl
 ### Required Configuration
 ```bash
 # Database
-DATABASE_URL=postgresql://kanban_user:kanban_pass@localhost:5432/kanban_db
+DATABASE_URL=postgresql://taskter_user:taskter_pass@db:5432/taskter_db
 
 # Flask
 SECRET_KEY=your-secret-key-change-in-production
@@ -572,6 +572,29 @@ curl http://localhost:5001/api/v1/executions
 3. Make your changes following the established architecture
 4. Test thoroughly
 5. Submit a pull request
+
+## Continuous Integration
+
+All pull requests automatically run the test suite via GitHub Actions. The
+workflow defined in `.github/workflows/test.yml` installs dependencies from
+`requirements.txt` and also installs `pytest` before executing the tests.
+
+## Preview Deployments
+
+To manually test a feature branch in Google Cloud Run, push a tag beginning with
+`deploy-` to the branch:
+
+```bash
+git tag deploy-my-feature
+git push origin deploy-my-feature
+```
+
+The `deploy.yml` workflow builds a container image and deploys it to Cloud Run.
+Configure the following repository secrets for authentication:
+
+- `GCP_PROJECT` – your Google Cloud project ID
+- `GCP_REGION` – the Cloud Run region
+- `GCP_SA_KEY` – JSON service account key with deploy permissions
 
 ## License
 
