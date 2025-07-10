@@ -7,6 +7,7 @@ An intelligent kanban board application built with Flask, PostgreSQL, and AI age
 ### Core Kanban Features
 - **Four-column Kanban Board**: To Do, In Progress, Blocked, Done
 - **Task Management**: Create, edit, delete, and move tasks between columns
+- **Task Comments**: Discuss work directly on each card with inline comments
 - **Server-driven UI**: All interactions handled server-side with full page refreshes
 - **PostgreSQL Database**: Persistent data storage
 - **Docker Support**: Easy deployment and development setup

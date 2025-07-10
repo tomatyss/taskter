@@ -154,6 +154,24 @@ def edit_task(task_id):
 
     return render_template('edit_task.html', task=task)
 
+
+@app.route('/add_comment/<int:task_id>', methods=['POST'])
+@login_required
+def add_comment(task_id):
+    """Add a comment to a task"""
+    task = Task.query.get_or_404(task_id)
+    comment = request.form.get('comment')
+    if comment:
+        comments = task.comments or []
+        comments.append(comment)
+        task.comments = comments
+        task.updated_at = datetime.utcnow()
+        db.session.commit()
+        flash('Comment added', 'success')
+    else:
+        flash('Comment cannot be empty', 'error')
+    return redirect(url_for('index'))
+
 # UI Routes for Agent Management
 
 

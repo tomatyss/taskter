@@ -27,6 +27,7 @@ body {
     overflow-y: auto;
 }
 
+/* Task Card Styles: visual layout for each task on the board */
 .task-card {
     background-color: #ffffff;
     border: 1px solid #e9ecef;
@@ -51,6 +52,7 @@ body {
     box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 
+/* Header section of a task card containing title and actions */
 .task-header {
     display: flex;
     justify-content: space-between;
@@ -66,11 +68,13 @@ body {
     margin-right: 10px;
 }
 
+/* Action buttons shown when hovering over a task card */
 .task-actions {
     display: flex;
     gap: 5px;
 }
 
+/* Optional description text within a task card */
 .task-description {
     color: #666;
     font-size: 0.9em;
@@ -78,6 +82,31 @@ body {
     line-height: 1.4;
 }
 
+/* List of comments displayed on a task card */
+.task-comments {
+    list-style: none;
+    padding-left: 0;
+    margin-bottom: 8px;
+    font-size: 0.85em;
+    color: #444;
+}
+
+.task-comments li {
+    margin-bottom: 2px;
+}
+
+/* Form for adding comments on a task card */
+.comment-form .form-control {
+    font-size: 0.8em;
+    padding: 2px 6px;
+}
+
+.comment-form .btn {
+    font-size: 0.8em;
+    padding: 2px 8px;
+}
+
+/* Footer section showing dates and movement buttons */
 .task-footer {
     display: flex;
     justify-content: space-between;
@@ -87,6 +116,7 @@ body {
     border-top: 1px solid #e9ecef;
 }
 
+/* Buttons used to move tasks between columns */
 .task-move-buttons {
     display: flex;
     gap: 5px;

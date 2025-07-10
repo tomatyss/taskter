@@ -18,6 +18,7 @@
             </div>
             <div class="kanban-body">
                 {% for task in todo_tasks %}
+                    <!-- Task card: displays a single task in the To Do column -->
                     <div class="task-card clickable-card" data-task-id="{{ task.id }}" onclick="showTaskDetails({{ task.id }})">
                         <div class="task-header">
                             <h6>{{ task.title }}</h6>
@@ -37,6 +38,19 @@
                         {% if task.description %}
                             <p class="task-description">{{ task.description }}</p>
                         {% endif %}
+                        {% if task.comments %}
+                            <ul class="task-comments">
+                                {% for comment in task.comments %}
+                                    <li>{{ comment }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                        <form action="{{ url_for('add_comment', task_id=task.id) }}" method="post" class="comment-form">
+                            <div class="input-group input-group-sm mb-2">
+                                <input type="text" class="form-control" name="comment" placeholder="Add comment" required>
+                                <button class="btn btn-outline-secondary" type="submit">Post</button>
+                            </div>
+                        </form>
                         
                         <!-- Agent Assignment Info -->
                         {% if task.assigned_agent %}
@@ -88,6 +102,7 @@
             </div>
             <div class="kanban-body">
                 {% for task in in_progress_tasks %}
+                    <!-- Task card: displays a single task in the In Progress column -->
                     <div class="task-card clickable-card" data-task-id="{{ task.id }}" onclick="showTaskDetails({{ task.id }})">
                         <div class="task-header">
                             <h6>{{ task.title }}</h6>
@@ -104,6 +119,19 @@
                         {% if task.description %}
                             <p class="task-description">{{ task.description }}</p>
                         {% endif %}
+                        {% if task.comments %}
+                            <ul class="task-comments">
+                                {% for comment in task.comments %}
+                                    <li>{{ comment }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                        <form action="{{ url_for('add_comment', task_id=task.id) }}" method="post" class="comment-form">
+                            <div class="input-group input-group-sm mb-2">
+                                <input type="text" class="form-control" name="comment" placeholder="Add comment" required>
+                                <button class="btn btn-outline-secondary" type="submit">Post</button>
+                            </div>
+                        </form>
                         <div class="task-footer">
                             <small class="text-muted">{{ task.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
                             <div class="task-move-buttons">
@@ -135,6 +163,7 @@
             </div>
             <div class="kanban-body">
                 {% for task in blocked_tasks %}
+                    <!-- Task card: displays a single task in the Blocked column -->
                     <div class="task-card">
                         <div class="task-header">
                             <h6>{{ task.title }}</h6>
@@ -151,6 +180,19 @@
                         {% if task.description %}
                             <p class="task-description">{{ task.description }}</p>
                         {% endif %}
+                        {% if task.comments %}
+                            <ul class="task-comments">
+                                {% for comment in task.comments %}
+                                    <li>{{ comment }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                        <form action="{{ url_for('add_comment', task_id=task.id) }}" method="post" class="comment-form">
+                            <div class="input-group input-group-sm mb-2">
+                                <input type="text" class="form-control" name="comment" placeholder="Add comment" required>
+                                <button class="btn btn-outline-secondary" type="submit">Post</button>
+                            </div>
+                        </form>
                         <div class="task-footer">
                             <small class="text-muted">{{ task.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
                             <div class="task-move-buttons">
@@ -178,6 +220,7 @@
             </div>
             <div class="kanban-body">
                 {% for task in done_tasks %}
+                    <!-- Task card: displays a single task in the Done column -->
                     <div class="task-card clickable-card" data-task-id="{{ task.id }}" onclick="showTaskDetails({{ task.id }})">
                         <div class="task-header">
                             <h6>{{ task.title }}</h6>
@@ -194,6 +237,19 @@
                         {% if task.description %}
                             <p class="task-description">{{ task.description }}</p>
                         {% endif %}
+                        {% if task.comments %}
+                            <ul class="task-comments">
+                                {% for comment in task.comments %}
+                                    <li>{{ comment }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                        <form action="{{ url_for('add_comment', task_id=task.id) }}" method="post" class="comment-form">
+                            <div class="input-group input-group-sm mb-2">
+                                <input type="text" class="form-control" name="comment" placeholder="Add comment" required>
+                                <button class="btn btn-outline-secondary" type="submit">Post</button>
+                            </div>
+                        </form>
                         <div class="task-footer">
                             <small class="text-muted">{{ task.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
                             <div class="task-move-buttons">
