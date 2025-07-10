@@ -102,5 +102,6 @@ class TestGeminiIntegration(unittest.TestCase):
         self.assertIn("finish_reason", response)
         self.assertIn("usage", response)
 
+
 if __name__ == '__main__':
     unittest.main(verbosity=2)

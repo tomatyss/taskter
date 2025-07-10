@@ -18,9 +18,11 @@ __author__ = "Taskter Team"
 from .models.task import Task
 from .models.agent import Agent
 from .models.execution import AgentExecution
+from .models.user import User
 
 __all__ = [
     "Task",
     "Agent", 
-    "AgentExecution"
+    "AgentExecution",
+    "User"
 ]

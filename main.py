@@ -3,6 +3,7 @@ import sys
 from celery_app import execute_agent_task_async
 from app.models import Task, Agent, AgentExecution
 from flask import Flask, render_template, request, redirect, url_for, flash
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_migrate import Migrate
 from datetime import datetime
 import os
@@ -10,6 +11,8 @@ import logging
 from dotenv import load_dotenv
 from db import db
 
+# Setup Flask-Login
+login_manager = LoginManager()
 # Load environment variables from .env file
 load_dotenv()
 
@@ -25,17 +28,54 @@ logger = logging.getLogger(__name__)
 
 db.init_app(app)
 migrate = Migrate(app, db)
+login_manager.init_app(app)
+login_manager.login_view = 'login'
 
+from app.models import Task, Agent, AgentExecution, User
+from celery_app import execute_agent_task_async
 
 # Register API blueprints
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 register_blueprints(app)
 
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        user = User.query.filter_by(username=username).first()
+        if user and user.check_password(password):
+            login_user(user)
+            flash('Logged in successfully!', 'success')
+            return redirect(url_for('index'))
+        flash('Invalid username or password', 'error')
+    return render_template('login.html')
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('Logged out', 'success')
+    return redirect(url_for('login'))
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
 # Routes
 
 
 @app.route('/')
+@login_required
 def index():
     todo_tasks = Task.query.filter_by(
         status='todo').order_by(Task.created_at.desc()).all()
@@ -51,6 +91,7 @@ def index():
 
 
 @app.route('/add_task', methods=['POST'])
+@login_required
 def add_task():
     title = request.form.get('title')
     description = request.form.get('description')
@@ -68,6 +109,7 @@ def add_task():
 
 
 @app.route('/move_task/<int:task_id>/<status>')
+@login_required
 def move_task(task_id, status):
     if status not in ['todo', 'in_progress', 'done']:
         flash('Invalid status!', 'error')
@@ -83,6 +125,7 @@ def move_task(task_id, status):
 
 
 @app.route('/delete_task/<int:task_id>')
+@login_required
 def delete_task(task_id):
     task = Task.query.get_or_404(task_id)
     db.session.delete(task)
@@ -93,6 +136,7 @@ def delete_task(task_id):
 
 
 @app.route('/edit_task/<int:task_id>', methods=['GET', 'POST'])
+@login_required
 def edit_task(task_id):
     task = Task.query.get_or_404(task_id)
 
@@ -111,12 +155,14 @@ def edit_task(task_id):
 
 
 @app.route('/agents')
+@login_required
 def agents():
     """Agents management page"""
     return render_template('agents.html')
 
 
 @app.route('/executions')
+@login_required
 def executions():
     """Agent executions monitoring page"""
     return render_template('executions.html')
