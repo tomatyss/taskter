@@ -8,6 +8,7 @@ class TaskStatus(str, Enum):
     """Task status enumeration"""
     TODO = "todo"
     IN_PROGRESS = "in_progress"
+    BLOCKED = "blocked"
     DONE = "done"
 
 
@@ -167,9 +168,17 @@ DB_CONSTRAINTS = {
 TASK_COMPLETION_INDICATORS = [
     "TASK_COMPLETED",
     "task completed",
-    "task is completed", 
+    "task is completed",
     "successfully completed",
     "finished the task"
+]
+
+# Indicators that signify a task is blocked
+TASK_BLOCKED_INDICATORS = [
+    "TASK_BLOCKED",
+    "task blocked",
+    "unable to proceed",
+    "blocked"
 ]
 
 # Dangerous code patterns for script execution

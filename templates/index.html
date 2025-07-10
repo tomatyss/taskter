@@ -11,7 +11,7 @@
 
 <div class="row">
     <!-- To Do Column -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="kanban-column">
             <div class="kanban-header bg-secondary text-white">
                 <h5><i class="fas fa-list"></i> To Do ({{ todo_tasks|length }})</h5>
@@ -79,8 +79,9 @@
         </div>
     </div>
 
+
     <!-- In Progress Column -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="kanban-column">
             <div class="kanban-header bg-warning text-dark">
                 <h5><i class="fas fa-clock"></i> In Progress ({{ in_progress_tasks|length }})</h5>
@@ -106,11 +107,15 @@
                         <div class="task-footer">
                             <small class="text-muted">{{ task.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
                             <div class="task-move-buttons">
-                                <a href="{{ url_for('move_task', task_id=task.id, status='todo') }}" 
+                                <a href="{{ url_for('move_task', task_id=task.id, status='todo') }}"
                                    class="btn btn-sm btn-secondary">
                                     <i class="fas fa-arrow-left"></i> To Do
                                 </a>
-                                <a href="{{ url_for('move_task', task_id=task.id, status='done') }}" 
+                                <a href="{{ url_for('move_task', task_id=task.id, status='blocked') }}"
+                                   class="btn btn-sm btn-danger">
+                                    <i class="fas fa-ban"></i> Blocked
+                                </a>
+                                <a href="{{ url_for('move_task', task_id=task.id, status='done') }}"
                                    class="btn btn-sm btn-success">
                                     <i class="fas fa-arrow-right"></i> Done
                                 </a>
@@ -121,9 +126,52 @@
             </div>
         </div>
     </div>
+    
+    <!-- Blocked Column -->
+    <div class="col-md-3">
+        <div class="kanban-column">
+            <div class="kanban-header bg-danger text-white">
+                <h5><i class="fas fa-ban"></i> Blocked ({{ blocked_tasks|length }})</h5>
+            </div>
+            <div class="kanban-body">
+                {% for task in blocked_tasks %}
+                    <div class="task-card">
+                        <div class="task-header">
+                            <h6>{{ task.title }}</h6>
+                            <div class="task-actions">
+                                <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{{ url_for('delete_task', task_id=task.id) }}" class="btn btn-sm btn-outline-danger"
+                                   onclick="return confirm('Are you sure you want to delete this task?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% if task.description %}
+                            <p class="task-description">{{ task.description }}</p>
+                        {% endif %}
+                        <div class="task-footer">
+                            <small class="text-muted">{{ task.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                            <div class="task-move-buttons">
+                                <a href="{{ url_for('move_task', task_id=task.id, status='in_progress') }}"
+                                   class="btn btn-sm btn-warning">
+                                    <i class="fas fa-arrow-right"></i> In Progress
+                                </a>
+                                <a href="{{ url_for('move_task', task_id=task.id, status='blocked') }}"
+                                   class="btn btn-sm btn-danger">
+                                    <i class="fas fa-ban"></i> Blocked
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
 
     <!-- Done Column -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="kanban-column">
             <div class="kanban-header bg-success text-white">
                 <h5><i class="fas fa-check"></i> Done ({{ done_tasks|length }})</h5>
