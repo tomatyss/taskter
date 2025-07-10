@@ -22,6 +22,8 @@ class Task(Base):
     id = Column(Integer, primary_key=True)
     title = Column(String(200), nullable=False)
     description = Column(Text)
+    # List of comments associated with the task
+    comments = Column(JSON, default=list)
     status = Column(String(20), nullable=False, default=TaskStatus.TODO.value)
     created_at = Column(DateTime, default=utcnow)
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
@@ -43,6 +45,7 @@ class Task(Base):
             'id': self.id,
             'title': self.title,
             'description': self.description,
+            'comments': self.comments or [],
             'status': self.status,
             'execution_status': self.execution_status,
             'created_at': self.created_at.isoformat() if self.created_at else None,
@@ -62,6 +65,7 @@ class Task(Base):
         return cls(
             title=data['title'],
             description=data.get('description'),
+            comments=data.get('comments', []),
             status=data.get('status', TaskStatus.TODO.value),
             assigned_agent_id=data.get('assigned_agent_id'),
             execution_status=data.get('execution_status', ExecutionStatus.MANUAL.value)
@@ -73,6 +77,8 @@ class Task(Base):
             self.title = data['title']
         if 'description' in data:
             self.description = data['description']
+        if 'comments' in data:
+            self.comments = data['comments']
         if 'status' in data:
             self.status = data['status']
         if 'assigned_agent_id' in data:
