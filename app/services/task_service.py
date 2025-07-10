@@ -362,6 +362,35 @@ class TaskService:
             logger.error(f"Failed to unassign tasks from agent {agent_id}: {str(e)}")
             raise
     
+    def copy_task(self, task_id: int) -> Task:
+        """Create a copy of an existing task"""
+        try:
+            original_task = self.get_task_by_id(task_id)
+            
+            # Create copy with modified title and reset properties
+            copy_title = f"Copy of {original_task.title}"
+            if len(copy_title) > 200:
+                # Truncate if too long
+                copy_title = copy_title[:197] + "..."
+            
+            copy_data = {
+                'title': copy_title,
+                'description': original_task.description,
+                'status': TaskStatus.TODO.value,  # Always start as TODO
+                'execution_status': ExecutionStatus.MANUAL.value,  # Reset execution status
+                'assigned_agent_id': None  # Don't copy agent assignment
+            }
+            
+            copied_task = Task.from_dict(copy_data)
+            created_copy = self.task_repo.create(copied_task)
+            
+            logger.info(f"Created copy of task {task_id} as task {created_copy.id}")
+            return created_copy
+            
+        except Exception as e:
+            logger.error(f"Failed to copy task {task_id}: {str(e)}")
+            raise
+    
     def _is_valid_status_transition(self, current_status: str, new_status: str) -> bool:
         """Validate if status transition is allowed"""
         # Define valid transitions

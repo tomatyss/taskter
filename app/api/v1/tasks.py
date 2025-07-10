@@ -315,6 +315,28 @@ def unassign_task(task_id: int):
         return APIResponse.internal_error()
 
 
+@tasks_bp.route('/<int:task_id>/copy', methods=['POST'])
+@handle_service_exceptions
+def copy_task(task_id: int):
+    """Create a copy of an existing task"""
+    try:
+        copied_task = task_service.copy_task(task_id)
+        task_data = task_to_response(copied_task)
+        
+        logger.info(f"Copied task {task_id} to new task {copied_task.id}")
+        
+        return APIResponse.created(
+            data=task_data.dict(),
+            message=f"Task copied successfully as '{copied_task.title}'"
+        )
+        
+    except TaskNotFoundError:
+        return APIResponse.not_found("Task")
+    except Exception as e:
+        logger.error(f"Error copying task {task_id}: {str(e)}")
+        return APIResponse.internal_error()
+
+
 @tasks_bp.route('/stats', methods=['GET'])
 @handle_service_exceptions
 def get_task_stats():

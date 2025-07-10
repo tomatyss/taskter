@@ -2,11 +2,11 @@
 Agent execution model with enhanced functionality
 """
 from datetime import datetime, timezone
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, JSON, Float
 from sqlalchemy.orm import relationship
 
-from db import db
+from app.models.base import Base
 from app.core.constants import AgentExecutionStatus
 
 
@@ -14,7 +14,7 @@ def utcnow():
     return datetime.now(timezone.utc)
 
 
-class AgentExecution(db.Model):
+class AgentExecution(Base):
     """Agent execution model with enhanced methods"""
     
     __tablename__ = 'agent_execution'
@@ -37,7 +37,8 @@ class AgentExecution(db.Model):
     # Results and logs
     result = Column(Text)
     error_message = Column(Text)
-    logs = Column(JSON, default=list)
+    logs = Column(JSON, default=list)  # Conversation logs
+    tool_logs = Column(JSON, default=list)  # Tool execution logs
     execution_metadata = Column(JSON, default=dict)
     
     # Timestamps
@@ -67,6 +68,7 @@ class AgentExecution(db.Model):
             'result': self.result,
             'error_message': self.error_message,
             'logs': self.logs or [],
+            'tool_logs': self.tool_logs or [],
             'metadata': self.execution_metadata or {},
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None
@@ -170,6 +172,41 @@ class AgentExecution(db.Model):
         
         self.logs.append(log_entry)
         self.updated_at = utcnow()
+    
+    def add_tool_log_entry(self, tool_name: str, arguments: Dict[str, Any], status: str, 
+                          result: Optional[Dict[str, Any]] = None, execution_time: Optional[float] = None,
+                          timestamp: Optional[datetime] = None) -> None:
+        """Add a tool execution log entry"""
+        if not self.tool_logs:
+            self.tool_logs = []
+        
+        tool_log_entry = {
+            'tool_name': tool_name,
+            'arguments': arguments,
+            'status': status,  # 'started', 'completed', 'failed', 'error'
+            'result': result,
+            'execution_time': execution_time,
+            'timestamp': (timestamp or utcnow()).isoformat()
+        }
+        
+        self.tool_logs.append(tool_log_entry)
+        self.updated_at = utcnow()
+    
+    def get_tool_logs(self) -> List[Dict[str, Any]]:
+        """Get all tool execution logs"""
+        return self.tool_logs or []
+    
+    def get_tool_logs_by_status(self, status: str) -> List[Dict[str, Any]]:
+        """Get tool logs filtered by status"""
+        return [log for log in (self.tool_logs or []) if log.get('status') == status]
+    
+    def get_failed_tool_logs(self) -> List[Dict[str, Any]]:
+        """Get all failed tool execution logs"""
+        return [log for log in (self.tool_logs or []) if log.get('status') in ['failed', 'error']]
+    
+    def get_successful_tool_logs(self) -> List[Dict[str, Any]]:
+        """Get all successful tool execution logs"""
+        return [log for log in (self.tool_logs or []) if log.get('status') == 'completed']
     
     def add_metadata(self, key: str, value: Any) -> None:
         """Add metadata to the execution"""

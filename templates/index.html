@@ -18,18 +18,18 @@
             </div>
             <div class="kanban-body">
                 {% for task in todo_tasks %}
-                    <div class="task-card" data-task-id="{{ task.id }}">
+                    <div class="task-card clickable-card" data-task-id="{{ task.id }}" onclick="showTaskDetails({{ task.id }})">
                         <div class="task-header">
                             <h6>{{ task.title }}</h6>
                             <div class="task-actions">
-                                <button class="btn btn-sm btn-outline-info" onclick="showAgentModal({{ task.id }})" title="Assign to Agent">
+                                <button class="btn btn-sm btn-outline-info" onclick="event.stopPropagation(); showAgentModal({{ task.id }})" title="Assign to Agent">
                                     <i class="fas fa-robot"></i>
                                 </button>
-                                <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-sm btn-outline-primary">
+                                <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation()">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 <a href="{{ url_for('delete_task', task_id=task.id) }}" class="btn btn-sm btn-outline-danger" 
-                                   onclick="return confirm('Are you sure you want to delete this task?')">
+                                   onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this task?')">
                                     <i class="fas fa-trash"></i>
                                 </a>
                             </div>
@@ -87,15 +87,15 @@
             </div>
             <div class="kanban-body">
                 {% for task in in_progress_tasks %}
-                    <div class="task-card">
+                    <div class="task-card clickable-card" data-task-id="{{ task.id }}" onclick="showTaskDetails({{ task.id }})">
                         <div class="task-header">
                             <h6>{{ task.title }}</h6>
                             <div class="task-actions">
-                                <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-sm btn-outline-primary">
+                                <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation()">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 <a href="{{ url_for('delete_task', task_id=task.id) }}" class="btn btn-sm btn-outline-danger" 
-                                   onclick="return confirm('Are you sure you want to delete this task?')">
+                                   onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this task?')">
                                     <i class="fas fa-trash"></i>
                                 </a>
                             </div>
@@ -130,15 +130,15 @@
             </div>
             <div class="kanban-body">
                 {% for task in done_tasks %}
-                    <div class="task-card">
+                    <div class="task-card clickable-card" data-task-id="{{ task.id }}" onclick="showTaskDetails({{ task.id }})">
                         <div class="task-header">
                             <h6>{{ task.title }}</h6>
                             <div class="task-actions">
-                                <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-sm btn-outline-primary">
+                                <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-sm btn-outline-primary" onclick="event.stopPropagation()">
                                     <i class="fas fa-edit"></i>
                                 </a>
                                 <a href="{{ url_for('delete_task', task_id=task.id) }}" class="btn btn-sm btn-outline-danger" 
-                                   onclick="return confirm('Are you sure you want to delete this task?')">
+                                   onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this task?')">
                                     <i class="fas fa-trash"></i>
                                 </a>
                             </div>
@@ -190,6 +190,33 @@
     </div>
 </div>
 
+<!-- Task Details Modal -->
+<div class="modal fade" id="taskDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="taskDetailsTitle">Task Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="taskDetailsContent">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" id="copyTaskBtn" onclick="copyTask()">
+                    <i class="fas fa-copy"></i> Copy Task
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Agent Assignment Modal -->
 <div class="modal fade" id="agentModal" tabindex="-1">
     <div class="modal-dialog">
@@ -213,6 +240,171 @@
 
 <script>
 let currentTaskId = null;
+
+function showTaskDetails(taskId) {
+    currentTaskId = taskId;
+    const modal = new bootstrap.Modal(document.getElementById('taskDetailsModal'));
+    modal.show();
+    
+    // Load task details
+    fetch(`/api/v1/tasks/${taskId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.data) {
+                const task = data.data;
+                document.getElementById('taskDetailsTitle').textContent = task.title;
+                
+                const content = document.getElementById('taskDetailsContent');
+                const createdDate = new Date(task.created_at).toLocaleString();
+                const updatedDate = new Date(task.updated_at).toLocaleString();
+                
+                let statusBadge = '';
+                switch(task.status) {
+                    case 'todo':
+                        statusBadge = '<span class="badge bg-secondary">To Do</span>';
+                        break;
+                    case 'in_progress':
+                        statusBadge = '<span class="badge bg-warning">In Progress</span>';
+                        break;
+                    case 'done':
+                        statusBadge = '<span class="badge bg-success">Done</span>';
+                        break;
+                }
+                
+                let executionBadge = '';
+                switch(task.execution_status) {
+                    case 'manual':
+                        executionBadge = '<span class="badge bg-light text-dark">Manual</span>';
+                        break;
+                    case 'assigned':
+                        executionBadge = '<span class="badge bg-info">Assigned</span>';
+                        break;
+                    case 'running':
+                        executionBadge = '<span class="badge bg-warning"><i class="fas fa-spinner fa-spin"></i> Running</span>';
+                        break;
+                    case 'completed':
+                        executionBadge = '<span class="badge bg-success">Completed</span>';
+                        break;
+                    case 'failed':
+                        executionBadge = '<span class="badge bg-danger">Failed</span>';
+                        break;
+                }
+                
+                let agentInfo = '';
+                if (task.assigned_agent_id) {
+                    agentInfo = `
+                        <div class="row mb-3">
+                            <div class="col-sm-3"><strong>Assigned Agent:</strong></div>
+                            <div class="col-sm-9">
+                                <span class="badge bg-info">
+                                    <i class="fas fa-robot"></i> Agent ID: ${task.assigned_agent_id}
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                content.innerHTML = `
+                    <div class="container-fluid">
+                        <div class="row mb-3">
+                            <div class="col-sm-3"><strong>Title:</strong></div>
+                            <div class="col-sm-9">${task.title}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-3"><strong>Description:</strong></div>
+                            <div class="col-sm-9">${task.description || '<em class="text-muted">No description</em>'}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-3"><strong>Status:</strong></div>
+                            <div class="col-sm-9">${statusBadge}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-3"><strong>Execution Status:</strong></div>
+                            <div class="col-sm-9">${executionBadge}</div>
+                        </div>
+                        ${agentInfo}
+                        <div class="row mb-3">
+                            <div class="col-sm-3"><strong>Created:</strong></div>
+                            <div class="col-sm-9">${createdDate}</div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-3"><strong>Last Updated:</strong></div>
+                            <div class="col-sm-9">${updatedDate}</div>
+                        </div>
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <a href="/edit_task/${task.id}" class="btn btn-outline-primary btn-sm">
+                                        <i class="fas fa-edit"></i> Edit Task
+                                    </a>
+                                    <button class="btn btn-outline-info btn-sm" onclick="showAgentModal(${task.id})">
+                                        <i class="fas fa-robot"></i> ${task.assigned_agent_id ? 'Change Agent' : 'Assign Agent'}
+                                    </button>
+                                    <button class="btn btn-outline-danger btn-sm" onclick="deleteTask(${task.id})">
+                                        <i class="fas fa-trash"></i> Delete Task
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                document.getElementById('taskDetailsContent').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-circle"></i> Error loading task details.
+                    </div>
+                `;
+            }
+        })
+        .catch(error => {
+            console.error('Error loading task details:', error);
+            document.getElementById('taskDetailsContent').innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle"></i> Error loading task details. Please try again.
+                </div>
+            `;
+        });
+}
+
+function copyTask() {
+    if (!currentTaskId) return;
+    
+    const copyBtn = document.getElementById('copyTaskBtn');
+    const originalText = copyBtn.innerHTML;
+    copyBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Copying...';
+    copyBtn.disabled = true;
+    
+    fetch(`/api/v1/tasks/${currentTaskId}/copy`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Task copied successfully! New task: "${data.data.title}"`);
+            bootstrap.Modal.getInstance(document.getElementById('taskDetailsModal')).hide();
+            location.reload(); // Refresh to show the new task
+        } else {
+            alert('Error copying task: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        console.error('Error copying task:', error);
+        alert('Error copying task. Please try again.');
+    })
+    .finally(() => {
+        copyBtn.innerHTML = originalText;
+        copyBtn.disabled = false;
+    });
+}
+
+function deleteTask(taskId) {
+    if (confirm('Are you sure you want to delete this task?')) {
+        window.location.href = `/delete_task/${taskId}`;
+    }
+}
 
 function showAgentModal(taskId) {
     currentTaskId = taskId;
