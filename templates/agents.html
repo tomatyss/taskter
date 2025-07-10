@@ -107,6 +107,13 @@
                                     <small class="text-muted d-block">Run Python scripts safely</small>
                                 </label>
                             </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" value="update_task_status" id="tool_update_task_status">
+                                <label class="form-check-label" for="tool_update_task_status">
+                                    <i class="fas fa-tasks"></i> Update Task Status
+                                    <small class="text-muted d-block">Change task status</small>
+                                </label>
+                            </div>
                         </div>
                     </div>
                     
@@ -429,6 +436,11 @@ function editAgent(agentId) {
                             <input class="form-check-input" type="checkbox" value="execute_script" id="edit_tool_execute_script"
                                    ${agent.available_tools.includes('execute_script') ? 'checked' : ''}>
                             <label class="form-check-label" for="edit_tool_execute_script">Execute Script</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="update_task_status" id="edit_tool_update_task_status"
+                                   ${agent.available_tools.includes('update_task_status') ? 'checked' : ''}>
+                            <label class="form-check-label" for="edit_tool_update_task_status">Update Task Status</label>
                         </div>
                     </div>
                 </div>
