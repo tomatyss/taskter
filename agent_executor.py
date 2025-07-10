@@ -290,6 +290,11 @@ Please analyze the task and create a plan to complete it, then execute that plan
     
     def _get_tools_for_provider(self, tool_names: List[str], provider_name: str) -> List[Dict]:
         """Get tools formatted for the specific LLM provider"""
+        # Ensure task status update tool is always available
+        from app.core.constants import ToolName
+        if ToolName.UPDATE_TASK_STATUS.value not in tool_names:
+            tool_names = list(tool_names) + [ToolName.UPDATE_TASK_STATUS.value]
+
         if provider_name == "openai":
             return tool_registry.get_tools_openai_format(tool_names)
         elif provider_name == "anthropic":

@@ -42,6 +42,7 @@ class ToolName(str, Enum):
     WEB_SEARCH = "web_search"
     SEND_EMAIL = "send_email"
     EXECUTE_SCRIPT = "execute_script"
+    UPDATE_TASK_STATUS = "update_task_status"
 
 
 class APIResponseStatus(str, Enum):

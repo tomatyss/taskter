@@ -16,7 +16,7 @@ An intelligent kanban board application built with Flask, PostgreSQL, and AI age
 - **Multi-LLM Support**: OpenAI GPT, Anthropic Claude, and Google Gemini
 - **Agent Management**: Create, configure, and manage AI agents with custom instructions
 - **Task Assignment**: Assign tasks to AI agents for automated execution
-- **Tool Integration**: Agents can use web search, email, and script execution tools
+- **Tool Integration**: Agents can use web search, email, script execution, and task status update tools
 - **Background Processing**: Asynchronous task execution with Celery and Redis
 - **Execution Monitoring**: Real-time tracking of agent task execution
 - **Conversation Logs**: Detailed logs of agent decision-making processes
@@ -311,6 +311,7 @@ curl http://localhost:5001/api/v1/executions
 1. **Web Search Tool**: Search the web for information using Google Custom Search or DuckDuckGo
 2. **Send Email Tool**: Send emails via SMTP with customizable content
 3. **Execute Script Tool**: Run Python scripts safely with timeout and security restrictions
+4. **Update Task Status Tool**: Move tasks between statuses on the board
 
 #### LLM Providers
 

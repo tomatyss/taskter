@@ -391,6 +391,60 @@ class ExecuteScriptTool(Tool):
             logger.error(f"Script execution error: {str(e)}")
             return {"success": False, "error": str(e)}
 
+class UpdateTaskStatusTool(Tool):
+    """Tool for updating the status of a task"""
+
+    def __init__(self):
+        from app.services.task_service import TaskService
+        self.task_service = TaskService()
+
+    @property
+    def name(self) -> str:
+        return "update_task_status"
+
+    @property
+    def description(self) -> str:
+        return "Update the status of a task in the kanban board."
+
+    @property
+    def input_schema(self) -> Dict:
+        from app.core.constants import TaskStatus
+        return {
+            "type": "object",
+            "properties": {
+                "task_id": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "ID of the task to update",
+                },
+                "status": {
+                    "type": "string",
+                    "description": "New status for the task",
+                    "enum": [status.value for status in TaskStatus],
+                },
+            },
+            "required": ["task_id", "status"],
+        }
+
+    def execute(self, **kwargs) -> Dict[str, Any]:
+        from app.core.constants import TaskStatus
+        try:
+            task_id = kwargs.get("task_id")
+            status = kwargs.get("status")
+
+            if task_id is None or status is None:
+                return {"success": False, "error": "task_id and status are required"}
+
+            task_id = int(task_id)
+            status_enum = TaskStatus(status)
+
+            task = self.task_service.move_task_to_status(task_id, status_enum)
+            return {"success": True, "result": task.to_dict()}
+
+        except Exception as e:
+            logger.error(f"Task status update error: {str(e)}")
+            return {"success": False, "error": str(e)}
+
 class ToolRegistry:
     """Registry for managing available tools"""
     
@@ -403,6 +457,7 @@ class ToolRegistry:
         self.register_tool(WebSearchTool())
         self.register_tool(SendEmailTool())
         self.register_tool(ExecuteScriptTool())
+        self.register_tool(UpdateTaskStatusTool())
     
     def register_tool(self, tool: Tool):
         """Register a new tool"""
