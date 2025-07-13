@@ -1,0 +1,15 @@
+[
+  {
+    "objective": "Implement the core functionality",
+    "key_results": [
+      {
+        "name": "Create the CLI skeleton",
+        "progress": 0.0
+      },
+      {
+        "name": "Implement the Kanban board",
+        "progress": 0.0
+      }
+    ]
+  }
+]
