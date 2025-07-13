@@ -5,15 +5,22 @@ use crossterm::{
 };
 use ratatui::{
     prelude::*,
-    widgets::{Block, Borders, List, ListItem, ListState},
+    text::{Line, Span},
+    widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph, Wrap},
 };
 use std::io;
 use crate::store::{self, Board, Task, TaskStatus};
+
+enum View {
+    Board,
+    TaskDescription,
+}
 
 struct App {
     board: Board,
     selected_column: usize,
     selected_task: [ListState; 3],
+    current_view: View,
 }
 
 impl App {
@@ -22,6 +29,7 @@ impl App {
             board,
             selected_column: 0,
             selected_task: [ListState::default(), ListState::default(), ListState::default()],
+            current_view: View::Board,
         };
         app.selected_task[0].select(Some(0));
         app
@@ -96,6 +104,14 @@ impl App {
             }
         }
     }
+
+    fn get_selected_task(&self) -> Option<&Task> {
+        self.selected_task[self.selected_column].selected()
+            .and_then(|selected_index| {
+                let tasks_in_column = self.tasks_in_current_column();
+                tasks_in_column.get(selected_index).map(|t| *t)
+            })
+    }
 }
 
 pub fn run_tui() -> anyhow::Result<()> {
@@ -129,24 +145,44 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
         terminal.draw(|f| ui(f, &mut app))?;
 
         if let Event::Key(key) = event::read()? {
-            match key.code {
-                KeyCode::Char('q') => {
-                    store::save_board(&app.board).unwrap();
-                    return Ok(());
-                }
-                KeyCode::Right | KeyCode::Tab => app.next_column(),
-                KeyCode::Left => app.prev_column(),
-                KeyCode::Down => app.next_task(),
-                KeyCode::Up => app.prev_task(),
-                KeyCode::Char('l') => app.move_task_to_next_column(),
-                KeyCode::Char('h') => app.move_task_to_prev_column(),
-                _ => {}
+            match app.current_view {
+                View::Board => match key.code {
+                    KeyCode::Char('q') => {
+                        store::save_board(&app.board).unwrap();
+                        return Ok(());
+                    }
+                    KeyCode::Right | KeyCode::Tab => app.next_column(),
+                    KeyCode::Left => app.prev_column(),
+                    KeyCode::Down => app.next_task(),
+                    KeyCode::Up => app.prev_task(),
+                    KeyCode::Char('l') => app.move_task_to_next_column(),
+                    KeyCode::Char('h') => app.move_task_to_prev_column(),
+                    KeyCode::Enter => {
+                        if app.get_selected_task().is_some() {
+                            app.current_view = View::TaskDescription;
+                        }
+                    }
+                    _ => {}
+                },
+                View::TaskDescription => match key.code {
+                    KeyCode::Char('q') | KeyCode::Esc => {
+                        app.current_view = View::Board;
+                    }
+                    _ => {}
+                },
             }
         }
     }
 }
 
 fn ui(f: &mut Frame, app: &mut App) {
+    render_board(f, app);
+    if let View::TaskDescription = app.current_view {
+        render_task_description(f, app);
+    }
+}
+
+fn render_board(f: &mut Frame, app: &mut App) {
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints([Constraint::Percentage(33), Constraint::Percentage(33), Constraint::Percentage(34)].as_ref())
@@ -160,4 +196,43 @@ fn ui(f: &mut Frame, app: &mut App) {
         }
         f.render_stateful_widget(list, chunks[i], &mut app.selected_task[i]);
     }
+}
+
+fn render_task_description(f: &mut Frame, app: &mut App) {
+    if let Some(task) = app.get_selected_task() {
+        let text = vec![
+            Line::from(Span::styled(
+                task.title.clone(),
+                Style::default().add_modifier(Modifier::BOLD),
+            )),
+            Line::from(task.description.clone().unwrap_or_default()),
+        ];
+
+        let block = Block::default().title("Task Description").borders(Borders::ALL);
+        let paragraph = Paragraph::new(text).block(block).wrap(Wrap { trim: true });
+        let area = centered_rect(60, 25, f.size());
+        f.render_widget(Clear, area); //this clears the background
+        f.render_widget(paragraph, area);
+    }
+}
+
+/// helper function to create a centered rect using up certain percentage of the available rect `r`
+fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
+    let popup_layout = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([
+            Constraint::Percentage((100 - percent_y) / 2),
+            Constraint::Percentage(percent_y),
+            Constraint::Percentage((100 - percent_y) / 2),
+        ])
+        .split(r);
+
+    Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints([
+            Constraint::Percentage((100 - percent_x) / 2),
+            Constraint::Percentage(percent_x),
+            Constraint::Percentage((100 - percent_x) / 2),
+        ])
+        .split(popup_layout[1])[1]
 }
