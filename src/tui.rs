@@ -10,26 +10,32 @@ use ratatui::{
 };
 use std::io;
 use crate::store::{self, Board, Task, TaskStatus};
+use crate::agent::{self, Agent};
 
 enum View {
     Board,
     TaskDescription,
+    AssignAgent,
 }
 
 struct App {
     board: Board,
+    agents: Vec<Agent>,
     selected_column: usize,
     selected_task: [ListState; 3],
     current_view: View,
+    agent_list_state: ListState,
 }
 
 impl App {
-    fn new(board: Board) -> Self {
+    fn new(board: Board, agents: Vec<Agent>) -> Self {
         let mut app = App {
             board,
+            agents,
             selected_column: 0,
             selected_task: [ListState::default(), ListState::default(), ListState::default()],
             current_view: View::Board,
+            agent_list_state: ListState::default(),
         };
         app.selected_task[0].select(Some(0));
         app
@@ -122,7 +128,8 @@ pub fn run_tui() -> anyhow::Result<()> {
     let mut terminal = Terminal::new(backend)?;
 
     let board = store::load_board().unwrap_or_default();
-    let app = App::new(board);
+    let agents = agent::load_agents().unwrap_or_default();
+    let app = App::new(board, agents);
     let res = run_app(&mut terminal, app);
 
     disable_raw_mode()?;
@@ -162,10 +169,67 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                             app.current_view = View::TaskDescription;
                         }
                     }
+                    KeyCode::Char('a') => {
+                        if app.get_selected_task().is_some() {
+                            app.current_view = View::AssignAgent;
+                            app.agent_list_state.select(Some(0));
+                        }
+                    }
                     _ => {}
                 },
                 View::TaskDescription => match key.code {
                     KeyCode::Char('q') | KeyCode::Esc => {
+                        app.current_view = View::Board;
+                    }
+                    _ => {}
+                },
+                View::AssignAgent => match key.code {
+                    KeyCode::Char('q') | KeyCode::Esc => {
+                        app.current_view = View::Board;
+                    }
+                    KeyCode::Down => {
+                        let i = match app.agent_list_state.selected() {
+                            Some(i) => (i + 1) % app.agents.len(),
+                            None => 0,
+                        };
+                        app.agent_list_state.select(Some(i));
+                    }
+                    KeyCode::Up => {
+                        let i = match app.agent_list_state.selected() {
+                            Some(i) => (i + app.agents.len() - 1) % app.agents.len(),
+                            None => 0,
+                        };
+                        app.agent_list_state.select(Some(i));
+                    }
+                    KeyCode::Enter => {
+                        if let Some(selected_agent_index) = app.agent_list_state.selected() {
+                            if let Some(agent) = app.agents.get(selected_agent_index).cloned() {
+                                if let Some(task_id) = app.get_selected_task().map(|t| t.id) {
+                                    if let Some(task) = app.board.tasks.iter_mut().find(|t| t.id == task_id) {
+                                        task.agent_id = Some(agent.id);
+                                        match agent::execute_task(&agent, task) {
+                                            Ok(result) => match result {
+                                                agent::ExecutionResult::Success => {
+                                                    task.status = store::TaskStatus::Done;
+                                                    task.comment = Some("Task completed successfully.".to_string());
+                                                }
+                                                agent::ExecutionResult::Failure { comment } => {
+                                                    task.status = store::TaskStatus::ToDo;
+                                                    task.comment = Some(comment);
+                                                    task.agent_id = None;
+                                                }
+                                            },
+                                            Err(_) => {
+                                                task.status = store::TaskStatus::ToDo;
+                                                task.comment = Some("Failed to execute task.".to_string());
+                                                task.agent_id = None;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        store::save_board(&app.board).unwrap();
                         app.current_view = View::Board;
                     }
                     _ => {}
@@ -177,8 +241,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
 
 fn ui(f: &mut Frame, app: &mut App) {
     render_board(f, app);
-    if let View::TaskDescription = app.current_view {
-        render_task_description(f, app);
+    match app.current_view {
+        View::TaskDescription => render_task_description(f, app),
+        View::AssignAgent => render_assign_agent(f, app),
+        _ => {}
     }
 }
 
@@ -189,7 +255,14 @@ fn render_board(f: &mut Frame, app: &mut App) {
         .split(f.size());
 
     for (i, status) in [TaskStatus::ToDo, TaskStatus::InProgress, TaskStatus::Done].iter().enumerate() {
-        let tasks: Vec<ListItem> = app.board.tasks.iter().filter(|t| t.status == *status).map(|t| ListItem::new(t.title.as_str())).collect();
+        let tasks: Vec<ListItem> = app.board.tasks.iter().filter(|t| t.status == *status).map(|t| {
+            let title = if t.agent_id.is_some() {
+                format!("* {}", t.title)
+            } else {
+                t.title.clone()
+            };
+            ListItem::new(title)
+        }).collect();
         let mut list = List::new(tasks).block(Block::default().title(format!("{:?}", status)).borders(Borders::ALL));
         if app.selected_column == i {
             list = list.highlight_style(Style::default().add_modifier(Modifier::BOLD).bg(Color::Blue));
@@ -200,7 +273,7 @@ fn render_board(f: &mut Frame, app: &mut App) {
 
 fn render_task_description(f: &mut Frame, app: &mut App) {
     if let Some(task) = app.get_selected_task() {
-        let text = vec![
+        let mut text = vec![
             Line::from(Span::styled(
                 task.title.clone(),
                 Style::default().add_modifier(Modifier::BOLD),
@@ -208,12 +281,60 @@ fn render_task_description(f: &mut Frame, app: &mut App) {
             Line::from(task.description.clone().unwrap_or_default()),
         ];
 
+        if let Some(agent_id) = task.agent_id {
+            text.push(Line::from(format!("Assigned to agent: {}", agent_id)));
+        }
+
+        if let Some(comment) = &task.comment {
+            text.push(Line::from(Span::styled(
+                format!("Comment: {}", comment),
+                Style::default().fg(Color::Yellow),
+            )));
+        }
+
         let block = Block::default().title("Task Description").borders(Borders::ALL);
         let paragraph = Paragraph::new(text).block(block).wrap(Wrap { trim: true });
         let area = centered_rect(60, 25, f.size());
         f.render_widget(Clear, area); //this clears the background
         f.render_widget(paragraph, area);
     }
+}
+
+fn render_assign_agent(f: &mut Frame, app: &mut App) {
+    if app.agents.is_empty() {
+        let block = Block::default()
+            .title("Assign Agent")
+            .borders(Borders::ALL);
+        let text = Paragraph::new("No agents available. Create one with `taskter add-agent`")
+            .block(block)
+            .wrap(Wrap { trim: true });
+        let area = centered_rect(60, 25, f.size());
+        f.render_widget(Clear, area);
+        f.render_widget(text, area);
+        return;
+    }
+
+    let agents: Vec<ListItem> = app
+        .agents
+        .iter()
+        .map(|a| ListItem::new(a.system_prompt.as_str()))
+        .collect();
+
+    let agent_list = List::new(agents)
+        .block(
+            Block::default()
+                .title("Assign Agent")
+                .borders(Borders::ALL),
+        )
+        .highlight_style(
+            Style::default()
+                .add_modifier(Modifier::BOLD)
+                .bg(Color::Blue),
+        );
+
+    let area = centered_rect(60, 25, f.size());
+    f.render_widget(Clear, area);
+    f.render_stateful_widget(agent_list, area, &mut app.agent_list_state);
 }
 
 /// helper function to create a centered rect using up certain percentage of the available rect `r`

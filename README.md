@@ -64,6 +64,7 @@ In the interactive board, you can use the following keys:
 - `←` / `→` or `Tab`: Navigate between columns
 - `↑` / `↓`: Navigate between tasks
 - `h` / `l`: Move a task to the previous/next column
+- `a`: Assign an agent to the selected task
 
 ### Manage tasks
 
@@ -112,3 +113,26 @@ In the interactive board, you can use the following keys:
   ```bash
   taskter log "This is a log message"
   ```
+
+### Agents
+
+Taskter now supports LLM-based agents that can be assigned to tasks. These agents can execute tasks using a mocked Gemini API for tool-calling.
+
+- **Add a new agent:**
+  ```bash
+  taskter add-agent --prompt "You are a helpful assistant." --tools "email" "calendar" --model "gemini-pro"
+  ```
+
+- **Assign an agent to a task:**
+  ```bash
+  taskter assign --task-id 1 --agent-id 1
+  ```
+
+- **Execute a task with an agent:**
+  ```bash
+  taskter execute --task-id 1
+  ```
+
+When a task is executed, the agent will attempt to perform the task. If successful, the task is marked as "Done". If it fails, the task is moved back to "To Do", unassigned, and a comment from the agent is added.
+
+In the interactive board (`taskter board`), tasks assigned to an agent will be marked with a `*`. You can view the assigned agent ID and any comments by selecting the task and pressing `Enter`.

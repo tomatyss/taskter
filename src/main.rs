@@ -5,6 +5,7 @@ use std::io::Write;
 
 mod store;
 mod tui;
+mod agent;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -54,6 +55,39 @@ enum Commands {
     },
     /// Opens the interactive board
     Board,
+    /// Sets the project description
+    Description {
+        /// The project description
+        description: String,
+    },
+    /// Adds a new agent
+    #[command(name = "add-agent")]
+    AddAgent {
+        /// The system prompt for the agent
+        #[arg(short, long)]
+        prompt: String,
+        /// The tools the agent can use
+        #[arg(short, long, num_args = 1..)]
+        tools: Vec<String>,
+        /// The model to use for the agent
+        #[arg(short, long)]
+        model: String,
+    },
+    /// Executes a task with an agent
+    Execute {
+        /// The id of the task to execute
+        #[arg(short, long)]
+        task_id: usize,
+    },
+    /// Assigns an agent to a task
+    Assign {
+        /// The id of the task to assign
+        #[arg(short, long)]
+        task_id: usize,
+        /// The id of the agent to assign
+        #[arg(short, long)]
+        agent_id: usize,
+    },
 }
 
 #[derive(Subcommand)]
@@ -80,6 +114,7 @@ fn main() -> anyhow::Result<()> {
                 fs::write(path.join("okrs.json"), "[]")?;
                 fs::write(path.join("logs.log"), "")?;
                 fs::write(path.join("board.json"), r#"{ "tasks": [] }"#)?;
+                fs::write(path.join("agents.json"), "[]")?;
                 println!("Taskter board initialized.");
             }
         }
@@ -90,6 +125,8 @@ fn main() -> anyhow::Result<()> {
                 title: title.clone(),
                 description: description.clone(),
                 status: store::TaskStatus::ToDo,
+                agent_id: None,
+                comment: None,
             };
             board.tasks.push(new_task);
             store::save_board(&board)?;
@@ -161,8 +198,77 @@ fn main() -> anyhow::Result<()> {
         Commands::Board => {
             tui::run_tui()?;
         }
+        Commands::Description { description } => {
+            fs::write(".taskter/description.md", description)?;
+            println!("Project description updated successfully.");
+        }
+        Commands::AddAgent {
+            prompt,
+            tools,
+            model,
+        } => {
+            let mut agents = agent::load_agents()?;
+            let new_agent = agent::Agent {
+                id: agents.len() + 1,
+                system_prompt: prompt.clone(),
+                tools: tools
+                    .iter()
+                    .map(|t| agent::Tool { name: t.clone() })
+                    .collect(),
+                model: model.clone(),
+            };
+            agents.push(new_agent);
+            agent::save_agents(&agents)?;
+            println!("Agent added successfully.");
+        }
+        Commands::Execute { task_id } => {
+            let mut board = store::load_board()?;
+            let agents = agent::load_agents()?;
+
+            if let Some(task) = board.tasks.iter_mut().find(|t| t.id == *task_id) {
+                if let Some(agent_id) = task.agent_id {
+                    if let Some(agent) = agents.iter().find(|a| a.id == agent_id) {
+                        match agent::execute_task(agent, task) {
+                            Ok(result) => match result {
+                                agent::ExecutionResult::Success => {
+                                    task.status = store::TaskStatus::Done;
+                                    task.comment = Some("Task completed successfully.".to_string());
+                                    println!("Task {} executed successfully.", task_id);
+                                }
+                                agent::ExecutionResult::Failure { comment } => {
+                                    task.status = store::TaskStatus::ToDo;
+                                    task.comment = Some(comment);
+                                    task.agent_id = None;
+                                    println!("Task {} failed to execute.", task_id);
+                                }
+                            },
+                            Err(e) => {
+                                println!("Error executing task {}: {}", task_id, e);
+                            }
+                        }
+                    } else {
+                        println!("Agent with id {} not found.", agent_id);
+                    }
+                } else {
+                    println!("Task {} is not assigned to an agent.", task_id);
+                }
+            } else {
+                println!("Task with id {} not found.", task_id);
+            }
+
+            store::save_board(&board)?;
+        }
+        Commands::Assign { task_id, agent_id } => {
+            let mut board = store::load_board()?;
+            if let Some(task) = board.tasks.iter_mut().find(|t| t.id == *task_id) {
+                task.agent_id = Some(*agent_id);
+                store::save_board(&board)?;
+                println!("Agent {} assigned to task {}.", agent_id, task_id);
+            } else {
+                println!("Task with id {} not found.", task_id);
+            }
+        }
     }
 
     Ok(())
 }
-

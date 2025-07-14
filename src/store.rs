@@ -15,6 +15,8 @@ pub struct Task {
     pub title: String,
     pub description: Option<String>,
     pub status: TaskStatus,
+    pub agent_id: Option<usize>,
+    pub comment: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Default)]

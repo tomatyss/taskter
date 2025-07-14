@@ -1,0 +1,12 @@
+[
+  {
+    "id": 1,
+    "system_prompt": "You are a helpful assistant.",
+    "tools": [
+      {
+        "name": "email"
+      }
+    ],
+    "model": "gemini-2.5-pro"
+  }
+]
