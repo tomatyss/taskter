@@ -4,6 +4,7 @@ use std::path::Path;
 use crate::store::Task;
 use anyhow::Result;
 
+#[derive(Debug, PartialEq)]
 pub enum ExecutionResult {
     Success,
     Failure { comment: String },
@@ -60,4 +61,73 @@ pub fn save_agents(agents: &[Agent]) -> anyhow::Result<()> {
     let content = serde_json::to_string_pretty(agents)?;
     fs::write(path, content)?;
     Ok(())
+}
+ 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::store::{Task, TaskStatus};
+
+    fn make_task(title: &str) -> Task {
+        Task {
+            id: 0,
+            title: title.to_string(),
+            description: None,
+            status: TaskStatus::ToDo,
+            agent_id: None,
+            comment: None,
+        }
+    }
+
+    #[test]
+    fn execute_email_success() {
+        let agent = Agent {
+            id: 0,
+            system_prompt: String::new(),
+            tools: vec![Tool { name: "email".into() }],
+            model: String::new(),
+        };
+        let task = make_task("send email to user");
+        let result = execute_task(&agent, &task).unwrap();
+        assert_eq!(result, ExecutionResult::Success);
+    }
+
+    #[test]
+    fn execute_email_failure_send() {
+        let agent = Agent {
+            id: 0,
+            system_prompt: String::new(),
+            tools: vec![Tool { name: "email".into() }],
+            model: String::new(),
+        };
+        let task = make_task("send email fail");
+        let result = execute_task(&agent, &task).unwrap();
+        assert!(matches!(result, ExecutionResult::Failure { comment } if comment == "The agent failed to send the email."));
+    }
+
+    #[test]
+    fn execute_without_tool() {
+        let agent = Agent {
+            id: 0,
+            system_prompt: String::new(),
+            tools: vec![],
+            model: String::new(),
+        };
+        let task = make_task("send email to user");
+        let result = execute_task(&agent, &task).unwrap();
+        assert!(matches!(result, ExecutionResult::Failure { comment } if comment.contains("does not have")));
+    }
+
+    #[test]
+    fn execute_unknown_task() {
+        let agent = Agent {
+            id: 0,
+            system_prompt: String::new(),
+            tools: vec![Tool { name: "email".into() }],
+            model: String::new(),
+        };
+        let task = make_task("perform other action");
+        let result = execute_task(&agent, &task).unwrap();
+        assert!(matches!(result, ExecutionResult::Failure { comment } if comment.contains("does not have")));
+    }
 }

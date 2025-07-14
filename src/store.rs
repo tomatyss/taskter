@@ -9,7 +9,7 @@ pub enum TaskStatus {
     Done,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Task {
     pub id: usize,
     pub title: String,
@@ -19,18 +19,18 @@ pub struct Task {
     pub comment: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Default)]
+#[derive(Serialize, Deserialize, Default, Debug, PartialEq)]
 pub struct Board {
     pub tasks: Vec<Task>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct KeyResult {
     pub name: String,
     pub progress: f32,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Okr {
     pub objective: String,
     pub key_results: Vec<KeyResult>,
