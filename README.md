@@ -2,6 +2,9 @@
 
 Taskter is a terminal Kanban board CLI tool built with Rust.
 
+> **Warning**
+> This project is currently in a *pre-alpha* state and is actively maintained. Expect breaking changes and incomplete features.
+
 ## Features
 
 - Kanban board with tasks (ToDo, InProgress, Done)
@@ -37,6 +40,25 @@ Alternatively, you can use `cargo install`:
 cargo install --path .
 ```
 This will install the `taskter` executable in your Cargo bin directory (usually `~/.cargo/bin/`), which should be in your `PATH`.
+
+## Docker
+
+You can build and run Taskter without installing Rust locally by using Docker.
+The included `Dockerfile` uses the official `rust:1.88.0` image to build the
+application.
+
+Build the container image:
+
+```bash
+docker build -t taskter .
+```
+
+Start the application with Docker Compose. If you use the Gemini integration,
+pass your API key as an environment variable:
+
+```bash
+GEMINI_API_KEY=<your_key> docker compose run --rm taskter --help
+```
 
 
 ## Usage
