@@ -1,0 +1,6 @@
+[env]
+# Ensure tests that manipulate the global current working directory are executed
+# sequentially. Running them in parallel causes race conditions and intermittent
+# failures because `std::env::set_current_dir` affects the entire process.
+RUST_TEST_THREADS = "1"
+

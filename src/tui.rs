@@ -207,7 +207,14 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                 if let Some(task_id) = app.get_selected_task().map(|t| t.id) {
                                     if let Some(task) = app.board.tasks.iter_mut().find(|t| t.id == task_id) {
                                         task.agent_id = Some(agent.id);
-                                        match agent::execute_task(&agent, task) {
+                                        // `execute_task` is asynchronous. We are inside the synchronous
+                                        // `run_app` loop which itself is executed from an async Tokio
+                                        // runtime (the `#[tokio::main]` in `main.rs`).  We therefore
+                                        // leverage the currently-running runtime handle to synchronously
+                                        // wait on the future. Using `Handle::current().block_on(...)` keeps
+                                        // the API here synchronous without spinning up a brand-new runtime
+                                        // each time.
+                                        match tokio::runtime::Handle::current().block_on(agent::execute_task(&agent, task)) {
                                             Ok(result) => match result {
                                                 agent::ExecutionResult::Success => {
                                                     task.status = store::TaskStatus::Done;
