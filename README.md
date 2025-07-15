@@ -38,6 +38,21 @@ cargo install --path .
 ```
 This will install the `taskter` executable in your Cargo bin directory (usually `~/.cargo/bin/`), which should be in your `PATH`.
 
+## Quick Start Example
+
+You can bootstrap a demo workspace containing sample tasks, an OKR and a test agent by running:
+
+```bash
+./scripts/start_example.sh
+```
+
+The script creates an `example/` directory and builds the project. Once it finishes you can explore the board with:
+
+```bash
+cd example
+../target/release/taskter board
+```
+
 
 ## Usage
 

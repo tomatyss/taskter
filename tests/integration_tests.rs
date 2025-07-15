@@ -1,8 +1,8 @@
 use std::fs;
 
-use taskter::store::{self, TaskStatus, Task, Board, Okr, KeyResult};
-use taskter::agent::{self, Agent, FunctionDeclaration, ExecutionResult};
 use serde_json::json;
+use taskter::agent::{self, Agent, ExecutionResult, FunctionDeclaration};
+use taskter::store::{self, Board, KeyResult, Okr, Task, TaskStatus};
 
 // Helper that creates a temporary workspace and changes the current directory to it.
 fn with_temp_dir<F: FnOnce() -> T, T>(test: F) -> T {
@@ -32,7 +32,9 @@ fn board_roundtrip_persists_tasks() {
             comment: None,
         };
 
-        let board = Board { tasks: vec![task.clone()] };
+        let board = Board {
+            tasks: vec![task.clone()],
+        };
 
         // When
         store::save_board(&board).expect("failed to save board");
@@ -50,7 +52,10 @@ fn okr_roundtrip_persists_data() {
         // Given
         let okr = Okr {
             objective: "Improve UX".to_string(),
-            key_results: vec![KeyResult { name: "Reduce load time".to_string(), progress: 0.2 }],
+            key_results: vec![KeyResult {
+                name: "Reduce load time".to_string(),
+                progress: 0.2,
+            }],
         };
 
         // When
@@ -86,7 +91,9 @@ async fn agent_executes_email_task_successfully() {
     };
 
     // When
-    let result = agent::execute_task(&agent, &task).await.expect("execution failed");
+    let result = agent::execute_task(&agent, &task)
+        .await
+        .expect("execution failed");
 
     // Then
     matches!(result, ExecutionResult::Success);
@@ -113,7 +120,9 @@ async fn agent_execution_fails_without_tool() {
     };
 
     // When
-    let result = agent::execute_task(&agent, &task).await.expect("execution failed");
+    let result = agent::execute_task(&agent, &task)
+        .await
+        .expect("execution failed");
 
     // Then
     assert!(matches!(result, ExecutionResult::Failure { .. }));

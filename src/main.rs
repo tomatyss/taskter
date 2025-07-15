@@ -1,11 +1,11 @@
 use clap::{Parser, Subcommand};
 use std::fs;
-use std::path::Path;
 use std::io::Write;
+use std::path::Path;
 
+mod agent;
 mod store;
 mod tui;
-mod agent;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
