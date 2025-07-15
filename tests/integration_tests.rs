@@ -70,7 +70,7 @@ async fn agent_executes_email_task_successfully() {
         system_prompt: "You are an email sender".into(),
         tools: vec![FunctionDeclaration {
             name: "send_email".into(),
-            description: "".into(),
+            description: Some("".into()),
             parameters: json!({}),
         }],
         model: "gpt-4o".into(),

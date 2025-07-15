@@ -111,8 +111,13 @@ fn execute_tool(tool_name: &str, args: &Value) -> Result<String> {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FunctionDeclaration {
     pub name: String,
-    pub description: String,
+    pub description: Option<String>,
+    #[serde(default = "empty_params")]
     pub parameters: Value,
+}
+
+fn empty_params() -> Value {
+    serde_json::json!({})
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
