@@ -1,7 +1,8 @@
 use std::fs;
 
 use taskter::store::{self, TaskStatus, Task, Board, Okr, KeyResult};
-use taskter::agent::{self, Agent, Tool, ExecutionResult};
+use taskter::agent::{self, Agent, FunctionDeclaration, ExecutionResult};
+use serde_json::json;
 
 // Helper that creates a temporary workspace and changes the current directory to it.
 fn with_temp_dir<F: FnOnce() -> T, T>(test: F) -> T {
@@ -61,13 +62,17 @@ fn okr_roundtrip_persists_data() {
     });
 }
 
-#[test]
-fn agent_executes_email_task_successfully() {
+#[tokio::test]
+async fn agent_executes_email_task_successfully() {
     // Given
     let agent = Agent {
         id: 1,
         system_prompt: "You are an email sender".into(),
-        tools: vec![Tool { name: "email".into() }],
+        tools: vec![FunctionDeclaration {
+            name: "send_email".into(),
+            description: Some("".into()),
+            parameters: json!({}),
+        }],
         model: "gpt-4o".into(),
     };
 
@@ -81,15 +86,15 @@ fn agent_executes_email_task_successfully() {
     };
 
     // When
-    let result = agent::execute_task(&agent, &task).expect("execution failed");
+    let result = agent::execute_task(&agent, &task).await.expect("execution failed");
 
     // Then
     matches!(result, ExecutionResult::Success);
     assert!(matches!(result, ExecutionResult::Success));
 }
 
-#[test]
-fn agent_execution_fails_without_tool() {
+#[tokio::test]
+async fn agent_execution_fails_without_tool() {
     // Given
     let agent = Agent {
         id: 1,
@@ -108,9 +113,8 @@ fn agent_execution_fails_without_tool() {
     };
 
     // When
-    let result = agent::execute_task(&agent, &task).expect("execution failed");
+    let result = agent::execute_task(&agent, &task).await.expect("execution failed");
 
     // Then
     assert!(matches!(result, ExecutionResult::Failure { .. }));
 }
-

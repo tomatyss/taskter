@@ -88,6 +88,16 @@ enum Commands {
         #[arg(short, long)]
         agent_id: usize,
     },
+    /// Lists all agents
+    #[command(name = "list-agents")]
+    ListAgents,
+    /// Deletes an agent by id
+    #[command(name = "delete-agent")]
+    DeleteAgent {
+        /// The id of the agent to delete
+        #[arg(short, long)]
+        agent_id: usize,
+    },
 }
 
 #[derive(Subcommand)]
@@ -272,6 +282,16 @@ async fn main() -> anyhow::Result<()> {
             } else {
                 println!("Task with id {} not found.", task_id);
             }
+        }
+        Commands::ListAgents => {
+            let agents = agent::list_agents()?;
+            for a in agents {
+                println!("{}: {}", a.id, a.system_prompt);
+            }
+        }
+        Commands::DeleteAgent { agent_id } => {
+            agent::delete_agent(*agent_id)?;
+            println!("Agent {} deleted.", agent_id);
         }
     }
 
