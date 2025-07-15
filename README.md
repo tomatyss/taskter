@@ -132,6 +132,14 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
   ```bash
   taskter execute --task-id 1
   ```
+- **List available agents:**
+  ```bash
+  taskter list-agents
+  ```
+- **Delete an agent:**
+  ```bash
+  taskter delete-agent --agent-id 1
+  ```
 
 When a task is executed, the agent will attempt to perform the task. If successful, the task is marked as "Done". If it fails, the task is moved back to "To Do", unassigned, and a comment from the agent is added.
 

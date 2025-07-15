@@ -116,3 +116,16 @@ pub fn save_agents(agents: &[Agent]) -> anyhow::Result<()> {
     fs::write(path, content)?;
     Ok(())
 }
+
+pub fn list_agents() -> anyhow::Result<Vec<Agent>> {
+    load_agents()
+}
+
+pub fn delete_agent(id: usize) -> anyhow::Result<()> {
+    let mut agents = load_agents()?;
+    if let Some(pos) = agents.iter().position(|a| a.id == id) {
+        agents.remove(pos);
+        save_agents(&agents)?;
+    }
+    Ok(())
+}
