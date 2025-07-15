@@ -2,6 +2,9 @@
 
 Taskter is a terminal Kanban board CLI tool built with Rust.
 
+> **Warning**
+> This project is currently in a *pre-alpha* state and is actively maintained. Expect breaking changes and incomplete features.
+
 ## Features
 
 - Kanban board with tasks (ToDo, InProgress, Done)
