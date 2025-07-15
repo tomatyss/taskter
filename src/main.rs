@@ -100,7 +100,8 @@ enum ShowCommands {
     Logs,
 }
 
-fn main() -> anyhow::Result<()> {
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match &cli.command {
@@ -208,13 +209,17 @@ fn main() -> anyhow::Result<()> {
             model,
         } => {
             let mut agents = agent::load_agents()?;
+            let mut function_declarations = Vec::new();
+            for tool_path in tools {
+                let tool_content = fs::read_to_string(tool_path)?;
+                let tool_json: serde_json::Value = serde_json::from_str(&tool_content)?;
+                function_declarations.push(serde_json::from_value(tool_json)?);
+            }
+
             let new_agent = agent::Agent {
                 id: agents.len() + 1,
                 system_prompt: prompt.clone(),
-                tools: tools
-                    .iter()
-                    .map(|t| agent::Tool { name: t.clone() })
-                    .collect(),
+                tools: function_declarations,
                 model: model.clone(),
             };
             agents.push(new_agent);
@@ -228,7 +233,7 @@ fn main() -> anyhow::Result<()> {
             if let Some(task) = board.tasks.iter_mut().find(|t| t.id == *task_id) {
                 if let Some(agent_id) = task.agent_id {
                     if let Some(agent) = agents.iter().find(|a| a.id == agent_id) {
-                        match agent::execute_task(agent, task) {
+                        match agent::execute_task(agent, task).await {
                             Ok(result) => match result {
                                 agent::ExecutionResult::Success => {
                                     task.status = store::TaskStatus::Done;

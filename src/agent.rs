@@ -3,6 +3,8 @@ use std::fs;
 use std::path::Path;
 use crate::store::Task;
 use anyhow::Result;
+use reqwest::Client;
+use serde_json::{json, Value};
 
 #[derive(Debug, PartialEq)]
 pub enum ExecutionResult {
@@ -10,44 +12,96 @@ pub enum ExecutionResult {
     Failure { comment: String },
 }
 
-pub fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult> {
-    // Mock Gemini API call
-    let has_email_tool = agent.tools.iter().any(|t| t.name == "email");
-    let is_email_task = task.title.to_lowercase().contains("send email");
+pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult> {
+    let client = Client::new();
+    let api_key = std::env::var("GEMINI_API_KEY").expect("GEMINI_API_KEY not set");
 
-    if has_email_tool && is_email_task {
-        if task.title.contains("fail") {
-            Ok(ExecutionResult::Failure {
-                comment: "The agent failed to send the email.".to_string(),
-            })
-        } else {
-            Ok(ExecutionResult::Success)
+    let mut history = vec![json!({
+        "role": "user",
+        "parts": [{"text": format!("System: {}\nUser: {}", agent.system_prompt, task.title)}]
+    })];
+
+    loop {
+        let request_body = json!({
+            "contents": history,
+            "tools": [{"functionDeclarations": agent.tools}]
+        });
+
+        let response = client
+            .post(format!("https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent", agent.model))
+            .header("x-goog-api-key", &api_key)
+            .header("Content-Type", "application/json")
+            .json(&request_body)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await?;
+            return Ok(ExecutionResult::Failure {
+                comment: format!("API call failed: {}", error_text),
+            });
         }
-    } else {
-        Ok(ExecutionResult::Failure {
-            comment: "The agent does not have the required tool or the task is not an email task.".to_string(),
-        })
+
+        let response_json: Value = response.json().await?;
+
+        let candidate = &response_json["candidates"][0];
+        let part = &candidate["content"]["parts"][0];
+
+        if let Some(function_call) = part.get("functionCall") {
+            let tool_name = function_call["name"].as_str().unwrap();
+            let args = &function_call["args"];
+            let tool_response = execute_tool(tool_name, args)?;
+
+            history.push(json!({
+                "role": "model",
+                "parts": [{"functionCall": function_call.clone()}]
+            }));
+            history.push(json!({
+                "role": "tool",
+                "parts": [{"functionResponse": {"name": tool_name, "response": {"content": tool_response}}}]
+            }));
+        } else if let Some(_text) = part.get("text") {
+            return Ok(ExecutionResult::Success);
+        } else {
+            return Ok(ExecutionResult::Failure {
+                comment: "No tool call or text response from the model".to_string(),
+            });
+        }
+    }
+}
+
+fn execute_tool(tool_name: &str, args: &Value) -> Result<String> {
+    match tool_name {
+        "send_email" => {
+            let to = args["to"].as_str().unwrap_or_default();
+            let subject = args["subject"].as_str().unwrap_or_default();
+            let body = args["body"].as_str().unwrap_or_default();
+            // This is a placeholder for a real email sending function
+            Ok(format!("Email sent to {} with subject '{}' and body '{}'", to, subject, body))
+        }
+        _ => Err(anyhow::anyhow!("Unknown tool: {}", tool_name)),
     }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Tool {
+pub struct FunctionDeclaration {
     pub name: String,
+    pub description: String,
+    pub parameters: Value,
 }
-
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Agent {
     pub id: usize,
     pub system_prompt: String,
-    pub tools: Vec<Tool>,
+    pub tools: Vec<FunctionDeclaration>,
     pub model: String,
 }
 
 pub fn load_agents() -> anyhow::Result<Vec<Agent>> {
     let path = Path::new(".taskter/agents.json");
     if !path.exists() {
-        // Create the file with an empty list if it doesn't exist
+        fs::create_dir_all(path.parent().unwrap())?;
         fs::write(path, "[]")?;
     }
 
@@ -61,73 +115,4 @@ pub fn save_agents(agents: &[Agent]) -> anyhow::Result<()> {
     let content = serde_json::to_string_pretty(agents)?;
     fs::write(path, content)?;
     Ok(())
-}
- 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::store::{Task, TaskStatus};
-
-    fn make_task(title: &str) -> Task {
-        Task {
-            id: 0,
-            title: title.to_string(),
-            description: None,
-            status: TaskStatus::ToDo,
-            agent_id: None,
-            comment: None,
-        }
-    }
-
-    #[test]
-    fn execute_email_success() {
-        let agent = Agent {
-            id: 0,
-            system_prompt: String::new(),
-            tools: vec![Tool { name: "email".into() }],
-            model: String::new(),
-        };
-        let task = make_task("send email to user");
-        let result = execute_task(&agent, &task).unwrap();
-        assert_eq!(result, ExecutionResult::Success);
-    }
-
-    #[test]
-    fn execute_email_failure_send() {
-        let agent = Agent {
-            id: 0,
-            system_prompt: String::new(),
-            tools: vec![Tool { name: "email".into() }],
-            model: String::new(),
-        };
-        let task = make_task("send email fail");
-        let result = execute_task(&agent, &task).unwrap();
-        assert!(matches!(result, ExecutionResult::Failure { comment } if comment == "The agent failed to send the email."));
-    }
-
-    #[test]
-    fn execute_without_tool() {
-        let agent = Agent {
-            id: 0,
-            system_prompt: String::new(),
-            tools: vec![],
-            model: String::new(),
-        };
-        let task = make_task("send email to user");
-        let result = execute_task(&agent, &task).unwrap();
-        assert!(matches!(result, ExecutionResult::Failure { comment } if comment.contains("does not have")));
-    }
-
-    #[test]
-    fn execute_unknown_task() {
-        let agent = Agent {
-            id: 0,
-            system_prompt: String::new(),
-            tools: vec![Tool { name: "email".into() }],
-            model: String::new(),
-        };
-        let task = make_task("perform other action");
-        let result = execute_task(&agent, &task).unwrap();
-        assert!(matches!(result, ExecutionResult::Failure { comment } if comment.contains("does not have")));
-    }
 }
