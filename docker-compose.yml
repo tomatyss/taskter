@@ -1,0 +1,9 @@
+version: "3.8"
+services:
+  taskter:
+    build: .
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
