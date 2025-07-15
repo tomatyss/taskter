@@ -151,7 +151,30 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
   ```bash
   taskter execute --task-id 1
   ```
+- **List available agents:**
+  ```bash
+  taskter list-agents
+  ```
+- **Delete an agent:**
+  ```bash
+  taskter delete-agent --agent-id 1
+  ```
 
 When a task is executed, the agent will attempt to perform the task. If successful, the task is marked as "Done". If it fails, the task is moved back to "To Do", unassigned, and a comment from the agent is added.
 
 In the interactive board (`taskter board`), tasks assigned to an agent will be marked with a `*`. You can view the assigned agent ID and any comments by selecting the task and pressing `Enter`.
+
+## Development
+
+Run the included helper script before committing changes to ensure the code is
+formatted, linted and all tests pass:
+
+```bash
+./scripts/precommit.sh
+```
+
+If you want Git to run it automatically, create a pre-commit hook:
+
+```bash
+ln -s ../../scripts/precommit.sh .git/hooks/pre-commit
+```
