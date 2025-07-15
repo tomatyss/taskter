@@ -1,10 +1,10 @@
-use serde::{Deserialize, Serialize};
-use std::fs;
-use std::path::Path;
 use crate::store::Task;
 use anyhow::Result;
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::fs;
+use std::path::Path;
 
 #[derive(Debug, PartialEq)]
 pub enum ExecutionResult {
@@ -144,7 +144,10 @@ fn execute_tool(tool_name: &str, args: &Value) -> Result<String> {
             let subject = args["subject"].as_str().unwrap_or_default();
             let body = args["body"].as_str().unwrap_or_default();
             // This is a placeholder for a real email sending function
-            Ok(format!("Email sent to {} with subject '{}' and body '{}'", to, subject, body))
+            Ok(format!(
+                "Email sent to {} with subject '{}' and body '{}'",
+                to, subject, body
+            ))
         }
         _ => Err(anyhow::anyhow!("Unknown tool: {}", tool_name)),
     }
