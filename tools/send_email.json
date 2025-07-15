@@ -1,0 +1,13 @@
+{
+  "name": "send_email",
+  "description": "Send an email via SMTP",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "to": { "type": "string", "description": "Recipient email address" },
+      "subject": { "type": "string", "description": "Email subject" },
+      "body": { "type": "string", "description": "Email body" }
+    },
+    "required": ["to", "subject", "body"]
+  }
+}

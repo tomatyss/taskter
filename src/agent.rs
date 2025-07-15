@@ -1,10 +1,11 @@
-use serde::{Deserialize, Serialize};
-use std::fs;
-use std::path::Path;
 use crate::store::Task;
+use crate::tools;
 use anyhow::Result;
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::fs;
+use std::path::Path;
 
 #[derive(Debug, PartialEq)]
 pub enum ExecutionResult {
@@ -117,7 +118,7 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
         if let Some(function_call) = part.get("functionCall") {
             let tool_name = function_call["name"].as_str().unwrap();
             let args = &function_call["args"];
-            let tool_response = execute_tool(tool_name, args)?;
+            let tool_response = tools::execute_tool(tool_name, args)?;
 
             history.push(json!({
                 "role": "model",
@@ -134,19 +135,6 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
                 comment: "No tool call or text response from the model".to_string(),
             });
         }
-    }
-}
-
-fn execute_tool(tool_name: &str, args: &Value) -> Result<String> {
-    match tool_name {
-        "send_email" => {
-            let to = args["to"].as_str().unwrap_or_default();
-            let subject = args["subject"].as_str().unwrap_or_default();
-            let body = args["body"].as_str().unwrap_or_default();
-            // This is a placeholder for a real email sending function
-            Ok(format!("Email sent to {} with subject '{}' and body '{}'", to, subject, body))
-        }
-        _ => Err(anyhow::anyhow!("Unknown tool: {}", tool_name)),
     }
 }
 
