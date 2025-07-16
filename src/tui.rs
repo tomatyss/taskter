@@ -242,11 +242,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                                 .block_on(agent::execute_task(&agent, task))
                                         }) {
                                             Ok(result) => match result {
-                                                agent::ExecutionResult::Success => {
+                                                agent::ExecutionResult::Success { comment } => {
                                                     task.status = store::TaskStatus::Done;
-                                                    task.comment = Some(
-                                                        "Task completed successfully.".to_string(),
-                                                    );
+                                                    task.comment = Some(comment);
                                                 }
                                                 agent::ExecutionResult::Failure { comment } => {
                                                     task.status = store::TaskStatus::ToDo;
@@ -295,7 +293,7 @@ fn render_board(f: &mut Frame, app: &mut App) {
             ]
             .as_ref(),
         )
-        .split(f.size());
+        .split(f.area());
 
     for (i, status) in [TaskStatus::ToDo, TaskStatus::InProgress, TaskStatus::Done]
         .iter()
@@ -356,7 +354,7 @@ fn render_task_description(f: &mut Frame, app: &mut App) {
             .title("Task Description")
             .borders(Borders::ALL);
         let paragraph = Paragraph::new(text).block(block).wrap(Wrap { trim: true });
-        let area = centered_rect(60, 25, f.size());
+        let area = centered_rect(60, 25, f.area());
         f.render_widget(Clear, area); //this clears the background
         f.render_widget(paragraph, area);
     }
@@ -368,7 +366,7 @@ fn render_assign_agent(f: &mut Frame, app: &mut App) {
         let text = Paragraph::new("No agents available. Create one with `taskter add-agent`")
             .block(block)
             .wrap(Wrap { trim: true });
-        let area = centered_rect(60, 25, f.size());
+        let area = centered_rect(60, 25, f.area());
         f.render_widget(Clear, area);
         f.render_widget(text, area);
         return;
@@ -388,7 +386,7 @@ fn render_assign_agent(f: &mut Frame, app: &mut App) {
                 .bg(Color::Blue),
         );
 
-    let area = centered_rect(60, 25, f.size());
+    let area = centered_rect(60, 25, f.area());
     f.render_widget(Clear, area);
     f.render_stateful_widget(agent_list, area, &mut app.agent_list_state);
 }

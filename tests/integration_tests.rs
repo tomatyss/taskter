@@ -96,8 +96,7 @@ async fn agent_executes_email_task_successfully() {
         .expect("execution failed");
 
     // Then
-    matches!(result, ExecutionResult::Success);
-    assert!(matches!(result, ExecutionResult::Success));
+    assert!(matches!(result, ExecutionResult::Success { .. }));
 }
 
 #[tokio::test]

@@ -253,9 +253,9 @@ async fn main() -> anyhow::Result<()> {
                     if let Some(agent) = agents.iter().find(|a| a.id == agent_id) {
                         match agent::execute_task(agent, task).await {
                             Ok(result) => match result {
-                                agent::ExecutionResult::Success => {
+                                agent::ExecutionResult::Success { comment } => {
                                     task.status = store::TaskStatus::Done;
-                                    task.comment = Some("Task completed successfully.".to_string());
+                                    task.comment = Some(comment);
                                     println!("Task {} executed successfully.", task_id);
                                 }
                                 agent::ExecutionResult::Failure { comment } => {
