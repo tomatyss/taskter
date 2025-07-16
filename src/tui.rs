@@ -16,6 +16,7 @@ enum View {
     Board,
     TaskDescription,
     AssignAgent,
+    AddTask,
 }
 
 struct App {
@@ -25,6 +26,7 @@ struct App {
     selected_task: [ListState; 3],
     current_view: View,
     agent_list_state: ListState,
+    new_task_title: String,
 }
 
 impl App {
@@ -36,6 +38,7 @@ impl App {
             selected_task: [ListState::default(), ListState::default(), ListState::default()],
             current_view: View::Board,
             agent_list_state: ListState::default(),
+            new_task_title: String::new(),
         };
         app.selected_task[0].select(Some(0));
         app
@@ -175,6 +178,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                             app.agent_list_state.select(Some(0));
                         }
                     }
+                    KeyCode::Char('n') => {
+                        app.new_task_title.clear();
+                        app.current_view = View::AddTask;
+                    }
                     _ => {}
                 },
                 View::TaskDescription => match key.code {
@@ -241,6 +248,32 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     }
                     _ => {}
                 },
+                View::AddTask => match key.code {
+                    KeyCode::Char(c) => {
+                        app.new_task_title.push(c);
+                    }
+                    KeyCode::Backspace => {
+                        app.new_task_title.pop();
+                    }
+                    KeyCode::Enter => {
+                        let new_id = app.board.tasks.len() + 1;
+                        let task = Task {
+                            id: new_id,
+                            title: app.new_task_title.clone(),
+                            description: None,
+                            status: TaskStatus::ToDo,
+                            agent_id: None,
+                            comment: None,
+                        };
+                        app.board.tasks.push(task);
+                        store::save_board(&app.board).unwrap();
+                        app.current_view = View::Board;
+                    }
+                    KeyCode::Esc => {
+                        app.current_view = View::Board;
+                    }
+                    _ => {}
+                },
             }
         }
     }
@@ -251,6 +284,7 @@ fn ui(f: &mut Frame, app: &mut App) {
     match app.current_view {
         View::TaskDescription => render_task_description(f, app),
         View::AssignAgent => render_assign_agent(f, app),
+        View::AddTask => render_add_task(f, app),
         _ => {}
     }
 }
@@ -342,6 +376,14 @@ fn render_assign_agent(f: &mut Frame, app: &mut App) {
     let area = centered_rect(60, 25, f.size());
     f.render_widget(Clear, area);
     f.render_stateful_widget(agent_list, area, &mut app.agent_list_state);
+}
+
+fn render_add_task(f: &mut Frame, app: &mut App) {
+    let block = Block::default().title("New Task").borders(Borders::ALL);
+    let paragraph = Paragraph::new(app.new_task_title.as_str()).block(block);
+    let area = centered_rect(60, 10, f.size());
+    f.render_widget(Clear, area);
+    f.render_widget(paragraph, area);
 }
 
 /// helper function to create a centered rect using up certain percentage of the available rect `r`
