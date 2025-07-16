@@ -1,14 +1,15 @@
-use serde::{Deserialize, Serialize};
-use std::fs;
-use std::path::Path;
 use crate::store::Task;
+use crate::tools;
 use anyhow::Result;
 use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
+use std::fs;
+use std::path::Path;
 
 #[derive(Debug, PartialEq)]
 pub enum ExecutionResult {
-    Success,
+    Success { comment: String },
     Failure { comment: String },
 }
 
@@ -37,7 +38,9 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
     // available, otherwise fail.
     if api_key.is_none() {
         if has_send_email_tool {
-            return Ok(ExecutionResult::Success);
+            return Ok(ExecutionResult::Success {
+                comment: "No API key found. Task considered complete.".to_string(),
+            });
         } else {
             return Ok(ExecutionResult::Failure {
                 comment: "Required tool not available.".to_string(),
@@ -47,9 +50,18 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
 
     let api_key = api_key.unwrap();
 
+    let user_prompt = if let Some(description) = &task.description {
+        format!(
+            "Task Title: {}\nTask Description: {}",
+            task.title, description
+        )
+    } else {
+        task.title.clone()
+    };
+
     let mut history = vec![json!({
         "role": "user",
-        "parts": [{"text": format!("System: {}\nUser: {}", agent.system_prompt, task.title)}]
+        "parts": [{"text": format!("System: {}\nUser: {}", agent.system_prompt, user_prompt)}]
     })];
 
     loop {
@@ -76,7 +88,9 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
             Ok(resp) => resp,
             Err(_) => {
                 return Ok(if has_send_email_tool {
-                    ExecutionResult::Success
+                    ExecutionResult::Success {
+                        comment: "Tool available. Task considered complete.".to_string(),
+                    }
                 } else {
                     ExecutionResult::Failure {
                         comment: "Required tool not available.".to_string(),
@@ -90,7 +104,9 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
             // we once again fall back to the local simulation.  This keeps normal
             // development and CI runs independent from external services.
             return Ok(if has_send_email_tool {
-                ExecutionResult::Success
+                ExecutionResult::Success {
+                    comment: "Tool available. Task considered complete.".to_string(),
+                }
             } else {
                 ExecutionResult::Failure {
                     comment: "Required tool not available.".to_string(),
@@ -102,7 +118,9 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
             Ok(json) => json,
             Err(_) => {
                 return Ok(if has_send_email_tool {
-                    ExecutionResult::Success
+                    ExecutionResult::Success {
+                        comment: "Tool available. Task considered complete.".to_string(),
+                    }
                 } else {
                     ExecutionResult::Failure {
                         comment: "Required tool not available.".to_string(),
@@ -117,7 +135,7 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
         if let Some(function_call) = part.get("functionCall") {
             let tool_name = function_call["name"].as_str().unwrap();
             let args = &function_call["args"];
-            let tool_response = execute_tool(tool_name, args)?;
+            let tool_response = tools::execute_tool(tool_name, args)?;
 
             history.push(json!({
                 "role": "model",
@@ -127,26 +145,15 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
                 "role": "tool",
                 "parts": [{"functionResponse": {"name": tool_name, "response": {"content": tool_response}}}]
             }));
-        } else if let Some(_text) = part.get("text") {
-            return Ok(ExecutionResult::Success);
+        } else if let Some(text) = part.get("text") {
+            return Ok(ExecutionResult::Success {
+                comment: text.as_str().unwrap().to_string(),
+            });
         } else {
             return Ok(ExecutionResult::Failure {
                 comment: "No tool call or text response from the model".to_string(),
             });
         }
-    }
-}
-
-fn execute_tool(tool_name: &str, args: &Value) -> Result<String> {
-    match tool_name {
-        "send_email" => {
-            let to = args["to"].as_str().unwrap_or_default();
-            let subject = args["subject"].as_str().unwrap_or_default();
-            let body = args["body"].as_str().unwrap_or_default();
-            // This is a placeholder for a real email sending function
-            Ok(format!("Email sent to {} with subject '{}' and body '{}'", to, subject, body))
-        }
-        _ => Err(anyhow::anyhow!("Unknown tool: {}", tool_name)),
     }
 }
 
