@@ -35,6 +35,15 @@ enum Commands {
         /// The id of the task to mark as done
         id: usize,
     },
+    /// Adds a comment to a task
+    Comment {
+        /// The id of the task to comment on
+        #[arg(short, long)]
+        task_id: usize,
+        /// The comment text
+        #[arg(short, long)]
+        comment: String,
+    },
     /// Show project information
     Show {
         #[command(subcommand)]
@@ -164,6 +173,16 @@ async fn main() -> anyhow::Result<()> {
                 println!("Task {} marked as done.", id);
             } else {
                 println!("Task with id {} not found.", id);
+            }
+        }
+        Commands::Comment { task_id, comment } => {
+            let mut board = store::load_board()?;
+            if let Some(task) = board.tasks.iter_mut().find(|t| t.id == *task_id) {
+                task.comment = Some(comment.clone());
+                store::save_board(&board)?;
+                println!("Comment added to task {}.", task_id);
+            } else {
+                println!("Task with id {} not found.", task_id);
             }
         }
         Commands::Show { what } => match what {

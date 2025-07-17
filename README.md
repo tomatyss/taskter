@@ -87,6 +87,7 @@ In the interactive board, you can use the following keys:
 - `↑` / `↓`: Navigate between tasks
 - `h` / `l`: Move a task to the previous/next column
 - `a`: Assign an agent to the selected task
+- `c`: Add a comment to the selected task
 - `n`: Create a new task
 - `u`: Edit the selected task
 - `d`: Delete the selected task
@@ -111,6 +112,10 @@ In the interactive board, you can use the following keys:
 - **Mark a task as done:**
   ```bash
   taskter done <task_id>
+  ```
+- **Add a comment to a task:**
+  ```bash
+  taskter comment --task-id <task_id> --comment "Your note"
   ```
 
 ### Project information

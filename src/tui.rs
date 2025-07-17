@@ -16,6 +16,7 @@ enum View {
     Board,
     TaskDescription,
     AssignAgent,
+    AddComment,
     AddTask,
     UpdateTask,
 }
@@ -27,6 +28,7 @@ struct App {
     selected_task: [ListState; 3],
     current_view: View,
     agent_list_state: ListState,
+    comment_input: String,
     new_task_title: String,
     new_task_description: String,
     editing_description: bool,
@@ -45,6 +47,7 @@ impl App {
             ],
             current_view: View::Board,
             agent_list_state: ListState::default(),
+            comment_input: String::new(),
             new_task_title: String::new(),
             new_task_description: String::new(),
             editing_description: false,
@@ -193,6 +196,12 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                             app.agent_list_state.select(Some(0));
                         }
                     }
+                    KeyCode::Char('c') => {
+                        if app.get_selected_task().is_some() {
+                            app.current_view = View::AddComment;
+                            app.comment_input.clear();
+                        }
+                    }
                     KeyCode::Char('n') => {
                         app.new_task_title.clear();
                         app.new_task_description.clear();
@@ -303,6 +312,28 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     }
                     _ => {}
                 },
+                View::AddComment => match key.code {
+                    KeyCode::Char('q') | KeyCode::Esc => {
+                        app.current_view = View::Board;
+                    }
+                    KeyCode::Enter => {
+                        if let Some(task_id) = app.get_selected_task().map(|t| t.id) {
+                            if let Some(task) = app.board.tasks.iter_mut().find(|t| t.id == task_id)
+                            {
+                                task.comment = Some(app.comment_input.clone());
+                            }
+                            store::save_board(&app.board).unwrap();
+                        }
+                        app.current_view = View::Board;
+                    }
+                    KeyCode::Backspace => {
+                        app.comment_input.pop();
+                    }
+                    KeyCode::Char(c) => {
+                        app.comment_input.push(c);
+                    }
+                    _ => {}
+                },
                 View::AddTask => match key.code {
                     KeyCode::Char(c) => {
                         if app.editing_description {
@@ -399,6 +430,7 @@ fn ui(f: &mut Frame, app: &mut App) {
     match app.current_view {
         View::TaskDescription => render_task_description(f, app),
         View::AssignAgent => render_assign_agent(f, app),
+        View::AddComment => render_add_comment(f, app),
         View::AddTask => render_add_task(f, app),
         View::UpdateTask => render_update_task(f, app),
         _ => {}
@@ -512,6 +544,17 @@ fn render_assign_agent(f: &mut Frame, app: &mut App) {
     let area = centered_rect(60, 25, f.area());
     f.render_widget(Clear, area);
     f.render_stateful_widget(agent_list, area, &mut app.agent_list_state);
+}
+
+
+fn render_add_comment(f: &mut Frame, app: &mut App) {
+    let block = Block::default().title("Add Comment").borders(Borders::ALL);
+    let paragraph = Paragraph::new(app.comment_input.as_str())
+        .block(block)
+        .wrap(Wrap { trim: true });
+    let area = centered_rect(60, 25, f.area());
+    f.render_widget(Clear, area);
+    f.render_widget(paragraph, area);
 }
 
 fn render_add_task(f: &mut Frame, app: &mut App) {

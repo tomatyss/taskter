@@ -67,6 +67,30 @@ fn okr_roundtrip_persists_data() {
     });
 }
 
+#[test]
+fn comment_roundtrip_persists_changes() {
+    with_temp_dir(|| {
+        let mut board = Board {
+            tasks: vec![Task {
+                id: 1,
+                title: "Test".to_string(),
+                description: None,
+                status: TaskStatus::ToDo,
+                agent_id: None,
+                comment: None,
+            }],
+        };
+
+        store::save_board(&board).expect("failed to save board");
+
+        board.tasks[0].comment = Some("note".to_string());
+        store::save_board(&board).expect("failed to save board");
+
+        let loaded = store::load_board().expect("failed to load board");
+        assert_eq!(loaded.tasks[0].comment.as_deref(), Some("note"));
+    });
+}
+
 #[tokio::test]
 async fn agent_executes_email_task_successfully() {
     // Given
