@@ -21,7 +21,7 @@ pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
         "add_okr" => Some(add_okr::declaration()),
         "list_tasks" => Some(list_tasks::declaration()),
         "list_agents" => Some(list_agents::declaration()),
-        "get_project_description" => Some(get_description::declaration()),
+        "get_description" => Some(get_description::declaration()),
         _ => None,
     }
 }
@@ -35,7 +35,7 @@ pub fn execute_tool(name: &str, args: &Value) -> Result<String> {
         "add_okr" => add_okr::execute(args),
         "list_tasks" => list_tasks::execute(args),
         "list_agents" => list_agents::execute(args),
-        "get_project_description" => get_description::execute(args),
+        "get_description" => get_description::execute(args),
         _ => Err(anyhow::anyhow!("Unknown tool: {}", name)),
     }
 }
