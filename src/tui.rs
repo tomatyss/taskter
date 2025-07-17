@@ -11,6 +11,7 @@ use ratatui::{
     widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph, Wrap},
 };
 use std::io;
+use std::sync::mpsc::{self, Receiver, Sender, TryRecvError};
 
 enum View {
     Board,
@@ -32,10 +33,15 @@ struct App {
     new_task_title: String,
     new_task_description: String,
     editing_description: bool,
+    result_tx: Sender<(usize, agent::ExecutionResult)>,
 }
 
 impl App {
-    fn new(board: Board, agents: Vec<Agent>) -> Self {
+    fn new(
+        board: Board,
+        agents: Vec<Agent>,
+        result_tx: Sender<(usize, agent::ExecutionResult)>,
+    ) -> Self {
         let mut app = App {
             board,
             agents,
@@ -51,6 +57,7 @@ impl App {
             new_task_title: String::new(),
             new_task_description: String::new(),
             editing_description: false,
+            result_tx,
         };
         app.selected_task[0].select(Some(0));
         app
@@ -150,8 +157,9 @@ pub fn run_tui() -> anyhow::Result<()> {
 
     let board = store::load_board().unwrap_or_default();
     let agents = agent::load_agents().unwrap_or_default();
-    let app = App::new(board, agents);
-    let res = run_app(&mut terminal, app);
+    let (tx, rx) = mpsc::channel();
+    let app = App::new(board, agents, tx);
+    let res = run_app(&mut terminal, app, rx);
 
     disable_raw_mode()?;
     execute!(
@@ -168,9 +176,35 @@ pub fn run_tui() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
+fn run_app<B: Backend>(
+    terminal: &mut Terminal<B>,
+    mut app: App,
+    rx: Receiver<(usize, agent::ExecutionResult)>,
+) -> io::Result<()> {
     loop {
         terminal.draw(|f| ui(f, &mut app))?;
+
+        // Check for completed task executions and update the board accordingly.
+        match rx.try_recv() {
+            Ok((task_id, result)) => {
+                if let Some(task) = app.board.tasks.iter_mut().find(|t| t.id == task_id) {
+                    match result {
+                        agent::ExecutionResult::Success { comment } => {
+                            task.status = store::TaskStatus::Done;
+                            task.comment = Some(comment);
+                        }
+                        agent::ExecutionResult::Failure { comment } => {
+                            task.status = store::TaskStatus::ToDo;
+                            task.comment = Some(comment);
+                            task.agent_id = None;
+                        }
+                    }
+                    store::save_board(&app.board).unwrap();
+                }
+            }
+            Err(TryRecvError::Empty) => {}
+            Err(TryRecvError::Disconnected) => {}
+        }
 
         if let Event::Key(key) = event::read()? {
             match app.current_view {
@@ -262,47 +296,26 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                         app.board.tasks.iter_mut().find(|t| t.id == task_id)
                                     {
                                         task.agent_id = Some(agent.id);
-                                        // `execute_task` is asynchronous. We are inside the synchronous
-                                        // `run_app` loop which itself is executed from an async Tokio
-                                        // runtime (the `#[tokio::main]` in `main.rs`).  We therefore
-                                        // leverage the currently-running runtime handle to synchronously
-                                        // wait on the future. Using `Handle::current().block_on(...)` keeps
-                                        // the API here synchronous without spinning up a brand-new runtime
-                                        // each time.
-                                      
-                                        // Calling `Handle::current().block_on(...)` inside an already
-                                        // running Tokio runtime panics ("Cannot start a runtime from
-                                        // within a runtime").  To remain in the synchronous context of
-                                        // the TUI while still awaiting the async `execute_task` call we
-                                        // off-load the blocking operation to Tokio's *blocking* thread
-                                        // pool via `block_in_place`.  Once on the dedicated blocking
-                                        // thread we spin up a lightweight *current-thread* runtime just
-                                        // for the duration of the task execution.
-                                        match tokio::task::block_in_place(|| {
-                                            tokio::runtime::Builder::new_current_thread()
-                                                .enable_all()
-                                                .build()
-                                                .unwrap()
-                                                .block_on(agent::execute_task(&agent, task))
-                                        }) {
-                                            Ok(result) => match result {
-                                                agent::ExecutionResult::Success { comment } => {
-                                                    task.status = store::TaskStatus::Done;
-                                                    task.comment = Some(comment);
+                                        task.status = store::TaskStatus::InProgress;
+                                        let tx = app.result_tx.clone();
+                                        let task_clone = task.clone();
+                                        std::thread::spawn(move || {
+                                            let result =
+                                                tokio::runtime::Builder::new_current_thread()
+                                                    .enable_all()
+                                                    .build()
+                                                    .unwrap()
+                                                    .block_on(agent::execute_task(
+                                                        &agent,
+                                                        &task_clone,
+                                                    ));
+                                            let result = result.unwrap_or_else(|_| {
+                                                agent::ExecutionResult::Failure {
+                                                    comment: "Failed to execute task.".to_string(),
                                                 }
-                                                agent::ExecutionResult::Failure { comment } => {
-                                                    task.status = store::TaskStatus::ToDo;
-                                                    task.comment = Some(comment);
-                                                    task.agent_id = None;
-                                                }
-                                            },
-                                            Err(_) => {
-                                                task.status = store::TaskStatus::ToDo;
-                                                task.comment =
-                                                    Some("Failed to execute task.".to_string());
-                                                task.agent_id = None;
-                                            }
-                                        }
+                                            });
+                                            let _ = tx.send((task_clone.id, result));
+                                        });
                                     }
                                 }
                             }
@@ -545,7 +558,6 @@ fn render_assign_agent(f: &mut Frame, app: &mut App) {
     f.render_widget(Clear, area);
     f.render_stateful_widget(agent_list, area, &mut app.agent_list_state);
 }
-
 
 fn render_add_comment(f: &mut Frame, app: &mut App) {
     let block = Block::default().title("Add Comment").borders(Borders::ALL);
