@@ -9,4 +9,5 @@ build-dir = "book"
 create-missing = true
 
 [output.html]
+site-url = "/taskter/"
 default-theme = "light"
