@@ -192,6 +192,20 @@ All agents will use the same configuration file. If the file is missing, the
 `send_email` tool will gracefully fall back to a no-op so tests and offline
 usage keep working.
 
+### Example project
+
+If you want to see Taskter in action without manually creating data, run the
+provided helper script:
+
+```bash
+./scripts/setup_example_project.sh
+```
+
+The script removes any existing `.taskter` directory, creates a new board with a
+few example tasks, sets a project description, defines OKRs and adds an agent
+using the built-in email tool. Once it finishes you can inspect the board with
+`taskter list` or launch the TUI via `taskter board`.
+
 ## Development
 
 Run the included helper script before committing changes to ensure the code is
