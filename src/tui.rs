@@ -16,6 +16,8 @@ enum View {
     Board,
     TaskDescription,
     AssignAgent,
+    AddTask,
+    UpdateTask,
 }
 
 struct App {
@@ -25,6 +27,9 @@ struct App {
     selected_task: [ListState; 3],
     current_view: View,
     agent_list_state: ListState,
+    new_task_title: String,
+    new_task_description: String,
+    editing_description: bool,
 }
 
 impl App {
@@ -40,6 +45,9 @@ impl App {
             ],
             current_view: View::Board,
             agent_list_state: ListState::default(),
+            new_task_title: String::new(),
+            new_task_description: String::new(),
+            editing_description: false,
         };
         app.selected_task[0].select(Some(0));
         app
@@ -125,7 +133,7 @@ impl App {
             .selected()
             .and_then(|selected_index| {
                 let tasks_in_column = self.tasks_in_current_column();
-                tasks_in_column.get(selected_index).copied()
+                tasks_in_column.get(selected_index).cloned()
             })
     }
 }
@@ -185,6 +193,32 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                             app.agent_list_state.select(Some(0));
                         }
                     }
+                    KeyCode::Char('n') => {
+                        app.new_task_title.clear();
+                        app.new_task_description.clear();
+                        app.editing_description = false;
+                        app.current_view = View::AddTask;
+                    }
+                    KeyCode::Char('u') => {
+                        if let Some(task) = app.get_selected_task().cloned() {
+                            app.new_task_title = task.title;
+                            app.new_task_description = task.description.unwrap_or_default();
+                            app.editing_description = false;
+                            app.current_view = View::UpdateTask;
+                        }
+                    }
+                    KeyCode::Char('d') => {
+                        if let Some(task_id) = app.get_selected_task().map(|t| t.id) {
+                            app.board.tasks.retain(|t| t.id != task_id);
+                            let tasks = app.tasks_in_current_column();
+                            if !tasks.is_empty() {
+                                app.selected_task[app.selected_column].select(Some(0));
+                            } else {
+                                app.selected_task[app.selected_column].select(None);
+                            }
+                            store::save_board(&app.board).unwrap();
+                        }
+                    }
                     _ => {}
                 },
                 View::TaskDescription => match key.code {
@@ -226,6 +260,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                         // wait on the future. Using `Handle::current().block_on(...)` keeps
                                         // the API here synchronous without spinning up a brand-new runtime
                                         // each time.
+                                      
                                         // Calling `Handle::current().block_on(...)` inside an already
                                         // running Tokio runtime panics ("Cannot start a runtime from
                                         // within a runtime").  To remain in the synchronous context of
@@ -268,6 +303,92 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     }
                     _ => {}
                 },
+                View::AddTask => match key.code {
+                    KeyCode::Char(c) => {
+                        if app.editing_description {
+                            app.new_task_description.push(c);
+                        } else {
+                            app.new_task_title.push(c);
+                        }
+                    }
+                    KeyCode::Backspace => {
+                        if app.editing_description {
+                            app.new_task_description.pop();
+                        } else {
+                            app.new_task_title.pop();
+                        }
+                    }
+                    KeyCode::Enter => {
+                        if app.editing_description {
+                            let new_id = app.board.tasks.len() + 1;
+                            let task = Task {
+                                id: new_id,
+                                title: app.new_task_title.clone(),
+                                description: if app.new_task_description.is_empty() {
+                                    None
+                                } else {
+                                    Some(app.new_task_description.clone())
+                                },
+                                status: TaskStatus::ToDo,
+                                agent_id: None,
+                                comment: None,
+                            };
+                            app.board.tasks.push(task);
+                            store::save_board(&app.board).unwrap();
+                            app.current_view = View::Board;
+                            app.editing_description = false;
+                        } else {
+                            app.editing_description = true;
+                        }
+                    }
+                    KeyCode::Esc => {
+                        app.current_view = View::Board;
+                        app.editing_description = false;
+                    }
+                    _ => {}
+                },
+                View::UpdateTask => match key.code {
+                    KeyCode::Char(c) => {
+                        if app.editing_description {
+                            app.new_task_description.push(c);
+                        } else {
+                            app.new_task_title.push(c);
+                        }
+                    }
+                    KeyCode::Backspace => {
+                        if app.editing_description {
+                            app.new_task_description.pop();
+                        } else {
+                            app.new_task_title.pop();
+                        }
+                    }
+                    KeyCode::Enter => {
+                        if app.editing_description {
+                            if let Some(task_id) = app.get_selected_task().map(|t| t.id) {
+                                if let Some(task) =
+                                    app.board.tasks.iter_mut().find(|t| t.id == task_id)
+                                {
+                                    task.title = app.new_task_title.clone();
+                                    task.description = if app.new_task_description.is_empty() {
+                                        None
+                                    } else {
+                                        Some(app.new_task_description.clone())
+                                    };
+                                    store::save_board(&app.board).unwrap();
+                                }
+                            }
+                            app.current_view = View::Board;
+                            app.editing_description = false;
+                        } else {
+                            app.editing_description = true;
+                        }
+                    }
+                    KeyCode::Esc => {
+                        app.current_view = View::Board;
+                        app.editing_description = false;
+                    }
+                    _ => {}
+                },
             }
         }
     }
@@ -278,6 +399,8 @@ fn ui(f: &mut Frame, app: &mut App) {
     match app.current_view {
         View::TaskDescription => render_task_description(f, app),
         View::AssignAgent => render_assign_agent(f, app),
+        View::AddTask => render_add_task(f, app),
+        View::UpdateTask => render_update_task(f, app),
         _ => {}
     }
 }
@@ -389,6 +512,64 @@ fn render_assign_agent(f: &mut Frame, app: &mut App) {
     let area = centered_rect(60, 25, f.area());
     f.render_widget(Clear, area);
     f.render_stateful_widget(agent_list, area, &mut app.agent_list_state);
+}
+
+fn render_add_task(f: &mut Frame, app: &mut App) {
+    let block = Block::default().title("New Task").borders(Borders::ALL);
+    let title_style = if !app.editing_description {
+        Style::default().fg(Color::Yellow)
+    } else {
+        Style::default()
+    };
+    let desc_style = if app.editing_description {
+        Style::default().fg(Color::Yellow)
+    } else {
+        Style::default()
+    };
+    let paragraph = Paragraph::new(vec![
+        Line::from(vec![
+            Span::raw("Title: "),
+            Span::styled(app.new_task_title.as_str(), title_style),
+        ]),
+        Line::from(vec![
+            Span::raw("Description: "),
+            Span::styled(app.new_task_description.as_str(), desc_style),
+        ]),
+    ])
+    .block(block)
+    .wrap(Wrap { trim: true });
+    let area = centered_rect(60, 15, f.area());
+    f.render_widget(Clear, area);
+    f.render_widget(paragraph, area);
+}
+
+fn render_update_task(f: &mut Frame, app: &mut App) {
+    let block = Block::default().title("Edit Task").borders(Borders::ALL);
+    let title_style = if !app.editing_description {
+        Style::default().fg(Color::Yellow)
+    } else {
+        Style::default()
+    };
+    let desc_style = if app.editing_description {
+        Style::default().fg(Color::Yellow)
+    } else {
+        Style::default()
+    };
+    let paragraph = Paragraph::new(vec![
+        Line::from(vec![
+            Span::raw("Title: "),
+            Span::styled(app.new_task_title.as_str(), title_style),
+        ]),
+        Line::from(vec![
+            Span::raw("Description: "),
+            Span::styled(app.new_task_description.as_str(), desc_style),
+        ]),
+    ])
+    .block(block)
+    .wrap(Wrap { trim: true });
+    let area = centered_rect(60, 15, f.area());
+    f.render_widget(Clear, area);
+    f.render_widget(paragraph, area);
 }
 
 /// helper function to create a centered rect using up certain percentage of the available rect `r`
