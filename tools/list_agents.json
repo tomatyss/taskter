@@ -1,0 +1,9 @@
+{
+  "name": "list_agents",
+  "description": "Return the current list of agents in JSON form",
+  "parameters": {
+    "type": "object",
+    "properties": {},
+    "required": []
+  }
+}

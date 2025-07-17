@@ -1,0 +1,11 @@
+{
+  "name": "add_log",
+  "description": "Add an entry to the operation log",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "message": { "type": "string", "description": "Log message" }
+    },
+    "required": ["message"]
+  }
+}

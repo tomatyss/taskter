@@ -1,0 +1,12 @@
+{
+  "name": "create_task",
+  "description": "Create a new task in the Taskter board",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "title": { "type": "string", "description": "Task title" },
+      "description": { "type": "string", "description": "Task description" }
+    },
+    "required": ["title"]
+  }
+}
