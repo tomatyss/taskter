@@ -18,3 +18,5 @@ tui = []
 [dev-dependencies]
 mockito = "1.4.0"
 tempfile = "3"
+assert_cmd = "2.0.17"
+predicates = "3.1.3"
