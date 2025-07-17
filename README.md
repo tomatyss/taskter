@@ -238,6 +238,6 @@ ln -s ../../scripts/precommit.sh .git/hooks/pre-commit
 
 ## Documentation
 
-Rendered documentation is available on GitHub Pages: <https://YOUR_GITHUB_USERNAME.github.io/taskter/>.
+Rendered documentation is available on GitHub Pages: <https://tomatyss.github.io/taskter/>.
 
 To contribute to the book, edit the Markdown files under `docs/src/` and open a pull request. The `Deploy Docs` workflow will rebuild the book and publish it automatically when changes land on `main`.
