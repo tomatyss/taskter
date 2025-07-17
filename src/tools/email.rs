@@ -27,10 +27,9 @@ pub fn execute(args: &Value) -> Result<String> {
     let body = args["body"].as_str().unwrap_or_default();
     match send_email(to, subject, body) {
         Ok(_) => Ok(format!(
-            "Email sent to {} with subject '{}' and body '{}'",
-            to, subject, body
+            "Email sent to {to} with subject '{subject}' and body '{body}'"
         )),
-        Err(e) => Ok(format!("Failed to send email: {}", e)),
+        Err(e) => Ok(format!("Failed to send email: {e}")),
     }
 }
 

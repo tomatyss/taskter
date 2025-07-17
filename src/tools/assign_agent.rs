@@ -20,15 +20,15 @@ pub fn execute(args: &Value) -> Result<String> {
 
     let agents = agent::load_agents()?;
     if !agents.iter().any(|a| a.id == agent_id) {
-        return Ok(format!("Agent {} not found", agent_id));
+        return Ok(format!("Agent {agent_id} not found"));
     }
 
     let mut board = store::load_board()?;
     if let Some(task) = board.tasks.iter_mut().find(|t| t.id == task_id) {
         task.agent_id = Some(agent_id);
         store::save_board(&board)?;
-        Ok(format!("Agent {} assigned to task {}", agent_id, task_id))
+        Ok(format!("Agent {agent_id} assigned to task {task_id}"))
     } else {
-        Ok(format!("Task {} not found", task_id))
+        Ok(format!("Task {task_id} not found"))
     }
 }

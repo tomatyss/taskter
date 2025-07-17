@@ -31,5 +31,5 @@ pub fn execute(args: &Value) -> Result<String> {
     };
     board.tasks.push(task);
     store::save_board(&board)?;
-    Ok(format!("Created task {}", id))
+    Ok(format!("Created task {id}"))
 }

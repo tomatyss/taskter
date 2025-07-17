@@ -19,6 +19,6 @@ pub fn execute(args: &Value) -> Result<String> {
         .create(true)
         .append(true)
         .open(".taskter/logs.log")?;
-    writeln!(file, "{}", message)?;
+    writeln!(file, "{message}")?;
     Ok("Log entry added".to_string())
 }

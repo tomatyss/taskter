@@ -34,5 +34,5 @@ pub fn execute(args: &Value) -> Result<String> {
         key_results: kr_list,
     });
     store::save_okrs(&okrs)?;
-    Ok(format!("Added OKR '{}'", objective))
+    Ok(format!("Added OKR '{objective}'"))
 }
