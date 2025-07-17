@@ -260,7 +260,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                         // wait on the future. Using `Handle::current().block_on(...)` keeps
                                         // the API here synchronous without spinning up a brand-new runtime
                                         // each time.
-                                      
+
                                         // Calling `Handle::current().block_on(...)` inside an already
                                         // running Tokio runtime panics ("Cannot start a runtime from
                                         // within a runtime").  To remain in the synchronous context of
