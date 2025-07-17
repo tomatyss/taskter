@@ -1,11 +1,12 @@
 use clap::{Parser, Subcommand};
 use std::fs;
-use std::path::Path;
 use std::io::Write;
+use std::path::Path;
 
-mod store;
-mod tui;
 mod agent;
+mod store;
+mod tools;
+mod tui;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -220,10 +221,17 @@ async fn main() -> anyhow::Result<()> {
         } => {
             let mut agents = agent::load_agents()?;
             let mut function_declarations = Vec::new();
-            for tool_path in tools {
-                let tool_content = fs::read_to_string(tool_path)?;
-                let tool_json: serde_json::Value = serde_json::from_str(&tool_content)?;
-                function_declarations.push(serde_json::from_value(tool_json)?);
+            for spec in tools {
+                let decl = if Path::new(spec).exists() {
+                    let tool_content = fs::read_to_string(spec)?;
+                    let tool_json: serde_json::Value = serde_json::from_str(&tool_content)?;
+                    serde_json::from_value(tool_json)?
+                } else if let Some(built) = tools::builtin_declaration(spec) {
+                    built
+                } else {
+                    return Err(anyhow::anyhow!(format!("Unknown tool: {}", spec)));
+                };
+                function_declarations.push(decl);
             }
 
             let new_agent = agent::Agent {
@@ -245,9 +253,9 @@ async fn main() -> anyhow::Result<()> {
                     if let Some(agent) = agents.iter().find(|a| a.id == agent_id) {
                         match agent::execute_task(agent, task).await {
                             Ok(result) => match result {
-                                agent::ExecutionResult::Success => {
+                                agent::ExecutionResult::Success { comment } => {
                                     task.status = store::TaskStatus::Done;
-                                    task.comment = Some("Task completed successfully.".to_string());
+                                    task.comment = Some(comment);
                                     println!("Task {} executed successfully.", task_id);
                                 }
                                 agent::ExecutionResult::Failure { comment } => {

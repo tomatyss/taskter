@@ -152,6 +152,9 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
   ```bash
   taskter add-agent --prompt "You are a helpful assistant." --tools "email" "calendar" --model "gemini-pro"
   ```
+  The `--tools` option accepts either paths to JSON files describing a tool or
+  the name of a built-in tool. Built-ins live under the `tools/` directory of
+  the repository. For example `email` resolves to `tools/send_email.json`.
 
 - **Assign an agent to a task:**
   ```bash
@@ -174,6 +177,28 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
 When a task is executed, the agent will attempt to perform the task. If successful, the task is marked as "Done". If it fails, the task is moved back to "To Do", unassigned, and a comment from the agent is added.
 
 In the interactive board (`taskter board`), tasks assigned to an agent will be marked with a `*`. You can view the assigned agent ID and any comments by selecting the task and pressing `Enter`.
+
+### Email configuration
+
+Agent email tools read credentials from `.taskter/email_config.json`.  At the
+moment only SMTP settings are required by the `send_email` tool, but IMAP
+details can also be provided for future extensions.  Create the file with the
+following structure:
+
+```json
+{
+  "smtp_server": "smtp.example.com",
+  "smtp_port": 587,
+  "imap_server": "imap.example.com",
+  "imap_port": 993,
+  "username": "user@example.com",
+  "password": "secret"
+}
+```
+
+All agents will use the same configuration file. If the file is missing, the
+`send_email` tool will gracefully fall back to a no-op so tests and offline
+usage keep working.
 
 ## Development
 
