@@ -200,6 +200,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         if app.get_selected_task().is_some() {
                             app.current_view = View::AddComment;
                             app.comment_input.clear();
+                        }
+                    }
                     KeyCode::Char('n') => {
                         app.new_task_title.clear();
                         app.new_task_description.clear();
@@ -329,6 +331,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     }
                     KeyCode::Char(c) => {
                         app.comment_input.push(c);
+                    }
+                    _ => {}
+                },
                 View::AddTask => match key.code {
                     KeyCode::Char(c) => {
                         if app.editing_description {
@@ -548,6 +553,9 @@ fn render_add_comment(f: &mut Frame, app: &mut App) {
         .block(block)
         .wrap(Wrap { trim: true });
     let area = centered_rect(60, 25, f.area());
+    f.render_widget(Clear, area);
+    f.render_widget(paragraph, area);
+}
 
 fn render_add_task(f: &mut Frame, app: &mut App) {
     let block = Block::default().title("New Task").borders(Borders::ALL);
