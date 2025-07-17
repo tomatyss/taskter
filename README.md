@@ -88,6 +88,9 @@ In the interactive board, you can use the following keys:
 - `h` / `l`: Move a task to the previous/next column
 - `a`: Assign an agent to the selected task
 - `c`: Add a comment to the selected task
+- `n`: Create a new task
+- `u`: Edit the selected task
+- `d`: Delete the selected task
 
 ### Manage tasks
 
@@ -95,6 +98,11 @@ In the interactive board, you can use the following keys:
   ```bash
   taskter add -t "My new task" -d "A description for my task"
   ```
+-  In the interactive board (`taskter board`), press `n` to add a task interactively. Enter the title, press `Enter`, then provide the description and press `Enter` again.
+
+- **Edit a task:** Press `u` while the task is selected in the board to update its title and description.
+
+- **Delete a task:** Press `d` while the task is selected in the board.
 
 - **List all tasks:**
   ```bash
