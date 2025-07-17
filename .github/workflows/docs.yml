@@ -27,5 +27,4 @@ jobs:
           github_token: ${{ secrets.GH_TOKEN }}
           publish_dir: docs/book
           publish_branch: gh-pages
-          disable_jekyll: true
 
