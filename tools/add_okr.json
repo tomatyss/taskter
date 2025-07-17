@@ -1,0 +1,12 @@
+{
+  "name": "add_okr",
+  "description": "Add a new objective with key results to the OKR list",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "objective": { "type": "string", "description": "Objective text" },
+      "key_results": { "type": "array", "items": { "type": "string" }, "description": "Key results to track" }
+    },
+    "required": ["objective", "key_results"]
+  }
+}

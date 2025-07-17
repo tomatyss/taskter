@@ -1,0 +1,9 @@
+{
+  "name": "get_project_description",
+  "description": "Retrieve the project description text",
+  "parameters": {
+    "type": "object",
+    "properties": {},
+    "required": []
+  }
+}
