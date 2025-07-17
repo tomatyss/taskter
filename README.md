@@ -207,6 +207,16 @@ All agents will use the same configuration file. If the file is missing, the
 `send_email` tool will gracefully fall back to a no-op so tests and offline
 usage keep working.
 
+
+### Gemini API key
+
+Agent execution uses the Gemini API, so the `GEMINI_API_KEY` environment
+variable must be set. For example:
+
+```bash
+export GEMINI_API_KEY=your_key_here
+```
+
 ### Example project
 
 If you want to see Taskter in action without manually creating data, run the
@@ -220,6 +230,7 @@ The script removes any existing `.taskter` directory, creates a new board with a
 few example tasks, sets a project description, defines OKRs and adds an agent
 using the built-in email tool. Once it finishes you can inspect the board with
 `taskter list` or launch the TUI via `taskter board`.
+
 
 ## Development
 
