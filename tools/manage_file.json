@@ -1,0 +1,13 @@
+{
+  "name": "manage_file",
+  "description": "Read, write or append to a text file in the current directory",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "filename": { "type": "string", "description": "File name" },
+      "mode": { "type": "string", "description": "Operation: read, write or append" },
+      "content": { "type": "string", "description": "Content for write or append" }
+    },
+    "required": ["filename", "mode"]
+  }
+}
