@@ -1,5 +1,5 @@
 use crate::agent::{self, Agent};
-use crate::store::{self, Board, Task, TaskStatus};
+use crate::store::{self, Board, Okr, Task, TaskStatus};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
     execute,
@@ -19,6 +19,9 @@ enum View {
     AddComment,
     AddTask,
     UpdateTask,
+    Logs,
+    Agents,
+    Okrs,
 }
 
 struct App {
@@ -32,6 +35,8 @@ struct App {
     new_task_title: String,
     new_task_description: String,
     editing_description: bool,
+    logs: String,
+    okrs: Vec<Okr>,
 }
 
 impl App {
@@ -51,6 +56,8 @@ impl App {
             new_task_title: String::new(),
             new_task_description: String::new(),
             editing_description: false,
+            logs: std::fs::read_to_string(".taskter/logs.log").unwrap_or_default(),
+            okrs: store::load_okrs().unwrap_or_default(),
         };
         app.selected_task[0].select(Some(0));
         app
@@ -227,6 +234,18 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                             }
                             store::save_board(&app.board).unwrap();
                         }
+                    }
+                    KeyCode::Char('L') => {
+                        app.logs = std::fs::read_to_string(".taskter/logs.log").unwrap_or_default();
+                        app.current_view = View::Logs;
+                    }
+                    KeyCode::Char('A') => {
+                        app.agents = crate::agent::load_agents().unwrap_or_default();
+                        app.current_view = View::Agents;
+                    }
+                    KeyCode::Char('O') => {
+                        app.okrs = store::load_okrs().unwrap_or_default();
+                        app.current_view = View::Okrs;
                     }
                     _ => {}
                 },
@@ -420,6 +439,12 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     }
                     _ => {}
                 },
+                View::Logs | View::Agents | View::Okrs => match key.code {
+                    KeyCode::Char('q') | KeyCode::Esc => {
+                        app.current_view = View::Board;
+                    }
+                    _ => {}
+                },
             }
         }
     }
@@ -433,6 +458,9 @@ fn ui(f: &mut Frame, app: &mut App) {
         View::AddComment => render_add_comment(f, app),
         View::AddTask => render_add_task(f, app),
         View::UpdateTask => render_update_task(f, app),
+        View::Logs => render_logs(f, app),
+        View::Agents => render_agents_list(f, app),
+        View::Okrs => render_okrs(f, app),
         _ => {}
     }
 }
@@ -610,6 +638,51 @@ fn render_update_task(f: &mut Frame, app: &mut App) {
     .block(block)
     .wrap(Wrap { trim: true });
     let area = centered_rect(60, 15, f.area());
+    f.render_widget(Clear, area);
+    f.render_widget(paragraph, area);
+}
+
+fn render_logs(f: &mut Frame, app: &mut App) {
+    let block = Block::default().title("Logs").borders(Borders::ALL);
+    let paragraph = Paragraph::new(app.logs.as_str())
+        .block(block)
+        .wrap(Wrap { trim: true });
+    let area = centered_rect(60, 50, f.area());
+    f.render_widget(Clear, area);
+    f.render_widget(paragraph, area);
+}
+
+fn render_agents_list(f: &mut Frame, app: &mut App) {
+    let items: Vec<ListItem> = app
+        .agents
+        .iter()
+        .map(|a| ListItem::new(format!("{}: {}", a.id, a.system_prompt)))
+        .collect();
+    let list = List::new(items).block(Block::default().title("Agents").borders(Borders::ALL));
+    let area = centered_rect(60, 25, f.area());
+    f.render_widget(Clear, area);
+    f.render_widget(list, area);
+}
+
+fn render_okrs(f: &mut Frame, app: &mut App) {
+    let mut lines = Vec::new();
+    for okr in &app.okrs {
+        lines.push(Line::from(Span::styled(
+            &okr.objective,
+            Style::default().add_modifier(Modifier::BOLD),
+        )));
+        for kr in &okr.key_results {
+            lines.push(Line::from(format!(
+                " - {} ({:.0}%)",
+                kr.name,
+                kr.progress * 100.0
+            )));
+        }
+        lines.push(Line::raw(""));
+    }
+    let block = Block::default().title("OKRs").borders(Borders::ALL);
+    let paragraph = Paragraph::new(lines).block(block).wrap(Wrap { trim: true });
+    let area = centered_rect(60, 50, f.area());
     f.render_widget(Clear, area);
     f.render_widget(paragraph, area);
 }

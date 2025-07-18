@@ -91,6 +91,9 @@ In the interactive board, you can use the following keys:
 - `n`: Create a new task
 - `u`: Edit the selected task
 - `d`: Delete the selected task
+- `L`: View project logs
+- `A`: List available agents
+- `O`: Show OKRs
 
 ### Manage tasks
 
