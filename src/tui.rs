@@ -11,6 +11,7 @@ use ratatui::{
     widgets::{Block, Borders, Clear, List, ListItem, ListState, Paragraph, Wrap},
 };
 use std::io;
+use std::sync::{Arc, Mutex};
 
 enum View {
     Board,
@@ -22,7 +23,7 @@ enum View {
 }
 
 struct App {
-    board: Board,
+    board: Arc<Mutex<Board>>,
     agents: Vec<Agent>,
     selected_column: usize,
     selected_task: [ListState; 3],
@@ -37,7 +38,7 @@ struct App {
 impl App {
     fn new(board: Board, agents: Vec<Agent>) -> Self {
         let mut app = App {
-            board,
+            board: Arc::new(Mutex::new(board)),
             agents,
             selected_column: 0,
             selected_task: [
@@ -88,16 +89,19 @@ impl App {
         self.selected_task[self.selected_column].select(Some(i));
     }
 
-    fn tasks_in_current_column(&self) -> Vec<&Task> {
+    fn tasks_in_current_column(&self) -> Vec<Task> {
         let status = match self.selected_column {
             0 => TaskStatus::ToDo,
             1 => TaskStatus::InProgress,
             _ => TaskStatus::Done,
         };
         self.board
+            .lock()
+            .unwrap()
             .tasks
             .iter()
             .filter(|t| t.status == status)
+            .cloned()
             .collect()
     }
 
@@ -119,7 +123,14 @@ impl App {
             };
 
         if let Some(task_id) = task_id_to_move {
-            if let Some(task) = self.board.tasks.iter_mut().find(|t| t.id == task_id) {
+            if let Some(task) = self
+                .board
+                .lock()
+                .unwrap()
+                .tasks
+                .iter_mut()
+                .find(|t| t.id == task_id)
+            {
                 let current_status_index = task.status.clone() as usize;
                 let next_status_index = (current_status_index as i8 + direction + 3) % 3;
                 task.status = match next_status_index {
@@ -131,7 +142,7 @@ impl App {
         }
     }
 
-    fn get_selected_task(&self) -> Option<&Task> {
+    fn get_selected_task(&self) -> Option<Task> {
         self.selected_task[self.selected_column]
             .selected()
             .and_then(|selected_index| {
@@ -176,7 +187,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
             match app.current_view {
                 View::Board => match key.code {
                     KeyCode::Char('q') => {
-                        store::save_board(&app.board).unwrap();
+                        store::save_board(&app.board.lock().unwrap()).unwrap();
                         return Ok(());
                     }
                     KeyCode::Right | KeyCode::Tab => app.next_column(),
@@ -209,7 +220,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         app.current_view = View::AddTask;
                     }
                     KeyCode::Char('u') => {
-                        if let Some(task) = app.get_selected_task().cloned() {
+                        if let Some(task) = app.get_selected_task() {
                             app.new_task_title = task.title;
                             app.new_task_description = task.description.unwrap_or_default();
                             app.editing_description = false;
@@ -218,14 +229,14 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     }
                     KeyCode::Char('d') => {
                         if let Some(task_id) = app.get_selected_task().map(|t| t.id) {
-                            app.board.tasks.retain(|t| t.id != task_id);
+                            app.board.lock().unwrap().tasks.retain(|t| t.id != task_id);
                             let tasks = app.tasks_in_current_column();
                             if !tasks.is_empty() {
                                 app.selected_task[app.selected_column].select(Some(0));
                             } else {
                                 app.selected_task[app.selected_column].select(None);
                             }
-                            store::save_board(&app.board).unwrap();
+                            store::save_board(&app.board.lock().unwrap()).unwrap();
                         }
                     }
                     _ => {}
@@ -257,57 +268,49 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     KeyCode::Enter => {
                         if let Some(selected_agent_index) = app.agent_list_state.selected() {
                             if let Some(agent) = app.agents.get(selected_agent_index).cloned() {
-                                if let Some(task_id) = app.get_selected_task().map(|t| t.id) {
-                                    if let Some(task) =
-                                        app.board.tasks.iter_mut().find(|t| t.id == task_id)
+                                if let Some(task) = app.get_selected_task() {
+                                    let mut board = app.board.lock().unwrap();
+                                    if let Some(task_to_update) =
+                                        board.tasks.iter_mut().find(|t| t.id == task.id)
                                     {
-                                        task.agent_id = Some(agent.id);
-                                        // `execute_task` is asynchronous. We are inside the synchronous
-                                        // `run_app` loop which itself is executed from an async Tokio
-                                        // runtime (the `#[tokio::main]` in `main.rs`).  We therefore
-                                        // leverage the currently-running runtime handle to synchronously
-                                        // wait on the future. Using `Handle::current().block_on(...)` keeps
-                                        // the API here synchronous without spinning up a brand-new runtime
-                                        // each time.
-
-                                        // Calling `Handle::current().block_on(...)` inside an already
-                                        // running Tokio runtime panics ("Cannot start a runtime from
-                                        // within a runtime").  To remain in the synchronous context of
-                                        // the TUI while still awaiting the async `execute_task` call we
-                                        // off-load the blocking operation to Tokio's *blocking* thread
-                                        // pool via `block_in_place`.  Once on the dedicated blocking
-                                        // thread we spin up a lightweight *current-thread* runtime just
-                                        // for the duration of the task execution.
-                                        match tokio::task::block_in_place(|| {
-                                            tokio::runtime::Builder::new_current_thread()
-                                                .enable_all()
-                                                .build()
-                                                .unwrap()
-                                                .block_on(agent::execute_task(&agent, task))
-                                        }) {
-                                            Ok(result) => match result {
-                                                agent::ExecutionResult::Success { comment } => {
-                                                    task.status = store::TaskStatus::Done;
-                                                    task.comment = Some(comment);
-                                                }
-                                                agent::ExecutionResult::Failure { comment } => {
+                                        task_to_update.agent_id = Some(agent.id);
+                                    }
+                                    let agent_clone = agent.clone();
+                                    let task_clone = task.clone();
+                                    let board_clone = Arc::clone(&app.board);
+                                    tokio::spawn(async move {
+                                        let result =
+                                            agent::execute_task(&agent_clone, &task_clone).await;
+                                        let mut board = board_clone.lock().unwrap();
+                                        if let Some(task) =
+                                            board.tasks.iter_mut().find(|t| t.id == task_clone.id)
+                                        {
+                                            match result {
+                                                Ok(result) => match result {
+                                                    agent::ExecutionResult::Success { comment } => {
+                                                        task.status = store::TaskStatus::Done;
+                                                        task.comment = Some(comment);
+                                                    }
+                                                    agent::ExecutionResult::Failure { comment } => {
+                                                        task.status = store::TaskStatus::ToDo;
+                                                        task.comment = Some(comment);
+                                                        task.agent_id = None;
+                                                    }
+                                                },
+                                                Err(_) => {
                                                     task.status = store::TaskStatus::ToDo;
-                                                    task.comment = Some(comment);
+                                                    task.comment = Some(
+                                                        "Failed to execute task.".to_string(),
+                                                    );
                                                     task.agent_id = None;
                                                 }
-                                            },
-                                            Err(_) => {
-                                                task.status = store::TaskStatus::ToDo;
-                                                task.comment =
-                                                    Some("Failed to execute task.".to_string());
-                                                task.agent_id = None;
                                             }
                                         }
-                                    }
+                                        store::save_board(&board).unwrap();
+                                    });
                                 }
                             }
                         }
-                        store::save_board(&app.board).unwrap();
                         app.current_view = View::Board;
                     }
                     _ => {}
@@ -318,11 +321,17 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     }
                     KeyCode::Enter => {
                         if let Some(task_id) = app.get_selected_task().map(|t| t.id) {
-                            if let Some(task) = app.board.tasks.iter_mut().find(|t| t.id == task_id)
+                            if let Some(task) = app
+                                .board
+                                .lock()
+                                .unwrap()
+                                .tasks
+                                .iter_mut()
+                                .find(|t| t.id == task_id)
                             {
                                 task.comment = Some(app.comment_input.clone());
                             }
-                            store::save_board(&app.board).unwrap();
+                            store::save_board(&app.board.lock().unwrap()).unwrap();
                         }
                         app.current_view = View::Board;
                     }
@@ -351,7 +360,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     }
                     KeyCode::Enter => {
                         if app.editing_description {
-                            let new_id = app.board.tasks.len() + 1;
+                            let new_id = app.board.lock().unwrap().tasks.len() + 1;
                             let task = Task {
                                 id: new_id,
                                 title: app.new_task_title.clone(),
@@ -364,8 +373,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                 agent_id: None,
                                 comment: None,
                             };
-                            app.board.tasks.push(task);
-                            store::save_board(&app.board).unwrap();
+                            app.board.lock().unwrap().tasks.push(task);
+                            store::save_board(&app.board.lock().unwrap()).unwrap();
                             app.current_view = View::Board;
                             app.editing_description = false;
                         } else {
@@ -397,7 +406,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         if app.editing_description {
                             if let Some(task_id) = app.get_selected_task().map(|t| t.id) {
                                 if let Some(task) =
-                                    app.board.tasks.iter_mut().find(|t| t.id == task_id)
+                                    app.board.lock().unwrap().tasks.iter_mut().find(|t| t.id == task_id)
                                 {
                                     task.title = app.new_task_title.clone();
                                     task.description = if app.new_task_description.is_empty() {
@@ -405,8 +414,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                     } else {
                                         Some(app.new_task_description.clone())
                                     };
-                                    store::save_board(&app.board).unwrap();
                                 }
+                                store::save_board(&app.board.lock().unwrap()).unwrap();
                             }
                             app.current_view = View::Board;
                             app.editing_description = false;
@@ -456,6 +465,8 @@ fn render_board(f: &mut Frame, app: &mut App) {
     {
         let tasks: Vec<ListItem> = app
             .board
+            .lock()
+            .unwrap()
             .tasks
             .iter()
             .filter(|t| t.status == *status)
