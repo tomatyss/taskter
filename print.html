@@ -175,23 +175,165 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="overview"><a class="header" href="#overview">Overview</a></h1>
-<p>Taskter is a terminal-based Kanban board written in Rust. This book provides an overview of its features and how to use them.</p>
+<p>Taskter is a powerful, terminal-based Kanban board designed for developers, project managers, and anyone who prefers to manage their tasks directly from the command line. Built with Rust, Taskter is a lightweight and efficient tool that helps you keep track of your projects without leaving the terminal.</p>
+<h2 id="key-features"><a class="header" href="#key-features">Key Features</a></h2>
+<ul>
+<li><strong>Kanban Board</strong>: Visualize your workflow with ToDo, In-Progress, and Done columns.</li>
+<li><strong>Task Management</strong>: Add, edit, delete, and manage tasks with simple commands.</li>
+<li><strong>Agent System</strong>: Automate tasks using LLM-based agents with tool-calling capabilities.</li>
+<li><strong>Project Tracking</strong>: Keep track of your project's description, objectives, and key results (OKRs).</li>
+<li><strong>Operation Logs</strong>: Maintain a log of all operations performed on the board.</li>
+<li><strong>Interactive TUI</strong>: A user-friendly terminal interface for easy navigation and task management.</li>
+</ul>
+<p>This book serves as the official documentation for Taskter, providing a comprehensive guide to its features and usage. Whether you're a new user or a seasoned developer, this guide will help you get the most out of Taskter.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="installation"><a class="header" href="#installation">Installation</a></h1>
-<p>Follow the instructions in the repository README to build Taskter from source or use Docker.</p>
+<p>You can install Taskter either by building from source or using Docker.</p>
+<h2 id="build-from-source"><a class="header" href="#build-from-source">Build from Source</a></h2>
+<p>To build Taskter from source, you need to have Rust and Cargo installed.</p>
+<ol>
+<li>
+<p>Clone the repository:</p>
+<pre><code class="language-bash">git clone https://github.com/tomatyss/taskter.git
+cd taskter
+</code></pre>
+</li>
+<li>
+<p>Build the project:</p>
+<pre><code class="language-bash">cargo build --release
+</code></pre>
+<p>The executable will be located at <code>target/release/taskter</code>.</p>
+</li>
+<li>
+<p>Install the executable:
+You can make <code>taskter</code> available system-wide by copying it to a directory in your system's <code>PATH</code>. For example, on macOS or Linux:</p>
+<pre><code class="language-bash">sudo cp target/release/taskter /usr/local/bin/taskter
+</code></pre>
+<p>Alternatively, you can use <code>cargo install</code>:</p>
+<pre><code class="language-bash">cargo install --path .
+</code></pre>
+<p>This will install the <code>taskter</code> executable in your Cargo bin directory (<code>~/.cargo/bin/</code>), which should be in your <code>PATH</code>.</p>
+</li>
+</ol>
+<h2 id="docker"><a class="header" href="#docker">Docker</a></h2>
+<p>If you prefer to use Docker, you can build and run Taskter without installing Rust locally.</p>
+<ol>
+<li>
+<p>Build the Docker image:</p>
+<pre><code class="language-bash">docker build -t taskter .
+</code></pre>
+</li>
+<li>
+<p>Run the application:</p>
+<pre><code class="language-bash">docker compose run --rm taskter --help
+</code></pre>
+<p>If you plan to use the Gemini integration for agents, you'll need to pass your API key as an environment variable:</p>
+<pre><code class="language-bash">GEMINI_API_KEY=&lt;your_key&gt; docker compose run --rm taskter --help
+</code></pre>
+</li>
+</ol>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="cli-usage"><a class="header" href="#cli-usage">CLI Usage</a></h1>
 <p>Taskter exposes multiple subcommands. Run <code>taskter --help</code> to see the available options. The README lists common workflows.</p>
+<h2 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h2>
+<p>This section provides a quick overview of how to get started with Taskter.</p>
+<h3 id="1-initialize-the-board"><a class="header" href="#1-initialize-the-board">1. Initialize the board</a></h3>
+<p>First, navigate to your project's directory and initialize the Taskter board:</p>
+<pre><code class="language-bash">taskter init
+</code></pre>
+<p>This will create a <code>.taskter</code> directory to store all your tasks, agents, and project data.</p>
+<h3 id="2-create-an-agent"><a class="header" href="#2-create-an-agent">2. Create an agent</a></h3>
+<p>Next, create an agent to help you with your tasks. For this example, we'll create a simple agent that can run bash commands:</p>
+<pre><code class="language-bash">taskter add-agent --prompt "You are a helpful assistant that can run bash commands." --tools "run_bash" --model "gemini-pro"
+</code></pre>
+<p>You can list all available agents using:</p>
+<pre><code class="language-bash">taskter list-agents
+</code></pre>
+<h3 id="3-create-a-task"><a class="header" href="#3-create-a-task">3. Create a task</a></h3>
+<p>Now, let's create a task for your agent to complete:</p>
+<pre><code class="language-bash">taskter add -t "List files in the current directory" -d "Use the ls -la command to list all files and folders in the current directory."
+</code></pre>
+<p>You can see all your tasks by running:</p>
+<pre><code class="language-bash">taskter list
+</code></pre>
+<h3 id="4-assign-the-task-to-an-agent"><a class="header" href="#4-assign-the-task-to-an-agent">4. Assign the task to an agent</a></h3>
+<p>Assign the newly created task to your agent:</p>
+<pre><code class="language-bash">taskter assign --task-id 1 --agent-id 1
+</code></pre>
+<h3 id="5-execute-the-task"><a class="header" href="#5-execute-the-task">5. Execute the task</a></h3>
+<p>Finally, execute the task:</p>
+<pre><code class="language-bash">taskter execute --task-id 1
+</code></pre>
+<p>The agent will now run the task. If it's successful, the task will be marked as "Done". You can view the board at any time using the interactive UI:</p>
+<pre><code class="language-bash">taskter board
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="tui-guide"><a class="header" href="#tui-guide">TUI Guide</a></h1>
-<p>Launch the interactive board with <code>taskter board</code>. Use the keyboard shortcuts displayed in the help menu to navigate between tasks and columns.</p>
-<p>Additional shortcuts:</p>
-<ul>
-<li><code>L</code> opens the project logs.</li>
-<li><code>A</code> lists all agents.</li>
-<li><code>O</code> displays the current OKRs.</li>
-</ul>
+<p>Taskter's interactive Terminal User Interface (TUI) provides a visual way to manage your Kanban board. To launch it, run:</p>
+<pre><code class="language-bash">taskter board
+</code></pre>
+<h2 id="keybindings"><a class="header" href="#keybindings">Keybindings</a></h2>
+<p>The TUI is controlled with keyboard shortcuts. Here is a list of the available keybindings:</p>
+<div class="table-wrapper"><table><thead><tr><th>Key(s)</th><th>Action</th></tr></thead><tbody>
+<tr><td><code>q</code></td><td>Quit the application</td></tr>
+<tr><td><code>←</code> / <code>→</code> or <code>Tab</code></td><td>Navigate between columns</td></tr>
+<tr><td><code>↑</code> / <code>↓</code></td><td>Navigate between tasks in a column</td></tr>
+<tr><td><code>h</code> / <code>l</code></td><td>Move a selected task to the next or previous column</td></tr>
+<tr><td><code>n</code></td><td>Create a new task</td></tr>
+<tr><td><code>u</code></td><td>Edit the selected task</td></tr>
+<tr><td><code>d</code></td><td>Delete the selected task</td></tr>
+<tr><td><code>a</code></td><td>Assign an agent to the selected task</td></tr>
+<tr><td><code>c</code></td><td>Add a comment to the selected task</td></tr>
+<tr><td><code>L</code></td><td>View project logs</td></tr>
+<tr><td><code>A</code></td><td>List available agents</td></tr>
+<tr><td><code>O</code></td><td>Show project OKRs</td></tr>
+</tbody></table>
+</div>
+<p>When a task is selected, you can press <code>Enter</code> to view its details, including the full description, any comments, and the assigned agent ID.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="agent-system"><a class="header" href="#agent-system">Agent System</a></h1>
-<p>Agents can be assigned to tasks to automate their execution using LLM-based tools. Refer to <code>taskter add-agent --help</code> for configuration options.</p>
+<p>Taskter supports LLM-based agents that can be assigned to tasks. These agents can execute tasks using a mocked Gemini API for tool-calling.</p>
+<h2 id="creating-an-agent"><a class="header" href="#creating-an-agent">Creating an Agent</a></h2>
+<p>You can create an agent using the <code>add-agent</code> subcommand. You need to provide a prompt, a list of tools, and a model.</p>
+<pre><code class="language-bash">taskter add-agent --prompt "You are a helpful assistant." --tools "email" "calendar" --model "gemini-pro"
+</code></pre>
+<p>The <code>--tools</code> option accepts either paths to JSON files describing a tool or the name of a built-in tool. Built-in tools are located in the <code>tools/</code> directory of the repository.</p>
+<p>Available built-in tools:</p>
+<ul>
+<li><code>create_task</code></li>
+<li><code>assign_agent</code></li>
+<li><code>add_log</code></li>
+<li><code>add_okr</code></li>
+<li><code>list_tasks</code></li>
+<li><code>list_agents</code></li>
+<li><code>get_description</code></li>
+<li><code>run_bash</code></li>
+<li><code>send_email</code></li>
+</ul>
+<h2 id="assigning-an-agent-to-a-task"><a class="header" href="#assigning-an-agent-to-a-task">Assigning an Agent to a Task</a></h2>
+<p>Once you have created an agent, you can assign it to a task using the <code>assign</code> subcommand:</p>
+<pre><code class="language-bash">taskter assign --task-id 1 --agent-id 1
+</code></pre>
+<h2 id="executing-a-task"><a class="header" href="#executing-a-task">Executing a Task</a></h2>
+<p>To execute a task with an assigned agent, use the <code>execute</code> subcommand:</p>
+<pre><code class="language-bash">taskter execute --task-id 1
+</code></pre>
+<p>When a task is executed, the agent will attempt to perform the task. If successful, the task is marked as "Done". If it fails, the task is moved back to "To Do", unassigned, and a comment from the agent is added.</p>
+<p>In the interactive board (<code>taskter board</code>), tasks assigned to an agent will be marked with a <code>*</code>. You can view the assigned agent ID and any comments by selecting the task and pressing <code>Enter</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="contributing"><a class="header" href="#contributing">Contributing</a></h1>
-<p>Documentation is built with <a href="https://rust-lang.github.io/mdBook/">mdBook</a>. Edit the files under <code>docs/src/</code> and open a pull request. The GitHub Actions workflow will publish the book automatically.</p>
+<p>Contributions are welcome! This guide will help you get started with setting up your development environment and submitting your changes.</p>
+<h2 id="development-environment"><a class="header" href="#development-environment">Development Environment</a></h2>
+<p>To contribute to Taskter, you'll need to have Rust and Cargo installed. If you haven't already, follow the instructions at <a href="https://www.rust-lang.org/tools/install">rust-lang.org</a>.</p>
+<p>Once you have Rust set up, clone the repository and navigate to the project directory:</p>
+<pre><code class="language-bash">git clone https://github.com/tomatyss/taskter.git
+cd taskter
+</code></pre>
+<h2 id="pre-commit-checks"><a class="header" href="#pre-commit-checks">Pre-commit checks</a></h2>
+<p>Before committing any changes, please run the pre-commit script to ensure your code is formatted, linted, and passes all tests:</p>
+<pre><code class="language-bash">./scripts/precommit.sh
+</code></pre>
+<p>You can also set this up as a pre-commit hook to run automatically:</p>
+<pre><code class="language-bash">ln -s ../../scripts/precommit.sh .git/hooks/pre-commit
+</code></pre>
+<h2 id="documentation"><a class="header" href="#documentation">Documentation</a></h2>
+<p>The documentation is built with <a href="https://rust-lang.github.io/mdBook/">mdBook</a>. To contribute to the docs, edit the Markdown files under the <code>docs/src/</code> directory.</p>
+<p>When you're ready, open a pull request with your changes. The GitHub Actions workflow will automatically build and publish the book when your changes are merged into the <code>main</code> branch.</p>
 
                     </main>
 

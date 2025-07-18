@@ -174,7 +174,50 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="installation"><a class="header" href="#installation">Installation</a></h1>
-<p>Follow the instructions in the repository README to build Taskter from source or use Docker.</p>
+<p>You can install Taskter either by building from source or using Docker.</p>
+<h2 id="build-from-source"><a class="header" href="#build-from-source">Build from Source</a></h2>
+<p>To build Taskter from source, you need to have Rust and Cargo installed.</p>
+<ol>
+<li>
+<p>Clone the repository:</p>
+<pre><code class="language-bash">git clone https://github.com/tomatyss/taskter.git
+cd taskter
+</code></pre>
+</li>
+<li>
+<p>Build the project:</p>
+<pre><code class="language-bash">cargo build --release
+</code></pre>
+<p>The executable will be located at <code>target/release/taskter</code>.</p>
+</li>
+<li>
+<p>Install the executable:
+You can make <code>taskter</code> available system-wide by copying it to a directory in your system's <code>PATH</code>. For example, on macOS or Linux:</p>
+<pre><code class="language-bash">sudo cp target/release/taskter /usr/local/bin/taskter
+</code></pre>
+<p>Alternatively, you can use <code>cargo install</code>:</p>
+<pre><code class="language-bash">cargo install --path .
+</code></pre>
+<p>This will install the <code>taskter</code> executable in your Cargo bin directory (<code>~/.cargo/bin/</code>), which should be in your <code>PATH</code>.</p>
+</li>
+</ol>
+<h2 id="docker"><a class="header" href="#docker">Docker</a></h2>
+<p>If you prefer to use Docker, you can build and run Taskter without installing Rust locally.</p>
+<ol>
+<li>
+<p>Build the Docker image:</p>
+<pre><code class="language-bash">docker build -t taskter .
+</code></pre>
+</li>
+<li>
+<p>Run the application:</p>
+<pre><code class="language-bash">docker compose run --rm taskter --help
+</code></pre>
+<p>If you plan to use the Gemini integration for agents, you'll need to pass your API key as an environment variable:</p>
+<pre><code class="language-bash">GEMINI_API_KEY=&lt;your_key&gt; docker compose run --rm taskter --help
+</code></pre>
+</li>
+</ol>
 
                     </main>
 

@@ -175,6 +175,38 @@
                     <main>
                         <h1 id="cli-usage"><a class="header" href="#cli-usage">CLI Usage</a></h1>
 <p>Taskter exposes multiple subcommands. Run <code>taskter --help</code> to see the available options. The README lists common workflows.</p>
+<h2 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h2>
+<p>This section provides a quick overview of how to get started with Taskter.</p>
+<h3 id="1-initialize-the-board"><a class="header" href="#1-initialize-the-board">1. Initialize the board</a></h3>
+<p>First, navigate to your project's directory and initialize the Taskter board:</p>
+<pre><code class="language-bash">taskter init
+</code></pre>
+<p>This will create a <code>.taskter</code> directory to store all your tasks, agents, and project data.</p>
+<h3 id="2-create-an-agent"><a class="header" href="#2-create-an-agent">2. Create an agent</a></h3>
+<p>Next, create an agent to help you with your tasks. For this example, we'll create a simple agent that can run bash commands:</p>
+<pre><code class="language-bash">taskter add-agent --prompt "You are a helpful assistant that can run bash commands." --tools "run_bash" --model "gemini-pro"
+</code></pre>
+<p>You can list all available agents using:</p>
+<pre><code class="language-bash">taskter list-agents
+</code></pre>
+<h3 id="3-create-a-task"><a class="header" href="#3-create-a-task">3. Create a task</a></h3>
+<p>Now, let's create a task for your agent to complete:</p>
+<pre><code class="language-bash">taskter add -t "List files in the current directory" -d "Use the ls -la command to list all files and folders in the current directory."
+</code></pre>
+<p>You can see all your tasks by running:</p>
+<pre><code class="language-bash">taskter list
+</code></pre>
+<h3 id="4-assign-the-task-to-an-agent"><a class="header" href="#4-assign-the-task-to-an-agent">4. Assign the task to an agent</a></h3>
+<p>Assign the newly created task to your agent:</p>
+<pre><code class="language-bash">taskter assign --task-id 1 --agent-id 1
+</code></pre>
+<h3 id="5-execute-the-task"><a class="header" href="#5-execute-the-task">5. Execute the task</a></h3>
+<p>Finally, execute the task:</p>
+<pre><code class="language-bash">taskter execute --task-id 1
+</code></pre>
+<p>The agent will now run the task. If it's successful, the task will be marked as "Done". You can view the board at any time using the interactive UI:</p>
+<pre><code class="language-bash">taskter board
+</code></pre>
 
                     </main>
 

@@ -174,13 +174,27 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="tui-guide"><a class="header" href="#tui-guide">TUI Guide</a></h1>
-<p>Launch the interactive board with <code>taskter board</code>. Use the keyboard shortcuts displayed in the help menu to navigate between tasks and columns.</p>
-<p>Additional shortcuts:</p>
-<ul>
-<li><code>L</code> opens the project logs.</li>
-<li><code>A</code> lists all agents.</li>
-<li><code>O</code> displays the current OKRs.</li>
-</ul>
+<p>Taskter's interactive Terminal User Interface (TUI) provides a visual way to manage your Kanban board. To launch it, run:</p>
+<pre><code class="language-bash">taskter board
+</code></pre>
+<h2 id="keybindings"><a class="header" href="#keybindings">Keybindings</a></h2>
+<p>The TUI is controlled with keyboard shortcuts. Here is a list of the available keybindings:</p>
+<div class="table-wrapper"><table><thead><tr><th>Key(s)</th><th>Action</th></tr></thead><tbody>
+<tr><td><code>q</code></td><td>Quit the application</td></tr>
+<tr><td><code>←</code> / <code>→</code> or <code>Tab</code></td><td>Navigate between columns</td></tr>
+<tr><td><code>↑</code> / <code>↓</code></td><td>Navigate between tasks in a column</td></tr>
+<tr><td><code>h</code> / <code>l</code></td><td>Move a selected task to the next or previous column</td></tr>
+<tr><td><code>n</code></td><td>Create a new task</td></tr>
+<tr><td><code>u</code></td><td>Edit the selected task</td></tr>
+<tr><td><code>d</code></td><td>Delete the selected task</td></tr>
+<tr><td><code>a</code></td><td>Assign an agent to the selected task</td></tr>
+<tr><td><code>c</code></td><td>Add a comment to the selected task</td></tr>
+<tr><td><code>L</code></td><td>View project logs</td></tr>
+<tr><td><code>A</code></td><td>List available agents</td></tr>
+<tr><td><code>O</code></td><td>Show project OKRs</td></tr>
+</tbody></table>
+</div>
+<p>When a task is selected, you can press <code>Enter</code> to view its details, including the full description, any comments, and the assigned agent ID.</p>
 
                     </main>
 

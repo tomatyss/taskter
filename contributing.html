@@ -174,7 +174,23 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="contributing"><a class="header" href="#contributing">Contributing</a></h1>
-<p>Documentation is built with <a href="https://rust-lang.github.io/mdBook/">mdBook</a>. Edit the files under <code>docs/src/</code> and open a pull request. The GitHub Actions workflow will publish the book automatically.</p>
+<p>Contributions are welcome! This guide will help you get started with setting up your development environment and submitting your changes.</p>
+<h2 id="development-environment"><a class="header" href="#development-environment">Development Environment</a></h2>
+<p>To contribute to Taskter, you'll need to have Rust and Cargo installed. If you haven't already, follow the instructions at <a href="https://www.rust-lang.org/tools/install">rust-lang.org</a>.</p>
+<p>Once you have Rust set up, clone the repository and navigate to the project directory:</p>
+<pre><code class="language-bash">git clone https://github.com/tomatyss/taskter.git
+cd taskter
+</code></pre>
+<h2 id="pre-commit-checks"><a class="header" href="#pre-commit-checks">Pre-commit checks</a></h2>
+<p>Before committing any changes, please run the pre-commit script to ensure your code is formatted, linted, and passes all tests:</p>
+<pre><code class="language-bash">./scripts/precommit.sh
+</code></pre>
+<p>You can also set this up as a pre-commit hook to run automatically:</p>
+<pre><code class="language-bash">ln -s ../../scripts/precommit.sh .git/hooks/pre-commit
+</code></pre>
+<h2 id="documentation"><a class="header" href="#documentation">Documentation</a></h2>
+<p>The documentation is built with <a href="https://rust-lang.github.io/mdBook/">mdBook</a>. To contribute to the docs, edit the Markdown files under the <code>docs/src/</code> directory.</p>
+<p>When you're ready, open a pull request with your changes. The GitHub Actions workflow will automatically build and publish the book when your changes are merged into the <code>main</code> branch.</p>
 
                     </main>
 
