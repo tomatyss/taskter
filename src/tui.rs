@@ -262,47 +262,11 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                         app.board.tasks.iter_mut().find(|t| t.id == task_id)
                                     {
                                         task.agent_id = Some(agent.id);
-                                        // `execute_task` is asynchronous. We are inside the synchronous
-                                        // `run_app` loop which itself is executed from an async Tokio
-                                        // runtime (the `#[tokio::main]` in `main.rs`).  We therefore
-                                        // leverage the currently-running runtime handle to synchronously
-                                        // wait on the future. Using `Handle::current().block_on(...)` keeps
-                                        // the API here synchronous without spinning up a brand-new runtime
-                                        // each time.
-
-                                        // Calling `Handle::current().block_on(...)` inside an already
-                                        // running Tokio runtime panics ("Cannot start a runtime from
-                                        // within a runtime").  To remain in the synchronous context of
-                                        // the TUI while still awaiting the async `execute_task` call we
-                                        // off-load the blocking operation to Tokio's *blocking* thread
-                                        // pool via `block_in_place`.  Once on the dedicated blocking
-                                        // thread we spin up a lightweight *current-thread* runtime just
-                                        // for the duration of the task execution.
-                                        match tokio::task::block_in_place(|| {
-                                            tokio::runtime::Builder::new_current_thread()
-                                                .enable_all()
-                                                .build()
-                                                .unwrap()
-                                                .block_on(agent::execute_task(&agent, task))
-                                        }) {
-                                            Ok(result) => match result {
-                                                agent::ExecutionResult::Success { comment } => {
-                                                    task.status = store::TaskStatus::Done;
-                                                    task.comment = Some(comment);
-                                                }
-                                                agent::ExecutionResult::Failure { comment } => {
-                                                    task.status = store::TaskStatus::ToDo;
-                                                    task.comment = Some(comment);
-                                                    task.agent_id = None;
-                                                }
-                                            },
-                                            Err(_) => {
-                                                task.status = store::TaskStatus::ToDo;
-                                                task.comment =
-                                                    Some("Failed to execute task.".to_string());
-                                                task.agent_id = None;
-                                            }
-                                        }
+                                        let agent_clone = agent.clone();
+                                        let task_clone = task.clone();
+                                        tokio::spawn(async move {
+                                            let _ = agent::execute_task(&agent_clone, &task_clone).await;
+                                        });
                                     }
                                 }
                             }
