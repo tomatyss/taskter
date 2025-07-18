@@ -255,3 +255,11 @@ ln -s ../../scripts/precommit.sh .git/hooks/pre-commit
 Rendered documentation is available on GitHub Pages: <https://tomatyss.github.io/taskter/>.
 
 To contribute to the book, edit the Markdown files under `docs/src/` and open a pull request. The `Deploy Docs` workflow will rebuild the book and publish it automatically when changes land on `main`.
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
