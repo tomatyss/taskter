@@ -157,7 +157,7 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct FunctionDeclaration {
     pub name: String,
     pub description: Option<String>,
@@ -169,7 +169,7 @@ fn empty_params() -> Value {
     serde_json::json!({})
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Agent {
     pub id: usize,
     pub system_prompt: String,
