@@ -12,6 +12,7 @@ pub mod get_description;
 pub mod list_agents;
 pub mod list_tasks;
 pub mod manage_file;
+pub mod run_bash;
 
 pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
     match name {
@@ -22,6 +23,7 @@ pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
         "add_okr" => Some(add_okr::declaration()),
         "list_tasks" => Some(list_tasks::declaration()),
         "list_agents" => Some(list_agents::declaration()),
+        "run_bash" => Some(run_bash::declaration()),
         "get_description" => Some(get_description::declaration()),
         "manage_file" => Some(manage_file::declaration()),
         _ => None,
@@ -37,6 +39,7 @@ pub fn execute_tool(name: &str, args: &Value) -> Result<String> {
         "add_okr" => add_okr::execute(args),
         "list_tasks" => list_tasks::execute(args),
         "list_agents" => list_agents::execute(args),
+        "run_bash" => run_bash::execute(args),
         "get_description" => get_description::execute(args),
         "manage_file" => manage_file::execute(args),
         _ => Err(anyhow::anyhow!("Unknown tool: {}", name)),
