@@ -1,5 +1,10 @@
 # Taskter
 
+[![Test](https://github.com/tomatyss/taskter/actions/workflows/test.yml/badge.svg)](https://github.com/tomatyss/taskter/actions/workflows/test.yml)
+[![Crates.io](https://img.shields.io/crates/v/taskter)](https://crates.io/crates/taskter)
+[![Documentation](https://img.shields.io/badge/docs-gh--pages-informational)](https://tomatyss.github.io/taskter/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Taskter is a terminal Kanban board CLI tool built with Rust.
 
 > **Warning**
