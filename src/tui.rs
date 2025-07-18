@@ -173,7 +173,7 @@ pub fn run_tui() -> anyhow::Result<()> {
     terminal.show_cursor()?;
 
     if let Err(err) = res {
-        println!("{:?}", err)
+        println!("{err:?}")
     }
 
     Ok(())
@@ -481,7 +481,7 @@ fn render_board(f: &mut Frame, app: &mut App) {
             .collect();
         let mut list = List::new(tasks).block(
             Block::default()
-                .title(format!("{:?}", status))
+                .title(format!("{status:?}"))
                 .borders(Borders::ALL),
         );
         if app.selected_column == i {
@@ -506,12 +506,12 @@ fn render_task_description(f: &mut Frame, app: &mut App) {
         ];
 
         if let Some(agent_id) = task.agent_id {
-            text.push(Line::from(format!("Assigned to agent: {}", agent_id)));
+            text.push(Line::from(format!("Assigned to agent: {agent_id}")));
         }
 
         if let Some(comment) = &task.comment {
             text.push(Line::from(Span::styled(
-                format!("Comment: {}", comment),
+                format!("Comment: {comment}"),
                 Style::default().fg(Color::Yellow),
             )));
         }

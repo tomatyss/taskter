@@ -1,0 +1,13 @@
+[book]
+title = "Taskter Documentation"
+author = "Taskter Contributors"
+multilingual = false
+src = "src"
+
+[build]
+build-dir = "book"
+create-missing = true
+
+[output.html]
+site-url = "/taskter/"
+default-theme = "light"

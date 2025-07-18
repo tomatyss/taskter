@@ -170,9 +170,9 @@ async fn main() -> anyhow::Result<()> {
             if let Some(task) = board.tasks.iter_mut().find(|t| t.id == *id) {
                 task.status = store::TaskStatus::Done;
                 store::save_board(&board)?;
-                println!("Task {} marked as done.", id);
+                println!("Task {id} marked as done.");
             } else {
-                println!("Task with id {} not found.", id);
+                println!("Task with id {id} not found.");
             }
         }
         Commands::Comment { task_id, comment } => {
@@ -180,23 +180,23 @@ async fn main() -> anyhow::Result<()> {
             if let Some(task) = board.tasks.iter_mut().find(|t| t.id == *task_id) {
                 task.comment = Some(comment.clone());
                 store::save_board(&board)?;
-                println!("Comment added to task {}.", task_id);
+                println!("Comment added to task {task_id}.");
             } else {
-                println!("Task with id {} not found.", task_id);
+                println!("Task with id {task_id} not found.");
             }
         }
         Commands::Show { what } => match what {
             ShowCommands::Description => {
                 let description = fs::read_to_string(".taskter/description.md")?;
-                println!("{}", description);
+                println!("{description}");
             }
             ShowCommands::Okrs => {
                 let okrs = fs::read_to_string(".taskter/okrs.json")?;
-                println!("{}", okrs);
+                println!("{okrs}");
             }
             ShowCommands::Logs => {
                 let logs = fs::read_to_string(".taskter/logs.log")?;
-                println!("{}", logs);
+                println!("{logs}");
             }
         },
         Commands::AddOkr {
@@ -223,7 +223,7 @@ async fn main() -> anyhow::Result<()> {
                 .create(true)
                 .append(true)
                 .open(".taskter/logs.log")?;
-            writeln!(file, "{}", message)?;
+            writeln!(file, "{message}")?;
             println!("Log added successfully.");
         }
         Commands::Board => {
@@ -248,7 +248,7 @@ async fn main() -> anyhow::Result<()> {
                 } else if let Some(built) = tools::builtin_declaration(spec) {
                     built
                 } else {
-                    return Err(anyhow::anyhow!(format!("Unknown tool: {}", spec)));
+                    return Err(anyhow::anyhow!(format!("Unknown tool: {spec}")));
                 };
                 function_declarations.push(decl);
             }
@@ -275,27 +275,27 @@ async fn main() -> anyhow::Result<()> {
                                 agent::ExecutionResult::Success { comment } => {
                                     task.status = store::TaskStatus::Done;
                                     task.comment = Some(comment);
-                                    println!("Task {} executed successfully.", task_id);
+                                    println!("Task {task_id} executed successfully.");
                                 }
                                 agent::ExecutionResult::Failure { comment } => {
                                     task.status = store::TaskStatus::ToDo;
                                     task.comment = Some(comment);
                                     task.agent_id = None;
-                                    println!("Task {} failed to execute.", task_id);
+                                    println!("Task {task_id} failed to execute.");
                                 }
                             },
                             Err(e) => {
-                                println!("Error executing task {}: {}", task_id, e);
+                                println!("Error executing task {task_id}: {e}");
                             }
                         }
                     } else {
-                        println!("Agent with id {} not found.", agent_id);
+                        println!("Agent with id {agent_id} not found.");
                     }
                 } else {
-                    println!("Task {} is not assigned to an agent.", task_id);
+                    println!("Task {task_id} is not assigned to an agent.");
                 }
             } else {
-                println!("Task with id {} not found.", task_id);
+                println!("Task with id {task_id} not found.");
             }
 
             store::save_board(&board)?;
@@ -305,9 +305,9 @@ async fn main() -> anyhow::Result<()> {
             if let Some(task) = board.tasks.iter_mut().find(|t| t.id == *task_id) {
                 task.agent_id = Some(*agent_id);
                 store::save_board(&board)?;
-                println!("Agent {} assigned to task {}.", agent_id, task_id);
+                println!("Agent {agent_id} assigned to task {task_id}.");
             } else {
-                println!("Task with id {} not found.", task_id);
+                println!("Task with id {task_id} not found.");
             }
         }
         Commands::ListAgents => {
@@ -318,7 +318,7 @@ async fn main() -> anyhow::Result<()> {
         }
         Commands::DeleteAgent { agent_id } => {
             agent::delete_agent(*agent_id)?;
-            println!("Agent {} deleted.", agent_id);
+            println!("Agent {agent_id} deleted.");
         }
     }
 

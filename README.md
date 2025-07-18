@@ -161,7 +161,7 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
   the name of a built-in tool. Built-ins live under the `tools/` directory of
   the repository. For example `email` resolves to `tools/send_email.json`.
   Other built-ins include `create_task`, `assign_agent`, `add_log`, `add_okr`,
-  `list_tasks`, `list_agents`, and `get_project_description`.
+  `list_tasks`, `list_agents`, and `get_description`.
 
 - **Assign an agent to a task:**
   ```bash
@@ -207,6 +207,16 @@ All agents will use the same configuration file. If the file is missing, the
 `send_email` tool will gracefully fall back to a no-op so tests and offline
 usage keep working.
 
+
+### Gemini API key
+
+Agent execution uses the Gemini API, so the `GEMINI_API_KEY` environment
+variable must be set. For example:
+
+```bash
+export GEMINI_API_KEY=your_key_here
+```
+
 ### Example project
 
 If you want to see Taskter in action without manually creating data, run the
@@ -220,6 +230,7 @@ The script removes any existing `.taskter` directory, creates a new board with a
 few example tasks, sets a project description, defines OKRs and adds an agent
 using the built-in email tool. Once it finishes you can inspect the board with
 `taskter list` or launch the TUI via `taskter board`.
+
 
 ## Development
 
@@ -235,3 +246,9 @@ If you want Git to run it automatically, create a pre-commit hook:
 ```bash
 ln -s ../../scripts/precommit.sh .git/hooks/pre-commit
 ```
+
+## Documentation
+
+Rendered documentation is available on GitHub Pages: <https://tomatyss.github.io/taskter/>.
+
+To contribute to the book, edit the Markdown files under `docs/src/` and open a pull request. The `Deploy Docs` workflow will rebuild the book and publish it automatically when changes land on `main`.
