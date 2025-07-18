@@ -1,5 +1,10 @@
 # Taskter
 
+[![Test](https://github.com/tomatyss/taskter/actions/workflows/test.yml/badge.svg)](https://github.com/tomatyss/taskter/actions/workflows/test.yml)
+[![Crates.io](https://img.shields.io/crates/v/taskter)](https://crates.io/crates/taskter)
+[![Documentation](https://img.shields.io/badge/docs-gh--pages-informational)](https://tomatyss.github.io/taskter/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Taskter is a terminal Kanban board CLI tool built with Rust.
 
 > **Warning**
@@ -255,3 +260,11 @@ ln -s ../../scripts/precommit.sh .git/hooks/pre-commit
 Rendered documentation is available on GitHub Pages: <https://tomatyss.github.io/taskter/>.
 
 To contribute to the book, edit the Markdown files under `docs/src/` and open a pull request. The `Deploy Docs` workflow will rebuild the book and publish it automatically when changes land on `main`.
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
