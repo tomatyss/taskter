@@ -11,6 +11,7 @@ pub mod email;
 pub mod get_description;
 pub mod list_agents;
 pub mod list_tasks;
+pub mod web_search;
 
 pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
     match name {
@@ -22,6 +23,7 @@ pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
         "list_tasks" => Some(list_tasks::declaration()),
         "list_agents" => Some(list_agents::declaration()),
         "get_description" => Some(get_description::declaration()),
+        "web_search" => Some(web_search::declaration()),
         _ => None,
     }
 }
@@ -36,6 +38,7 @@ pub fn execute_tool(name: &str, args: &Value) -> Result<String> {
         "list_tasks" => list_tasks::execute(args),
         "list_agents" => list_agents::execute(args),
         "get_description" => get_description::execute(args),
+        "web_search" => web_search::execute(args),
         _ => Err(anyhow::anyhow!("Unknown tool: {}", name)),
     }
 }
