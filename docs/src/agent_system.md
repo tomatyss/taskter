@@ -21,6 +21,7 @@ Available built-in tools:
 - `list_agents`
 - `get_description`
 - `run_bash`
+- `run_python`
 - `send_email`
 
 ## Assigning an Agent to a Task

@@ -150,3 +150,10 @@ async fn agent_execution_fails_without_tool() {
     // Then
     assert!(matches!(result, ExecutionResult::Failure { .. }));
 }
+
+#[test]
+fn run_python_tool_executes_code() {
+    let result = taskter::tools::execute_tool("run_python", &json!({ "code": "print(40 + 2)" }))
+        .expect("execution failed");
+    assert_eq!(result.trim(), "42");
+}
