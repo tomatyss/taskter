@@ -1,0 +1,11 @@
+{
+  "name": "run_python",
+  "description": "Execute a Python script and return its output",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "code": { "type": "string", "description": "Python code to execute" }
+    },
+    "required": ["code"]
+  }
+}
