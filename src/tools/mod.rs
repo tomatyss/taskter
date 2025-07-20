@@ -6,6 +6,7 @@ use crate::agent::FunctionDeclaration;
 pub mod add_log;
 pub mod add_okr;
 pub mod assign_agent;
+pub mod create_agent;
 pub mod create_task;
 pub mod email;
 pub mod get_description;
@@ -26,8 +27,28 @@ pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
         "run_bash" => Some(run_bash::declaration()),
         "run_python" => Some(run_python::declaration()),
         "get_description" => Some(get_description::declaration()),
+        "create_agent" => Some(create_agent::declaration()),
         _ => None,
     }
+}
+
+pub fn builtin_tool_names() -> Vec<String> {
+    vec![
+        "send_email",
+        "create_task",
+        "assign_agent",
+        "add_log",
+        "add_okr",
+        "list_tasks",
+        "list_agents",
+        "run_bash",
+        "run_python",
+        "get_description",
+        "create_agent",
+    ]
+    .into_iter()
+    .map(String::from)
+    .collect()
 }
 
 pub fn execute_tool(name: &str, args: &Value) -> Result<String> {
@@ -42,6 +63,7 @@ pub fn execute_tool(name: &str, args: &Value) -> Result<String> {
         "run_bash" => run_bash::execute(args),
         "run_python" => run_python::execute(args),
         "get_description" => get_description::execute(args),
+        "create_agent" => create_agent::execute(args),
         _ => Err(anyhow::anyhow!("Unknown tool: {}", name)),
     }
 }

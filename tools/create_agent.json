@@ -1,0 +1,18 @@
+{
+  "name": "create_agent",
+  "description": "Create a new agent or update an existing one",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "id": { "type": "integer", "description": "Existing agent id to update" },
+      "prompt": { "type": "string", "description": "System prompt for the agent" },
+      "tools": {
+        "type": "array",
+        "items": { "type": "string" },
+        "description": "Tools the agent can use"
+      },
+      "model": { "type": "string", "description": "Model to use for the agent" }
+    },
+    "required": ["prompt"]
+  }
+}

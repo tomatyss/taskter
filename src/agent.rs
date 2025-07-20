@@ -24,6 +24,15 @@ fn append_log(message: &str) -> Result<()> {
     Ok(())
 }
 
+pub fn generate_system_prompt(agent: &Agent) -> String {
+    if agent.tools.iter().any(|t| t.name == "create_agent") {
+        let names = crate::tools::builtin_tool_names().join(", ");
+        format!("{}\nAvailable tools: {}", agent.system_prompt, names)
+    } else {
+        agent.system_prompt.clone()
+    }
+}
+
 pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult> {
     let client = Client::new();
     let _ = append_log(&format!(
@@ -79,9 +88,10 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
         task.title.clone()
     };
 
+    let system_prompt = generate_system_prompt(agent);
     let mut history = vec![json!({
         "role": "user",
-        "parts": [{"text": format!("System: {}\nUser: {}", agent.system_prompt, user_prompt)}]
+        "parts": [{"text": format!("System: {}\nUser: {}", system_prompt, user_prompt)}]
     })];
 
     loop {

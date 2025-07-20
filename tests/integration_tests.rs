@@ -157,3 +157,50 @@ fn run_python_tool_executes_code() {
         .expect("execution failed");
     assert_eq!(result.trim(), "42");
 }
+
+#[test]
+fn create_agent_tool_creates_and_updates_agents() {
+    with_temp_dir(|| {
+        fs::write(".taskter/agents.json", "[]").unwrap();
+
+        let msg = taskter::tools::execute_tool(
+            "create_agent",
+            &json!({"prompt": "p1", "tools": ["list_agents"], "model": "m1"}),
+        )
+        .unwrap();
+        assert_eq!(msg, "Agent 1 created");
+
+        let agents = agent::load_agents().unwrap();
+        assert_eq!(agents.len(), 1);
+        assert_eq!(agents[0].model, "m1");
+
+        let msg2 = taskter::tools::execute_tool(
+            "create_agent",
+            &json!({"id":1, "prompt":"p2", "tools": ["list_agents"], "model":"m2"}),
+        )
+        .unwrap();
+        assert_eq!(msg2, "Agent 1 updated");
+
+        let agents = agent::load_agents().unwrap();
+        assert_eq!(agents[0].system_prompt, "p2");
+        assert_eq!(agents[0].model, "m2");
+    });
+}
+
+#[test]
+fn system_prompt_includes_tools_when_creating_agents() {
+    let agent = Agent {
+        id: 1,
+        system_prompt: "base".into(),
+        tools: vec![FunctionDeclaration {
+            name: "create_agent".into(),
+            description: None,
+            parameters: json!({}),
+        }],
+        model: "m".into(),
+    };
+
+    let prompt = agent::generate_system_prompt(&agent);
+    assert!(prompt.contains("Available tools:"));
+    assert!(prompt.contains("create_agent"));
+}

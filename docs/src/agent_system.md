@@ -23,6 +23,7 @@ Available built-in tools:
 - `run_bash`
 - `run_python`
 - `send_email`
+- `create_agent`
 
 ## Assigning an Agent to a Task
 
