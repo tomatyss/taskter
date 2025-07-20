@@ -1,5 +1,10 @@
 # Taskter
 
+[![Test](https://github.com/tomatyss/taskter/actions/workflows/test.yml/badge.svg)](https://github.com/tomatyss/taskter/actions/workflows/test.yml)
+[![Crates.io](https://img.shields.io/crates/v/taskter)](https://crates.io/crates/taskter)
+[![Documentation](https://img.shields.io/badge/docs-gh--pages-informational)](https://tomatyss.github.io/taskter/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Taskter is a terminal Kanban board CLI tool built with Rust.
 
 > **Warning**
@@ -11,6 +16,71 @@ Taskter is a terminal Kanban board CLI tool built with Rust.
 - Project description
 - Operation logs
 - OKRs (Objectives and Key Results)
+
+## Quick Start
+
+This section provides a quick overview of how to get started with Taskter.
+
+### 1. Initialize the board
+
+First, navigate to your project's directory and initialize the Taskter board:
+
+```bash
+taskter init
+```
+
+This will create a `.taskter` directory to store all your tasks, agents, and project data.
+
+### 2. Create an agent
+
+Next, create an agent to help you with your tasks. For this example, we'll create a simple agent that can run bash commands:
+
+```bash
+taskter add-agent --prompt "You are a helpful assistant that can run bash commands." --tools "run_bash" --model "gemini-2.5-pro"
+```
+
+You can list all available agents using:
+
+```bash
+taskter show agents
+```
+
+### 3. Create a task
+
+Now, let's create a task for your agent to complete:
+
+```bash
+taskter add -t "List files in the current directory" -d "Use the ls -la command to list all files and folders in the current directory."
+```
+
+You can see all your tasks by running:
+
+```bash
+taskter list
+```
+
+### 4. Assign the task to an agent
+
+Assign the newly created task to your agent:
+
+```bash
+taskter assign --task-id 1 --agent-id 1
+```
+
+### 5. Execute the task
+
+Finally, execute the task:
+
+```bash
+taskter execute --task-id 1
+```
+
+The agent will now run the task. If it's successful, the task will be marked as "Done". You can view the board at any time using the interactive UI:
+
+```bash
+taskter board
+```
+
 
 ## Build and Installation
 
@@ -91,6 +161,10 @@ In the interactive board, you can use the following keys:
 - `n`: Create a new task
 - `u`: Edit the selected task
 - `d`: Delete the selected task
+- `L`: View project logs
+- `A`: List available agents
+- `O`: Show OKRs
+- `?`: Show available commands
 
 ### Manage tasks
 
@@ -161,7 +235,7 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
   the name of a built-in tool. Built-ins live under the `tools/` directory of
   the repository. For example `email` resolves to `tools/send_email.json`.
   Other built-ins include `create_task`, `assign_agent`, `add_log`, `add_okr`,
-  `list_tasks`, `list_agents`, `get_description`, and `web_search`.
+  `list_tasks`, `list_agents`, `get_description`, `run_bash`, `run_python`, and `web_search`.
 
 - **Assign an agent to a task:**
   ```bash
@@ -174,7 +248,7 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
   ```
 - **List available agents:**
   ```bash
-  taskter list-agents
+  taskter show agents
   ```
 - **Delete an agent:**
   ```bash
@@ -252,3 +326,11 @@ ln -s ../../scripts/precommit.sh .git/hooks/pre-commit
 Rendered documentation is available on GitHub Pages: <https://tomatyss.github.io/taskter/>.
 
 To contribute to the book, edit the Markdown files under `docs/src/` and open a pull request. The `Deploy Docs` workflow will rebuild the book and publish it automatically when changes land on `main`.
+
+## Contributing
+
+Contributions are welcome! Please open an issue or submit a pull request.
+
+## License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.

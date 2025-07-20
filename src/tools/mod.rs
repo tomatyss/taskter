@@ -11,6 +11,8 @@ pub mod email;
 pub mod get_description;
 pub mod list_agents;
 pub mod list_tasks;
+pub mod run_bash;
+pub mod run_python;
 pub mod web_search;
 
 pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
@@ -22,6 +24,8 @@ pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
         "add_okr" => Some(add_okr::declaration()),
         "list_tasks" => Some(list_tasks::declaration()),
         "list_agents" => Some(list_agents::declaration()),
+        "run_bash" => Some(run_bash::declaration()),
+        "run_python" => Some(run_python::declaration()),
         "get_description" => Some(get_description::declaration()),
         "web_search" => Some(web_search::declaration()),
         _ => None,
@@ -37,6 +41,8 @@ pub fn execute_tool(name: &str, args: &Value) -> Result<String> {
         "add_okr" => add_okr::execute(args),
         "list_tasks" => list_tasks::execute(args),
         "list_agents" => list_agents::execute(args),
+        "run_bash" => run_bash::execute(args),
+        "run_python" => run_python::execute(args),
         "get_description" => get_description::execute(args),
         "web_search" => web_search::execute(args),
         _ => Err(anyhow::anyhow!("Unknown tool: {}", name)),
