@@ -15,6 +15,25 @@ pub enum ExecutionResult {
     Failure { comment: String },
 }
 
+/// Build the final system prompt for an agent.
+///
+/// If the agent has the `create_agent` or `update_agent` tool,
+/// a list of all built-in tools is appended so the model can
+/// reference them when managing other agents.
+pub fn build_system_prompt(agent: &Agent) -> String {
+    let mut prompt = agent.system_prompt.clone();
+    let manages_agents = agent
+        .tools
+        .iter()
+        .any(|t| t.name == "create_agent" || t.name == "update_agent");
+    if manages_agents {
+        prompt.push_str("\nAvailable tools: ");
+        let names = tools::builtin_names();
+        prompt.push_str(&names.join(", "));
+    }
+    prompt
+}
+
 fn append_log(message: &str) -> Result<()> {
     let mut file = OpenOptions::new()
         .create(true)
@@ -79,9 +98,10 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
         task.title.clone()
     };
 
+    let system_prompt = build_system_prompt(agent);
     let mut history = vec![json!({
         "role": "user",
-        "parts": [{"text": format!("System: {}\nUser: {}", agent.system_prompt, user_prompt)}]
+        "parts": [{"text": format!("System: {}\nUser: {}", system_prompt, user_prompt)}]
     })];
 
     loop {

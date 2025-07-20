@@ -22,6 +22,14 @@ Next, create an agent to help you with your tasks. For this example, we'll creat
 
 ```bash
 taskter add-agent --prompt "You are a helpful assistant that can run bash commands." --tools "run_bash" --model "gemini-pro"
+
+# Agent capable of creating other agents
+taskter add-agent --prompt "Agent factory" --tools "create_agent" --model "gemini-2.5-flash"
+
+# Agent that can update existing agents
+taskter add-agent --prompt "Agent supervisor" --tools "update_agent" --model "gemini-2.5-flash"
+
+If you omit `--model`, the tool defaults to `gemini-2.5-flash`.
 ```
 
 You can list all available agents using:

@@ -229,12 +229,20 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
 - **Add a new agent:**
   ```bash
   taskter add-agent --prompt "You are a helpful assistant." --tools "email" "calendar" --model "gemini-pro"
+
+  # Agent capable of creating other agents
+  taskter add-agent --prompt "Agent factory" --tools "create_agent" --model "gemini-2.5-flash"
+
+  # Agent that can update other agents
+  taskter add-agent --prompt "Agent supervisor" --tools "update_agent" --model "gemini-2.5-flash"
   ```
+  If `--model` is omitted, the `create_agent` tool defaults to `gemini-2.5-flash`.
   The `--tools` option accepts either paths to JSON files describing a tool or
   the name of a built-in tool. Built-ins live under the `tools/` directory of
   the repository. For example `email` resolves to `tools/send_email.json`.
   Other built-ins include `create_task`, `assign_agent`, `add_log`, `add_okr`,
-  `list_tasks`, `list_agents`, `get_description`, `run_bash`, and `run_python`.
+  `update_agent`, `list_tasks`, `list_agents`, `get_description`,
+  `run_bash`, and `run_python`.
 
 - **Assign an agent to a task:**
   ```bash

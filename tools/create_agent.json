@@ -1,0 +1,16 @@
+{
+  "name": "create_agent",
+  "description": "Create a new agent with the given prompt, tools and model",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "prompt": { "type": "string", "description": "System prompt for the agent" },
+      "tools": { "type": "array", "items": { "type": "string" }, "description": "Tools available to the agent" },
+      "model": {
+        "type": "string",
+        "description": "LLM model to use (defaults to gemini-2.5-flash)"
+      }
+    },
+    "required": ["prompt", "tools"]
+  }
+}

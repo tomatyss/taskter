@@ -318,9 +318,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                                 },
                                                 Err(_) => {
                                                     task.status = store::TaskStatus::ToDo;
-                                                    task.comment = Some(
-                                                        "Failed to execute task.".to_string(),
-                                                    );
+                                                    task.comment =
+                                                        Some("Failed to execute task.".to_string());
                                                     task.agent_id = None;
                                                 }
                                             }
@@ -424,8 +423,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     KeyCode::Enter => {
                         if app.editing_description {
                             if let Some(task_id) = app.get_selected_task().map(|t| t.id) {
-                                if let Some(task) =
-                                    app.board.lock().unwrap().tasks.iter_mut().find(|t| t.id == task_id)
+                                if let Some(task) = app
+                                    .board
+                                    .lock()
+                                    .unwrap()
+                                    .tasks
+                                    .iter_mut()
+                                    .find(|t| t.id == task_id)
                                 {
                                     task.title = app.new_task_title.clone();
                                     task.description = if app.new_task_description.is_empty() {

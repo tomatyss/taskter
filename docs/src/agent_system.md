@@ -8,15 +8,27 @@ You can create an agent using the `add-agent` subcommand. You need to provide a 
 
 ```bash
 taskter add-agent --prompt "You are a helpful assistant." --tools "email" "calendar" --model "gemini-pro"
+
+# Create an agent capable of creating other agents
+
+taskter add-agent --prompt "Agent factory" --tools "create_agent" --model "gemini-2.5-flash"
+
+# Agent that can update existing agents
+
+taskter add-agent --prompt "Agent supervisor" --tools "update_agent" --model "gemini-2.5-flash"
 ```
+
+If you omit the `--model` flag, the `create_agent` tool uses `gemini-2.5-flash` by default.
 
 The `--tools` option accepts either paths to JSON files describing a tool or the name of a built-in tool. Built-in tools are located in the `tools/` directory of the repository.
 
 Available built-in tools:
 - `create_task`
 - `assign_agent`
+- `create_agent`
 - `add_log`
 - `add_okr`
+- `update_agent`
 - `list_tasks`
 - `list_agents`
 - `get_description`
