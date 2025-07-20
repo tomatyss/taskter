@@ -2,6 +2,14 @@
 name = "taskter"
 version = "0.1.0"
 edition = "2021"
+description = "Taskter is a terminal Kanban board CLI tool built with Rust."
+license = "MIT"
+repository = "https://github.com/tomatyss/taskter"
+documentation = "https://tomatyss.github.io/taskter/"
+readme = "README.md"
+homepage = "https://github.com/tomatyss/taskter"
+keywords = ["cli", "kanban", "tui", "productivity", "task-management"]
+categories = ["command-line-utilities"]
 
 [dependencies]
 anyhow = "1.0"

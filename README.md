@@ -128,11 +128,15 @@ sudo cp target/release/taskter /usr/local/bin/taskter
 ```
 After this, you can run `taskter` from any directory.
 
-Alternatively, you can use `cargo install`:
+Alternatively, you can install the latest published version from [crates.io](https://crates.io/crates/taskter):
+```bash
+cargo install taskter
+```
+You can also install directly from the repository for a development build:
 ```bash
 cargo install --path .
 ```
-This will install the `taskter` executable in your Cargo bin directory (usually `~/.cargo/bin/`), which should be in your `PATH`.
+Both methods place the `taskter` executable in your Cargo bin directory (usually `~/.cargo/bin/`), which should be in your `PATH`.
 
 ## Docker
 
