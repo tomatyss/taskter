@@ -4,6 +4,9 @@
 pub mod agent;
 pub mod store;
 pub mod tools;
+pub mod cli;
+
+pub use cli::{Cli, Commands, ShowCommands};
 
 // The TUI heavily depends on a terminal backend which is not easily testable in
 // automated environments. We expose it behind the `tui` feature so that normal
