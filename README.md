@@ -42,7 +42,7 @@ taskter add-agent --prompt "You are a helpful assistant that can run bash comman
 You can list all available agents using:
 
 ```bash
-taskter list-agents
+taskter show agents
 ```
 
 To see the available built-in tools, run:
@@ -259,7 +259,7 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
   ```
 - **List available agents:**
   ```bash
-  taskter list-agents
+  taskter show agents
   ```
 - **Delete an agent:**
   ```bash

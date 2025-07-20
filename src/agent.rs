@@ -1,6 +1,7 @@
 use crate::store::Task;
 use crate::tools;
 use anyhow::Result;
+use chrono::Local;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
@@ -20,7 +21,8 @@ fn append_log(message: &str) -> Result<()> {
         .create(true)
         .append(true)
         .open(".taskter/logs.log")?;
-    writeln!(file, "{}", message)?;
+    let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
+    writeln!(file, "[{timestamp}] {message}")?;
     Ok(())
 }
 
