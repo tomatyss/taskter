@@ -27,7 +27,7 @@ taskter add-agent --prompt "You are a helpful assistant that can run bash comman
 You can list all available agents using:
 
 ```bash
-taskter list-agents
+taskter show agents
 ```
 
 ### 3. Create a task
