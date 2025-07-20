@@ -23,6 +23,7 @@ enum View {
     Logs,
     Agents,
     Okrs,
+    Commands,
 }
 
 struct App {
@@ -258,6 +259,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         app.okrs = store::load_okrs().unwrap_or_default();
                         app.current_view = View::Okrs;
                     }
+                    KeyCode::Char('?') => {
+                        app.current_view = View::Commands;
+                    }
                     _ => {}
                 },
                 View::TaskDescription => match key.code {
@@ -448,8 +452,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     }
                     _ => {}
                 },
-                View::Logs | View::Agents | View::Okrs => match key.code {
-                    KeyCode::Char('q') | KeyCode::Esc => {
+                View::Logs | View::Agents | View::Okrs | View::Commands => match key.code {
+                    KeyCode::Char('q') | KeyCode::Esc | KeyCode::Char('?') => {
                         app.current_view = View::Board;
                     }
                     _ => {}
@@ -470,6 +474,7 @@ fn ui(f: &mut Frame, app: &mut App) {
         View::Logs => render_logs(f, app),
         View::Agents => render_agents_list(f, app),
         View::Okrs => render_okrs(f, app),
+        View::Commands => render_commands(f),
         _ => {}
     }
 }
@@ -692,6 +697,28 @@ fn render_okrs(f: &mut Frame, app: &mut App) {
         lines.push(Line::raw(""));
     }
     let block = Block::default().title("OKRs").borders(Borders::ALL);
+    let paragraph = Paragraph::new(lines).block(block).wrap(Wrap { trim: true });
+    let area = centered_rect(60, 50, f.area());
+    f.render_widget(Clear, area);
+    f.render_widget(paragraph, area);
+}
+
+fn render_commands(f: &mut Frame) {
+    let lines = vec![
+        Line::from("q - Quit"),
+        Line::from("←/→ or Tab - Switch columns"),
+        Line::from("↑/↓ - Navigate tasks"),
+        Line::from("h/l - Move task"),
+        Line::from("n - New task"),
+        Line::from("u - Edit task"),
+        Line::from("d - Delete task"),
+        Line::from("a - Assign agent"),
+        Line::from("c - Add comment"),
+        Line::from("L - View logs"),
+        Line::from("A - List agents"),
+        Line::from("O - Show OKRs"),
+    ];
+    let block = Block::default().title("Commands").borders(Borders::ALL);
     let paragraph = Paragraph::new(lines).block(block).wrap(Wrap { trim: true });
     let area = centered_rect(60, 50, f.area());
     f.render_widget(Clear, area);

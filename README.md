@@ -164,6 +164,7 @@ In the interactive board, you can use the following keys:
 - `L`: View project logs
 - `A`: List available agents
 - `O`: Show OKRs
+- `?`: Show available commands
 
 ### Manage tasks
 
