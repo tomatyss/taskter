@@ -1,3 +1,4 @@
+use chrono::Local;
 use clap::{Parser, Subcommand};
 use std::fs;
 use std::io::Write;
@@ -223,7 +224,8 @@ async fn main() -> anyhow::Result<()> {
                 .create(true)
                 .append(true)
                 .open(".taskter/logs.log")?;
-            writeln!(file, "{message}")?;
+            let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
+            writeln!(file, "[{timestamp}] {message}")?;
             println!("Log added successfully.");
         }
         Commands::Board => {

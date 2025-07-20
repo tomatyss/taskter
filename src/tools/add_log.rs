@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Result};
+use chrono::Local;
 use serde_json::Value;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -19,6 +20,7 @@ pub fn execute(args: &Value) -> Result<String> {
         .create(true)
         .append(true)
         .open(".taskter/logs.log")?;
-    writeln!(file, "{message}")?;
+    let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
+    writeln!(file, "[{timestamp}] {message}")?;
     Ok("Log entry added".to_string())
 }
