@@ -1,6 +1,25 @@
 # Installation
 
-You can install Taskter either by building from source or using Docker.
+You can install Taskter from prebuilt packages or build from source.
+
+## Homebrew
+
+```bash
+brew tap tomatyss/taskter
+brew install taskter
+```
+
+## Linux packages
+
+Prebuilt `.deb` archives are generated using `cargo deb` and can be downloaded
+from the GitHub release page. Install them with `dpkg -i`:
+
+```bash
+sudo dpkg -i taskter_0.1.0_amd64.deb
+```
+
+For Alpine Linux there is an `APKBUILD` script in `packaging/apk/` which can be
+used with `abuild -r` to produce an `apk` package.
 
 ## Build from Source
 

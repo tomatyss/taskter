@@ -1,0 +1,15 @@
+# Contributor: Taskter Maintainers
+# Maintainer: Taskter Maintainers
+pkgname=taskter
+pkgver=0.1.0
+pkgrel=0
+pkgdesc="Terminal Kanban board CLI tool"
+url="https://github.com/tomatyss/taskter"
+license="MIT"
+arch="x86_64"
+source="https://github.com/tomatyss/taskter/releases/download/v${pkgver}/taskter-${pkgver}-x86_64-unknown-linux-musl.tar.gz"
+options="!strip"
+
+package() {
+    install -Dm755 taskter "$pkgdir/usr/bin/taskter"
+}

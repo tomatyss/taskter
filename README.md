@@ -84,6 +84,29 @@ taskter board
 
 ## Build and Installation
 
+Taskter can be installed from prebuilt packages or built from source.
+
+### Homebrew
+
+```
+brew tap tomatyss/taskter
+brew install taskter
+```
+
+### Linux packages
+
+Prebuilt `.deb` archives are generated with `cargo deb` and published on the
+GitHub release page.  You can install them with:
+
+```
+sudo dpkg -i taskter_0.1.0_amd64.deb
+```
+
+For Alpine Linux an `APKBUILD` script is provided under `packaging/apk/`.  Run
+`abuild -r` inside that directory to create an `apk` package.
+
+### Build from source
+
 To build Taskter from source, you need to have Rust and Cargo installed.
 
 1. Clone the repository:
