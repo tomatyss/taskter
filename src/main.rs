@@ -212,6 +212,12 @@ async fn main() -> anyhow::Result<()> {
             agent::delete_agent(*agent_id)?;
             println!("Agent {agent_id} deleted.");
         }
+        Commands::ListAgents => {
+            let agents = agent::list_agents()?;
+            for a in agents {
+                println!("{}: {}", a.id, a.system_prompt);
+            }
+        }
     }
 
     Ok(())

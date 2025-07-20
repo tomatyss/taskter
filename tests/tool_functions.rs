@@ -5,6 +5,7 @@ use taskter::agent::{self, Agent};
 use taskter::store::{self, Board, Task, TaskStatus};
 use taskter::tools::{
     add_log, add_okr, assign_agent, create_task, get_description, list_agents, list_tasks,
+    text_file,
 };
 
 fn with_temp_dir<F: FnOnce() -> T, T>(test: F) -> T {
@@ -218,5 +219,23 @@ fn get_description_fails_missing_file() {
     with_temp_dir(|| {
         let err = get_description::execute(&json!({})).unwrap_err();
         assert!(err.to_string().contains("No such file"));
+    });
+}
+
+#[test]
+fn text_file_writes_and_reads() {
+    with_temp_dir(|| {
+        let path = ".taskter/note.txt";
+        text_file::execute(&json!({"path": path, "content": "hello"})).unwrap();
+        let out = text_file::execute(&json!({"path": path})).unwrap();
+        assert_eq!(out, "hello");
+    });
+}
+
+#[test]
+fn text_file_requires_path() {
+    with_temp_dir(|| {
+        let err = text_file::execute(&json!({"content": "hi"})).unwrap_err();
+        assert!(err.to_string().contains("path missing"));
     });
 }

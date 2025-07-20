@@ -97,6 +97,9 @@ pub enum Commands {
         #[arg(short, long)]
         agent_id: usize,
     },
+    /// Lists all agents
+    #[command(name = "list-agents")]
+    ListAgents,
 }
 
 #[derive(Subcommand)]

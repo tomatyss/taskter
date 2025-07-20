@@ -1,0 +1,13 @@
+{
+  "name": "text_file",
+  "description": "Read from or write to a text file. Creates the file if it doesn't exist.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "path": { "type": "string", "description": "Path to the text file" },
+      "content": { "type": "string", "description": "Content to write. Omit to read" },
+      "append": { "type": "boolean", "description": "Append to file instead of overwriting" }
+    },
+    "required": ["path"]
+  }
+}
