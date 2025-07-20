@@ -187,7 +187,18 @@
 </ul>
 <p>This book serves as the official documentation for Taskter, providing a comprehensive guide to its features and usage. Whether you're a new user or a seasoned developer, this guide will help you get the most out of Taskter.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="installation"><a class="header" href="#installation">Installation</a></h1>
-<p>You can install Taskter either by building from source or using Docker.</p>
+<p>You can install Taskter from prebuilt packages or build from source.</p>
+<h2 id="homebrew"><a class="header" href="#homebrew">Homebrew</a></h2>
+<pre><code class="language-bash">brew tap tomatyss/taskter
+brew install taskter
+</code></pre>
+<h2 id="linux-packages"><a class="header" href="#linux-packages">Linux packages</a></h2>
+<p>Prebuilt <code>.deb</code> archives are generated using <code>cargo deb</code> and can be downloaded
+from the GitHub release page. Install them with <code>dpkg -i</code>:</p>
+<pre><code class="language-bash">sudo dpkg -i taskter_0.1.0_amd64.deb
+</code></pre>
+<p>For Alpine Linux there is an <code>APKBUILD</code> script in <code>packaging/apk/</code> which can be
+used with <code>abuild -r</code> to produce an <code>apk</code> package.</p>
 <h2 id="build-from-source"><a class="header" href="#build-from-source">Build from Source</a></h2>
 <p>To build Taskter from source, you need to have Rust and Cargo installed.</p>
 <ol>
