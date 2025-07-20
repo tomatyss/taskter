@@ -24,5 +24,6 @@ The TUI is controlled with keyboard shortcuts. Here is a list of the available k
 | `L`                 | View project logs                    |
 | `A`                 | List available agents                |
 | `O`                 | Show project OKRs                    |
+| `?`                 | Show available commands              |
 
 When a task is selected, you can press `Enter` to view its details, including the full description, any comments, and the assigned agent ID.
