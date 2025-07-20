@@ -67,10 +67,23 @@ impl App {
 
     fn next_column(&mut self) {
         self.selected_column = (self.selected_column + 1) % 3;
+        self.ensure_selected_task();
     }
 
     fn prev_column(&mut self) {
         self.selected_column = (self.selected_column + 2) % 3;
+        self.ensure_selected_task();
+    }
+
+    fn ensure_selected_task(&mut self) {
+        let tasks = self.tasks_in_current_column();
+        if !tasks.is_empty()
+            && self.selected_task[self.selected_column]
+                .selected()
+                .is_none()
+        {
+            self.selected_task[self.selected_column].select(Some(0));
+        }
     }
 
     fn next_task(&mut self) {
@@ -322,9 +335,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                                 },
                                                 Err(_) => {
                                                     task.status = store::TaskStatus::ToDo;
-                                                    task.comment = Some(
-                                                        "Failed to execute task.".to_string(),
-                                                    );
+                                                    task.comment =
+                                                        Some("Failed to execute task.".to_string());
                                                     task.agent_id = None;
                                                 }
                                             }
@@ -428,8 +440,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     KeyCode::Enter => {
                         if app.editing_description {
                             if let Some(task_id) = app.get_selected_task().map(|t| t.id) {
-                                if let Some(task) =
-                                    app.board.lock().unwrap().tasks.iter_mut().find(|t| t.id == task_id)
+                                if let Some(task) = app
+                                    .board
+                                    .lock()
+                                    .unwrap()
+                                    .tasks
+                                    .iter_mut()
+                                    .find(|t| t.id == task_id)
                                 {
                                     task.title = app.new_task_title.clone();
                                     task.description = if app.new_task_description.is_empty() {
