@@ -15,5 +15,5 @@ jobs:
           toolchain: stable
           profile: minimal
           override: true
-      - name: Run tests
-        run: cargo test --all --verbose
+      - name: Run precommit checks
+        run: ./scripts/precommit.sh
