@@ -99,9 +99,6 @@ enum Commands {
         #[arg(short, long)]
         agent_id: usize,
     },
-    /// Lists all agents
-    #[command(name = "list-agents")]
-    ListAgents,
     /// Deletes an agent by id
     #[command(name = "delete-agent")]
     DeleteAgent {
@@ -119,6 +116,8 @@ enum ShowCommands {
     Okrs,
     /// Shows the operation logs
     Logs,
+    /// Lists all agents
+    Agents,
 }
 
 #[tokio::main]
@@ -198,6 +197,12 @@ async fn main() -> anyhow::Result<()> {
             ShowCommands::Logs => {
                 let logs = fs::read_to_string(".taskter/logs.log")?;
                 println!("{logs}");
+            }
+            ShowCommands::Agents => {
+                let agents = agent::list_agents()?;
+                for a in agents {
+                    println!("{}: {}", a.id, a.system_prompt);
+                }
             }
         },
         Commands::AddOkr {
@@ -310,12 +315,6 @@ async fn main() -> anyhow::Result<()> {
                 println!("Agent {agent_id} assigned to task {task_id}.");
             } else {
                 println!("Task with id {task_id} not found.");
-            }
-        }
-        Commands::ListAgents => {
-            let agents = agent::list_agents()?;
-            for a in agents {
-                println!("{}: {}", a.id, a.system_prompt);
             }
         }
         Commands::DeleteAgent { agent_id } => {
