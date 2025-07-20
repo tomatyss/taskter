@@ -118,6 +118,8 @@ enum ShowCommands {
     Okrs,
     /// Shows the operation logs
     Logs,
+    /// Lists available built-in tools
+    Tools,
 }
 
 #[tokio::main]
@@ -197,6 +199,11 @@ async fn main() -> anyhow::Result<()> {
             ShowCommands::Logs => {
                 let logs = fs::read_to_string(".taskter/logs.log")?;
                 println!("{logs}");
+            }
+            ShowCommands::Tools => {
+                for name in tools::builtin_names() {
+                    println!("{name}");
+                }
             }
         },
         Commands::AddOkr {

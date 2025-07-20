@@ -14,6 +14,20 @@ pub mod list_tasks;
 pub mod run_bash;
 pub mod run_python;
 
+/// List of built-in tool identifiers.
+const BUILTIN_TOOLS: &[&str] = &[
+    "send_email",
+    "create_task",
+    "assign_agent",
+    "add_log",
+    "add_okr",
+    "list_tasks",
+    "list_agents",
+    "run_bash",
+    "run_python",
+    "get_description",
+];
+
 pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
     match name {
         "send_email" | "email" => Some(email::declaration()),
@@ -28,6 +42,11 @@ pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
         "get_description" => Some(get_description::declaration()),
         _ => None,
     }
+}
+
+/// Returns the identifiers of all built-in tools.
+pub fn builtin_names() -> Vec<&'static str> {
+    BUILTIN_TOOLS.to_vec()
 }
 
 pub fn execute_tool(name: &str, args: &Value) -> Result<String> {
