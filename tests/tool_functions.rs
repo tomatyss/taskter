@@ -220,3 +220,28 @@ fn get_description_fails_missing_file() {
         assert!(err.to_string().contains("No such file"));
     });
 }
+
+#[test]
+fn web_search_fetches_results() {
+    with_temp_dir(|| {
+        let mut server = mockito::Server::new();
+        let url = server.url();
+        let m = server
+            .mock("GET", "/")
+            .match_query(mockito::Matcher::AllOf(vec![
+                mockito::Matcher::UrlEncoded("q".into(), "rust".into()),
+                mockito::Matcher::UrlEncoded("format".into(), "json".into()),
+                mockito::Matcher::UrlEncoded("no_redirect".into(), "1".into()),
+                mockito::Matcher::UrlEncoded("skip_disambig".into(), "1".into()),
+            ]))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body("{\"Heading\":\"Rust\",\"AbstractText\":\"A language\"}")
+            .create();
+        std::env::set_var("SEARCH_API_BASE_URL", url);
+        let out = taskter::tools::execute_tool("web_search", &json!({"query":"rust"})).unwrap();
+        m.assert();
+        assert!(out.contains("Rust"));
+        std::env::remove_var("SEARCH_API_BASE_URL");
+    });
+}

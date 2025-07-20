@@ -13,6 +13,7 @@ pub mod list_agents;
 pub mod list_tasks;
 pub mod run_bash;
 pub mod run_python;
+pub mod web_search;
 
 pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
     match name {
@@ -26,6 +27,7 @@ pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
         "run_bash" => Some(run_bash::declaration()),
         "run_python" => Some(run_python::declaration()),
         "get_description" => Some(get_description::declaration()),
+        "web_search" => Some(web_search::declaration()),
         _ => None,
     }
 }
@@ -42,6 +44,7 @@ pub fn execute_tool(name: &str, args: &Value) -> Result<String> {
         "run_bash" => run_bash::execute(args),
         "run_python" => run_python::execute(args),
         "get_description" => get_description::execute(args),
+        "web_search" => web_search::execute(args),
         _ => Err(anyhow::anyhow!("Unknown tool: {}", name)),
     }
 }

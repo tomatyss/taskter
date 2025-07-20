@@ -113,17 +113,31 @@ fn add_agent_and_execute_task() {
 #[test]
 fn list_and_delete_agents() {
     with_temp_dir(|| {
-        Command::cargo_bin("taskter").unwrap().arg("init").assert().success();
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .arg("init")
+            .assert()
+            .success();
 
         // add an agent
-        Command::cargo_bin("taskter").unwrap()
-            .args(["add-agent", "--prompt", "helper", "--tools", "email", "--model", "gpt-4o"])
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args([
+                "add-agent",
+                "--prompt",
+                "helper",
+                "--tools",
+                "email",
+                "--model",
+                "gpt-4o",
+            ])
             .assert()
             .success();
 
         // list agents
-        let out = Command::cargo_bin("taskter").unwrap()
-            .arg("list-agents")
+        let out = Command::cargo_bin("taskter")
+            .unwrap()
+            .args(["show", "agents"])
             .assert()
             .success()
             .get_output()
@@ -133,13 +147,15 @@ fn list_and_delete_agents() {
         assert!(output.contains("1: helper"));
 
         // delete agent
-        Command::cargo_bin("taskter").unwrap()
+        Command::cargo_bin("taskter")
+            .unwrap()
             .args(["delete-agent", "--agent-id", "1"])
             .assert()
             .success()
             .stdout(predicate::str::contains("Agent 1 deleted."));
 
-        let agents: Vec<Value> = serde_json::from_str(&fs::read_to_string(".taskter/agents.json").unwrap()).unwrap();
+        let agents: Vec<Value> =
+            serde_json::from_str(&fs::read_to_string(".taskter/agents.json").unwrap()).unwrap();
         assert!(agents.is_empty());
     });
 }
@@ -147,21 +163,28 @@ fn list_and_delete_agents() {
 #[test]
 fn add_okr_log_and_description() {
     with_temp_dir(|| {
-        Command::cargo_bin("taskter").unwrap().arg("init").assert().success();
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .arg("init")
+            .assert()
+            .success();
 
         // add okr
-        Command::cargo_bin("taskter").unwrap()
+        Command::cargo_bin("taskter")
+            .unwrap()
             .args(["add-okr", "-o", "Improve UI", "-k", "Faster", "Better"])
             .assert()
             .success()
             .stdout(predicate::str::contains("OKR added successfully"));
 
-        let okrs: Value = serde_json::from_str(&fs::read_to_string(".taskter/okrs.json").unwrap()).unwrap();
+        let okrs: Value =
+            serde_json::from_str(&fs::read_to_string(".taskter/okrs.json").unwrap()).unwrap();
         assert_eq!(okrs.as_array().unwrap().len(), 1);
         assert_eq!(okrs[0]["objective"], "Improve UI");
 
         // add log entry
-        Command::cargo_bin("taskter").unwrap()
+        Command::cargo_bin("taskter")
+            .unwrap()
             .args(["log", "Initial commit"])
             .assert()
             .success()
@@ -171,11 +194,14 @@ fn add_okr_log_and_description() {
         assert!(logs.contains("Initial commit"));
 
         // update description
-        Command::cargo_bin("taskter").unwrap()
+        Command::cargo_bin("taskter")
+            .unwrap()
             .args(["description", "A great project"])
             .assert()
             .success()
-            .stdout(predicate::str::contains("Project description updated successfully"));
+            .stdout(predicate::str::contains(
+                "Project description updated successfully",
+            ));
 
         let desc = fs::read_to_string(".taskter/description.md").unwrap();
         assert_eq!(desc, "A great project");

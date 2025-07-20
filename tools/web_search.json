@@ -1,0 +1,11 @@
+{
+  "name": "web_search",
+  "description": "Search the web for a query using DuckDuckGo",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "query": { "type": "string", "description": "Search terms" }
+    },
+    "required": ["query"]
+  }
+}
