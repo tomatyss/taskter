@@ -18,20 +18,23 @@ fn with_temp_dir<F: FnOnce() -> T, T>(test: F) -> T {
 fn add_list_done_workflow() {
     with_temp_dir(|| {
         // Initialize board
-        Command::cargo_bin("taskter").unwrap()
+        Command::cargo_bin("taskter")
+            .unwrap()
             .arg("init")
             .assert()
             .success();
 
         // Add a task
-        Command::cargo_bin("taskter").unwrap()
+        Command::cargo_bin("taskter")
+            .unwrap()
             .args(["add", "--title", "Test task"])
             .assert()
             .success()
             .stdout(predicate::str::contains("Task added successfully"));
 
         // Verify list output contains the task
-        let out = Command::cargo_bin("taskter").unwrap()
+        let out = Command::cargo_bin("taskter")
+            .unwrap()
             .arg("list")
             .assert()
             .success()
@@ -42,14 +45,16 @@ fn add_list_done_workflow() {
         assert!(output.contains("Test task"));
 
         // Mark the task as done
-        Command::cargo_bin("taskter").unwrap()
+        Command::cargo_bin("taskter")
+            .unwrap()
             .args(["done", "1"])
             .assert()
             .success()
             .stdout(predicate::str::contains("marked as done"));
 
         // Inspect board file
-        let board: Value = serde_json::from_str(&fs::read_to_string(".taskter/board.json").unwrap()).unwrap();
+        let board: Value =
+            serde_json::from_str(&fs::read_to_string(".taskter/board.json").unwrap()).unwrap();
         assert_eq!(board["tasks"][0]["status"], "Done");
     });
 }
@@ -58,33 +63,50 @@ fn add_list_done_workflow() {
 fn add_agent_and_execute_task() {
     with_temp_dir(|| {
         // prepare board
-        Command::cargo_bin("taskter").unwrap().arg("init").assert().success();
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .arg("init")
+            .assert()
+            .success();
 
         // add a task
-        Command::cargo_bin("taskter").unwrap()
+        Command::cargo_bin("taskter")
+            .unwrap()
             .args(["add", "--title", "Send email"])
             .assert()
             .success();
 
         // add agent with builtin tool
-        Command::cargo_bin("taskter").unwrap()
-            .args(["add-agent", "--prompt", "email agent", "--tools", "email", "--model", "gpt-4o"])
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args([
+                "add-agent",
+                "--prompt",
+                "email agent",
+                "--tools",
+                "email",
+                "--model",
+                "gpt-4o",
+            ])
             .assert()
             .success();
 
         // assign agent to task
-        Command::cargo_bin("taskter").unwrap()
+        Command::cargo_bin("taskter")
+            .unwrap()
             .args(["assign", "--task-id", "1", "--agent-id", "1"])
             .assert()
             .success();
 
         // execute the task
-        Command::cargo_bin("taskter").unwrap()
+        Command::cargo_bin("taskter")
+            .unwrap()
             .args(["execute", "--task-id", "1"])
             .assert()
             .success();
 
-        let board: Value = serde_json::from_str(&fs::read_to_string(".taskter/board.json").unwrap()).unwrap();
+        let board: Value =
+            serde_json::from_str(&fs::read_to_string(".taskter/board.json").unwrap()).unwrap();
         assert_eq!(board["tasks"][0]["status"], "Done");
     });
 }
