@@ -5,6 +5,7 @@ use taskter::agent::{self, Agent};
 use taskter::store::{self, Board, Task, TaskStatus};
 use taskter::tools::{
     add_log, add_okr, assign_agent, create_task, get_description, list_agents, list_tasks,
+    run_bash, run_python,
 };
 
 fn with_temp_dir<F: FnOnce() -> T, T>(test: F) -> T {
@@ -218,5 +219,38 @@ fn get_description_fails_missing_file() {
     with_temp_dir(|| {
         let err = get_description::execute(&json!({})).unwrap_err();
         assert!(err.to_string().contains("No such file"));
+    });
+}
+
+#[test]
+fn run_bash_requires_command() {
+    with_temp_dir(|| {
+        let err = run_bash::execute(&json!({})).unwrap_err();
+        assert!(err.to_string().contains("command missing"));
+    });
+}
+
+#[test]
+fn run_bash_fails_on_error() {
+    with_temp_dir(|| {
+        let err = run_bash::execute(&json!({"command": "false"})).unwrap_err();
+        assert!(err.to_string().contains("Command failed"));
+    });
+}
+
+#[test]
+fn run_python_requires_code() {
+    with_temp_dir(|| {
+        let err = run_python::execute(&json!({})).unwrap_err();
+        assert!(err.to_string().contains("code missing"));
+    });
+}
+
+#[test]
+fn run_python_fails_on_error() {
+    with_temp_dir(|| {
+        let err = run_python::execute(&json!({"code": "raise Exception()"}))
+            .unwrap_err();
+        assert!(err.to_string().contains("Python execution failed"));
     });
 }

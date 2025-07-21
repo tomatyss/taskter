@@ -820,3 +820,67 @@ fn centered_rect(percent_x: u16, percent_y: u16, r: Rect) -> Rect {
         ])
         .split(popup_layout[1])[1]
 }
+
+#[cfg(all(test, feature = "tui"))]
+mod tests {
+    use super::*;
+    use crate::store::{Board, Task, TaskStatus};
+
+    fn sample_app() -> App {
+        let board = Board {
+            tasks: vec![
+                Task {
+                    id: 1,
+                    title: "t1".into(),
+                    description: None,
+                    status: TaskStatus::ToDo,
+                    agent_id: None,
+                    comment: None,
+                },
+                Task {
+                    id: 2,
+                    title: "t2".into(),
+                    description: None,
+                    status: TaskStatus::ToDo,
+                    agent_id: None,
+                    comment: None,
+                },
+            ],
+        };
+        App::new(board, vec![])
+    }
+
+    #[test]
+    fn column_navigation_wraps() {
+        let mut app = sample_app();
+        assert_eq!(app.selected_column, 0);
+        app.next_column();
+        assert_eq!(app.selected_column, 1);
+        app.next_column();
+        assert_eq!(app.selected_column, 2);
+        app.next_column();
+        assert_eq!(app.selected_column, 0);
+        app.prev_column();
+        assert_eq!(app.selected_column, 2);
+    }
+
+    #[test]
+    fn task_navigation_cycles() {
+        let mut app = sample_app();
+        assert_eq!(app.selected_task[0].selected(), Some(0));
+        app.next_task();
+        assert_eq!(app.selected_task[0].selected(), Some(1));
+        app.next_task();
+        assert_eq!(app.selected_task[0].selected(), Some(0));
+        app.prev_task();
+        assert_eq!(app.selected_task[0].selected(), Some(1));
+    }
+
+    #[test]
+    fn moving_task_updates_status() {
+        let mut app = sample_app();
+        app.move_task_to_next_column();
+        let board = app.board.lock().unwrap();
+        assert_eq!(board.tasks[0].status, TaskStatus::InProgress);
+    }
+}
