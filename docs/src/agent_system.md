@@ -23,6 +23,7 @@ Available built-in tools:
 - `run_bash`
 - `run_python`
 - `send_email`
+- `web_search`
 
 You can display this list at any time with:
 

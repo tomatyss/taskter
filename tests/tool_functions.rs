@@ -7,6 +7,8 @@ use taskter::tools::{
     add_log, add_okr, assign_agent, create_task, get_description, list_agents, list_tasks,
 };
 
+use mockito::{Matcher, Server};
+
 mod common;
 pub use common::with_temp_dir;
 
@@ -208,5 +210,27 @@ fn get_description_fails_missing_file() {
     with_temp_dir(|| {
         let err = get_description::execute(&json!({})).unwrap_err();
         assert!(err.to_string().contains("No such file"));
+    });
+}
+
+#[test]
+fn web_search_fetches_result() {
+    with_temp_dir(|| {
+        let mut server = Server::new();
+        let _m = server
+            .mock("GET", "/")
+            .match_query(Matcher::AllOf(vec![
+                Matcher::UrlEncoded("q".into(), "rust".into()),
+                Matcher::UrlEncoded("format".into(), "json".into()),
+            ]))
+            .with_status(200)
+            .with_header("content-type", "application/json")
+            .with_body(r#"{"AbstractText":"Rust lang","RelatedTopics":[]}"#)
+            .create();
+        std::env::set_var("SEARCH_API_ENDPOINT", server.url());
+        let out = taskter::tools::execute_tool("web_search", &json!({"query":"rust"})).unwrap();
+        assert_eq!(out, "Rust lang");
+        std::env::remove_var("SEARCH_API_ENDPOINT");
+        _m.assert();
     });
 }
