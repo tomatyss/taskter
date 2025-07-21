@@ -2,6 +2,7 @@ use std::fs;
 
 use serde_json::json;
 use taskter::agent::{self, Agent, ExecutionResult, FunctionDeclaration};
+use taskter::config;
 use taskter::store::{self, Board, KeyResult, Okr, Task, TaskStatus};
 
 // Helper that creates a temporary workspace and changes the current directory to it.
@@ -11,7 +12,7 @@ fn with_temp_dir<F: FnOnce() -> T, T>(test: F) -> T {
     std::env::set_current_dir(tmp.path()).expect("cannot set current dir");
 
     // Each Taskter invocation expects the .taskter directory to exist. We'll ensure it's present.
-    fs::create_dir(".taskter").unwrap();
+    fs::create_dir(config::TASKTER_DIR).unwrap();
 
     let result = test();
 

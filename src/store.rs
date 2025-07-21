@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::fs;
-use std::path::Path;
+
+use crate::config;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum TaskStatus {
@@ -37,7 +38,7 @@ pub struct Okr {
 }
 
 pub fn load_board() -> anyhow::Result<Board> {
-    let path = Path::new(".taskter/board.json");
+    let path = config::board_file();
     if !path.exists() {
         return Ok(Board::default());
     }
@@ -48,14 +49,14 @@ pub fn load_board() -> anyhow::Result<Board> {
 }
 
 pub fn save_board(board: &Board) -> anyhow::Result<()> {
-    let path = Path::new(".taskter/board.json");
+    let path = config::board_file();
     let content = serde_json::to_string_pretty(board)?;
     fs::write(path, content)?;
     Ok(())
 }
 
 pub fn load_okrs() -> anyhow::Result<Vec<Okr>> {
-    let path = Path::new(".taskter/okrs.json");
+    let path = config::okrs_file();
     if !path.exists() {
         return Ok(Vec::new());
     }
@@ -66,7 +67,7 @@ pub fn load_okrs() -> anyhow::Result<Vec<Okr>> {
 }
 
 pub fn save_okrs(okrs: &[Okr]) -> anyhow::Result<()> {
-    let path = Path::new(".taskter/okrs.json");
+    let path = config::okrs_file();
     let content = serde_json::to_string_pretty(okrs)?;
     fs::write(path, content)?;
     Ok(())

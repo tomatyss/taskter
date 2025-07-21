@@ -2,6 +2,7 @@ use serde_json::json;
 use std::fs;
 
 use taskter::agent::{self, Agent};
+use taskter::config;
 use taskter::store::{self, Board, Task, TaskStatus};
 use taskter::tools::{
     add_log, add_okr, assign_agent, create_task, get_description, list_agents, list_tasks,
@@ -12,7 +13,7 @@ fn with_temp_dir<F: FnOnce() -> T, T>(test: F) -> T {
     let original_dir = std::env::current_dir().expect("cannot read current dir");
     std::env::set_current_dir(tmp.path()).expect("cannot set current dir");
 
-    fs::create_dir(".taskter").unwrap();
+    fs::create_dir(config::TASKTER_DIR).unwrap();
 
     let result = test();
 
@@ -138,7 +139,7 @@ fn add_okr_requires_fields() {
 fn add_log_appends_message() {
     with_temp_dir(|| {
         add_log::execute(&json!({"message":"hello"})).unwrap();
-        let content = fs::read_to_string(".taskter/logs.log").unwrap();
+        let content = fs::read_to_string(config::logs_file()).unwrap();
         assert!(content.contains("hello"));
     });
 }
@@ -207,7 +208,7 @@ fn list_tasks_empty_when_none() {
 #[test]
 fn get_description_reads_file() {
     with_temp_dir(|| {
-        fs::write(".taskter/description.md", "desc").unwrap();
+        fs::write(config::description_file(), "desc").unwrap();
         let out = get_description::execute(&json!({})).unwrap();
         assert_eq!(out, "desc");
     });

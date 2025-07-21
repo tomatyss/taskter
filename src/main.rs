@@ -6,6 +6,7 @@ use std::path::Path;
 
 use taskter::cli::*;
 mod agent;
+mod config;
 mod store;
 mod tools;
 mod tui;
@@ -16,7 +17,7 @@ async fn main() -> anyhow::Result<()> {
 
     match &cli.command {
         Commands::Init => {
-            let path = Path::new(".taskter");
+            let path = Path::new(config::TASKTER_DIR);
             if path.exists() {
                 println!("Taskter board already initialized.");
             } else {
@@ -77,15 +78,15 @@ async fn main() -> anyhow::Result<()> {
         }
         Commands::Show { what } => match what {
             ShowCommands::Description => {
-                let description = fs::read_to_string(".taskter/description.md")?;
+                let description = fs::read_to_string(config::description_file())?;
                 println!("{description}");
             }
             ShowCommands::Okrs => {
-                let okrs = fs::read_to_string(".taskter/okrs.json")?;
+                let okrs = fs::read_to_string(config::okrs_file())?;
                 println!("{okrs}");
             }
             ShowCommands::Logs => {
-                let logs = fs::read_to_string(".taskter/logs.log")?;
+                let logs = fs::read_to_string(config::logs_file())?;
                 println!("{logs}");
             }
             ShowCommands::Agents => {
@@ -123,7 +124,7 @@ async fn main() -> anyhow::Result<()> {
             let mut file = fs::OpenOptions::new()
                 .create(true)
                 .append(true)
-                .open(".taskter/logs.log")?;
+                .open(config::logs_file())?;
             let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
             writeln!(file, "[{timestamp}] {message}")?;
             println!("Log added successfully.");
@@ -132,7 +133,7 @@ async fn main() -> anyhow::Result<()> {
             tui::run_tui()?;
         }
         Commands::Description { description } => {
-            fs::write(".taskter/description.md", description)?;
+            fs::write(config::description_file(), description)?;
             println!("Project description updated successfully.");
         }
         Commands::AddAgent {

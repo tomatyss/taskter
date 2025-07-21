@@ -5,6 +5,7 @@ use std::fs::OpenOptions;
 use std::io::Write;
 
 use crate::agent::FunctionDeclaration;
+use crate::config;
 
 const DECL_JSON: &str = include_str!("../../tools/add_log.json");
 
@@ -19,7 +20,7 @@ pub fn execute(args: &Value) -> Result<String> {
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
-        .open(".taskter/logs.log")?;
+        .open(config::logs_file())?;
     let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
     writeln!(file, "[{timestamp}] {message}")?;
     Ok("Log entry added".to_string())

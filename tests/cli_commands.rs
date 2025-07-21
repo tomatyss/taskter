@@ -2,6 +2,7 @@ use assert_cmd::Command;
 use predicates::prelude::*;
 use serde_json::Value;
 use std::fs;
+use taskter::config;
 
 fn with_temp_dir<F: FnOnce() -> T, T>(test: F) -> T {
     let tmp = tempfile::tempdir().expect("failed to create temp dir");
@@ -54,7 +55,7 @@ fn add_list_done_workflow() {
 
         // Inspect board file
         let board: Value =
-            serde_json::from_str(&fs::read_to_string(".taskter/board.json").unwrap()).unwrap();
+            serde_json::from_str(&fs::read_to_string(config::board_file()).unwrap()).unwrap();
         assert_eq!(board["tasks"][0]["status"], "Done");
     });
 }
@@ -106,7 +107,7 @@ fn add_agent_and_execute_task() {
             .success();
 
         let board: Value =
-            serde_json::from_str(&fs::read_to_string(".taskter/board.json").unwrap()).unwrap();
+            serde_json::from_str(&fs::read_to_string(config::board_file()).unwrap()).unwrap();
         assert_eq!(board["tasks"][0]["status"], "Done");
     });
 }
@@ -155,7 +156,7 @@ fn list_and_delete_agents() {
             .stdout(predicate::str::contains("Agent 1 deleted."));
 
         let agents: Vec<Value> =
-            serde_json::from_str(&fs::read_to_string(".taskter/agents.json").unwrap()).unwrap();
+            serde_json::from_str(&fs::read_to_string(config::agents_file()).unwrap()).unwrap();
         assert!(agents.is_empty());
     });
 }
@@ -178,7 +179,7 @@ fn add_okr_log_and_description() {
             .stdout(predicate::str::contains("OKR added successfully"));
 
         let okrs: Value =
-            serde_json::from_str(&fs::read_to_string(".taskter/okrs.json").unwrap()).unwrap();
+            serde_json::from_str(&fs::read_to_string(config::okrs_file()).unwrap()).unwrap();
         assert_eq!(okrs.as_array().unwrap().len(), 1);
         assert_eq!(okrs[0]["objective"], "Improve UI");
 
@@ -190,7 +191,7 @@ fn add_okr_log_and_description() {
             .success()
             .stdout(predicate::str::contains("Log added successfully"));
 
-        let logs = fs::read_to_string(".taskter/logs.log").unwrap();
+        let logs = fs::read_to_string(config::logs_file()).unwrap();
         assert!(logs.contains("Initial commit"));
 
         // update description
@@ -203,7 +204,7 @@ fn add_okr_log_and_description() {
                 "Project description updated successfully",
             ));
 
-        let desc = fs::read_to_string(".taskter/description.md").unwrap();
+        let desc = fs::read_to_string(config::description_file()).unwrap();
         assert_eq!(desc, "A great project");
     });
 }
