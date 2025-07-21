@@ -30,6 +30,12 @@ You can list all available agents using:
 taskter show agents
 ```
 
+You can list the built-in tools with:
+
+```bash
+taskter show tools
+```
+
 ### 3. Create a task
 
 Now, let's create a task for your agent to complete:

@@ -24,6 +24,12 @@ Available built-in tools:
 - `run_python`
 - `send_email`
 
+You can display this list at any time with:
+
+```bash
+taskter show tools
+```
+
 ## Assigning an Agent to a Task
 
 Once you have created an agent, you can assign it to a task using the `assign` subcommand:
