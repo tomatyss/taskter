@@ -258,6 +258,9 @@ You can make <code>taskter</code> available system-wide by copying it to a direc
 <p>You can list all available agents using:</p>
 <pre><code class="language-bash">taskter show agents
 </code></pre>
+<p>You can list the built-in tools with:</p>
+<pre><code class="language-bash">taskter show tools
+</code></pre>
 <h3 id="3-create-a-task"><a class="header" href="#3-create-a-task">3. Create a task</a></h3>
 <p>Now, let's create a task for your agent to complete:</p>
 <pre><code class="language-bash">taskter add -t "List files in the current directory" -d "Use the ls -la command to list all files and folders in the current directory."
@@ -319,6 +322,9 @@ You can make <code>taskter</code> available system-wide by copying it to a direc
 <li><code>run_python</code></li>
 <li><code>send_email</code></li>
 </ul>
+<p>You can display this list at any time with:</p>
+<pre><code class="language-bash">taskter show tools
+</code></pre>
 <h2 id="assigning-an-agent-to-a-task"><a class="header" href="#assigning-an-agent-to-a-task">Assigning an Agent to a Task</a></h2>
 <p>Once you have created an agent, you can assign it to a task using the <code>assign</code> subcommand:</p>
 <pre><code class="language-bash">taskter assign --task-id 1 --agent-id 1
