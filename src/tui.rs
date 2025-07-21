@@ -298,7 +298,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         }
                         KeyCode::Char('d') => {
                             if let Some(task_id) = app.get_selected_task().map(|t| t.id) {
-                                app.board.lock().unwrap().tasks.retain(|t| t.id != task_id);
+                                app.board.lock().unwrap().remove_task(task_id);
                                 let tasks = app.tasks_in_current_column();
                                 if !tasks.is_empty() {
                                     app.selected_task[app.selected_column].select(Some(0));
@@ -355,11 +355,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                 if let Some(agent) = app.agents.get(selected_agent_index).cloned() {
                                     if let Some(task) = app.get_selected_task() {
                                         let mut board = app.board.lock().unwrap();
-                                        if let Some(task_to_update) =
-                                            board.tasks.iter_mut().find(|t| t.id == task.id)
-                                        {
-                                            task_to_update.agent_id = Some(agent.id);
-                                        }
+                                        board.assign_agent(task.id, agent.id);
                                         let agent_clone = agent.clone();
                                         let task_clone = task.clone();
                                         let board_clone = Arc::clone(&app.board);
@@ -413,17 +409,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         }
                         KeyCode::Enter => {
                             if let Some(task_id) = app.get_selected_task().map(|t| t.id) {
-                                if let Some(task) = app
-                                    .board
-                                    .lock()
-                                    .unwrap()
-                                    .tasks
-                                    .iter_mut()
-                                    .find(|t| t.id == task_id)
-                                {
-                                    task.comment = Some(app.comment_input.clone());
-                                }
-                                store::save_board(&app.board.lock().unwrap()).unwrap();
+                                let mut board = app.board.lock().unwrap();
+                                board.add_comment(task_id, app.comment_input.clone());
+                                store::save_board(&board).unwrap();
                             }
                             app.current_view = View::Board;
                         }
@@ -452,21 +440,16 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         }
                         KeyCode::Enter => {
                             if app.editing_description {
-                                let new_id = app.board.lock().unwrap().tasks.len() + 1;
-                                let task = Task {
-                                    id: new_id,
-                                    title: app.new_task_title.clone(),
-                                    description: if app.new_task_description.is_empty() {
+                                let mut board = app.board.lock().unwrap();
+                                board.add_task(
+                                    app.new_task_title.clone(),
+                                    if app.new_task_description.is_empty() {
                                         None
                                     } else {
                                         Some(app.new_task_description.clone())
                                     },
-                                    status: TaskStatus::ToDo,
-                                    agent_id: None,
-                                    comment: None,
-                                };
-                                app.board.lock().unwrap().tasks.push(task);
-                                store::save_board(&app.board.lock().unwrap()).unwrap();
+                                );
+                                store::save_board(&board).unwrap();
                                 app.current_view = View::Board;
                                 app.editing_description = false;
                             } else {
@@ -497,22 +480,17 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         KeyCode::Enter => {
                             if app.editing_description {
                                 if let Some(task_id) = app.get_selected_task().map(|t| t.id) {
-                                    if let Some(task) = app
-                                        .board
-                                        .lock()
-                                        .unwrap()
-                                        .tasks
-                                        .iter_mut()
-                                        .find(|t| t.id == task_id)
-                                    {
-                                        task.title = app.new_task_title.clone();
-                                        task.description = if app.new_task_description.is_empty() {
+                                    let mut board = app.board.lock().unwrap();
+                                    board.update_task(
+                                        task_id,
+                                        app.new_task_title.clone(),
+                                        if app.new_task_description.is_empty() {
                                             None
                                         } else {
                                             Some(app.new_task_description.clone())
-                                        };
-                                    }
-                                    store::save_board(&app.board.lock().unwrap()).unwrap();
+                                        },
+                                    );
+                                    store::save_board(&board).unwrap();
                                 }
                                 app.current_view = View::Board;
                                 app.editing_description = false;

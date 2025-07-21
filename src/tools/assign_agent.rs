@@ -24,8 +24,7 @@ pub fn execute(args: &Value) -> Result<String> {
     }
 
     let mut board = store::load_board()?;
-    if let Some(task) = board.tasks.iter_mut().find(|t| t.id == task_id) {
-        task.agent_id = Some(agent_id);
+    if board.assign_agent(task_id, agent_id) {
         store::save_board(&board)?;
         Ok(format!("Agent {agent_id} assigned to task {task_id}"))
     } else {

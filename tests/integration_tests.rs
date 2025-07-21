@@ -83,7 +83,7 @@ fn comment_roundtrip_persists_changes() {
 
         store::save_board(&board).expect("failed to save board");
 
-        board.tasks[0].comment = Some("note".to_string());
+        board.add_comment(1, "note".to_string());
         store::save_board(&board).expect("failed to save board");
 
         let loaded = store::load_board().expect("failed to load board");

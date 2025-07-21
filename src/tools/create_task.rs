@@ -2,7 +2,7 @@ use anyhow::{anyhow, Result};
 use serde_json::Value;
 
 use crate::agent::FunctionDeclaration;
-use crate::store::{self, Task, TaskStatus};
+use crate::store;
 
 const DECL_JSON: &str = include_str!("../../tools/create_task.json");
 
@@ -20,16 +20,7 @@ pub fn execute(args: &Value) -> Result<String> {
         .map(String::from);
 
     let mut board = store::load_board()?;
-    let id = board.tasks.len() + 1;
-    let task = Task {
-        id,
-        title: title.to_string(),
-        description,
-        status: TaskStatus::ToDo,
-        agent_id: None,
-        comment: None,
-    };
-    board.tasks.push(task);
+    let id = board.add_task(title.to_string(), description);
     store::save_board(&board)?;
     Ok(format!("Created task {id}"))
 }

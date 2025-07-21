@@ -24,6 +24,69 @@ pub struct Board {
     pub tasks: Vec<Task>,
 }
 
+impl Board {
+    fn next_id(&self) -> usize {
+        self.tasks.iter().map(|t| t.id).max().unwrap_or(0) + 1
+    }
+
+    pub fn add_task(&mut self, title: String, description: Option<String>) -> usize {
+        let id = self.next_id();
+        let task = Task {
+            id,
+            title,
+            description,
+            status: TaskStatus::ToDo,
+            agent_id: None,
+            comment: None,
+        };
+        self.tasks.push(task);
+        id
+    }
+
+    pub fn mark_done(&mut self, id: usize) -> bool {
+        if let Some(task) = self.tasks.iter_mut().find(|t| t.id == id) {
+            task.status = TaskStatus::Done;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn assign_agent(&mut self, task_id: usize, agent_id: usize) -> bool {
+        if let Some(task) = self.tasks.iter_mut().find(|t| t.id == task_id) {
+            task.agent_id = Some(agent_id);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn add_comment(&mut self, task_id: usize, comment: String) -> bool {
+        if let Some(task) = self.tasks.iter_mut().find(|t| t.id == task_id) {
+            task.comment = Some(comment);
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn update_task(&mut self, id: usize, title: String, description: Option<String>) -> bool {
+        if let Some(task) = self.tasks.iter_mut().find(|t| t.id == id) {
+            task.title = title;
+            task.description = description;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn remove_task(&mut self, id: usize) -> bool {
+        let initial = self.tasks.len();
+        self.tasks.retain(|t| t.id != id);
+        initial != self.tasks.len()
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct KeyResult {
     pub name: String,

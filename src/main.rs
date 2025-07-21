@@ -31,15 +31,7 @@ async fn main() -> anyhow::Result<()> {
         }
         Commands::Add { title, description } => {
             let mut board = store::load_board()?;
-            let new_task = store::Task {
-                id: board.tasks.len() + 1,
-                title: title.clone(),
-                description: description.clone(),
-                status: store::TaskStatus::ToDo,
-                agent_id: None,
-                comment: None,
-            };
-            board.tasks.push(new_task);
+            board.add_task(title.clone(), description.clone());
             store::save_board(&board)?;
             println!("Task added successfully.");
         }
@@ -57,8 +49,7 @@ async fn main() -> anyhow::Result<()> {
         }
         Commands::Done { id } => {
             let mut board = store::load_board()?;
-            if let Some(task) = board.tasks.iter_mut().find(|t| t.id == *id) {
-                task.status = store::TaskStatus::Done;
+            if board.mark_done(*id) {
                 store::save_board(&board)?;
                 println!("Task {id} marked as done.");
             } else {
@@ -67,8 +58,7 @@ async fn main() -> anyhow::Result<()> {
         }
         Commands::Comment { task_id, comment } => {
             let mut board = store::load_board()?;
-            if let Some(task) = board.tasks.iter_mut().find(|t| t.id == *task_id) {
-                task.comment = Some(comment.clone());
+            if board.add_comment(*task_id, comment.clone()) {
                 store::save_board(&board)?;
                 println!("Comment added to task {task_id}.");
             } else {
@@ -204,8 +194,7 @@ async fn main() -> anyhow::Result<()> {
         }
         Commands::Assign { task_id, agent_id } => {
             let mut board = store::load_board()?;
-            if let Some(task) = board.tasks.iter_mut().find(|t| t.id == *task_id) {
-                task.agent_id = Some(*agent_id);
+            if board.assign_agent(*task_id, *agent_id) {
                 store::save_board(&board)?;
                 println!("Agent {agent_id} assigned to task {task_id}.");
             } else {
