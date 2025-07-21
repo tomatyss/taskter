@@ -3,6 +3,8 @@ use serde_json::Value;
 
 use crate::agent::{self, FunctionDeclaration};
 use crate::store;
+use crate::tools::Tool;
+use std::collections::HashMap;
 
 const DECL_JSON: &str = include_str!("../../tools/assign_agent.json");
 
@@ -31,4 +33,14 @@ pub fn execute(args: &Value) -> Result<String> {
     } else {
         Ok(format!("Task {task_id} not found"))
     }
+}
+
+pub fn register(map: &mut HashMap<&'static str, Tool>) {
+    map.insert(
+        "assign_agent",
+        Tool {
+            declaration: declaration(),
+            execute,
+        },
+    );
 }

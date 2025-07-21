@@ -3,6 +3,8 @@ use serde_json::Value;
 
 use crate::agent::FunctionDeclaration;
 use crate::store::{self, Task, TaskStatus};
+use crate::tools::Tool;
+use std::collections::HashMap;
 
 const DECL_JSON: &str = include_str!("../../tools/create_task.json");
 
@@ -32,4 +34,14 @@ pub fn execute(args: &Value) -> Result<String> {
     board.tasks.push(task);
     store::save_board(&board)?;
     Ok(format!("Created task {id}"))
+}
+
+pub fn register(map: &mut HashMap<&'static str, Tool>) {
+    map.insert(
+        "create_task",
+        Tool {
+            declaration: declaration(),
+            execute,
+        },
+    );
 }

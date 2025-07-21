@@ -6,6 +6,8 @@ use std::fs;
 use std::path::Path;
 
 use crate::agent::FunctionDeclaration;
+use crate::tools::Tool;
+use std::collections::HashMap;
 
 #[derive(Deserialize)]
 struct EmailConfig {
@@ -56,4 +58,22 @@ fn send_email(to: &str, subject: &str, body: &str) -> Result<()> {
         .build();
 
     mailer.send(&email).map(|_| ()).map_err(|e| e.into())
+}
+
+pub fn register(map: &mut HashMap<&'static str, Tool>) {
+    let decl = declaration();
+    map.insert(
+        "send_email",
+        Tool {
+            declaration: decl.clone(),
+            execute,
+        },
+    );
+    map.insert(
+        "email",
+        Tool {
+            declaration: decl,
+            execute,
+        },
+    );
 }

@@ -1,5 +1,7 @@
 use anyhow::Result;
+use once_cell::sync::Lazy;
 use serde_json::Value;
+use std::collections::HashMap;
 
 use crate::agent::FunctionDeclaration;
 
@@ -14,53 +16,41 @@ pub mod list_tasks;
 pub mod run_bash;
 pub mod run_python;
 
-/// List of built-in tool names available to agents.
-pub const BUILTIN_TOOLS: &[&str] = &[
-    "send_email",
-    "create_task",
-    "assign_agent",
-    "add_log",
-    "add_okr",
-    "list_tasks",
-    "list_agents",
-    "run_bash",
-    "run_python",
-    "get_description",
-];
+pub struct Tool {
+    pub declaration: FunctionDeclaration,
+    pub execute: fn(&Value) -> Result<String>,
+}
+
+pub static BUILTIN_TOOLS: Lazy<HashMap<&'static str, Tool>> = Lazy::new(|| {
+    let mut m = HashMap::new();
+    add_log::register(&mut m);
+    add_okr::register(&mut m);
+    assign_agent::register(&mut m);
+    create_task::register(&mut m);
+    email::register(&mut m);
+    get_description::register(&mut m);
+    list_agents::register(&mut m);
+    list_tasks::register(&mut m);
+    run_bash::register(&mut m);
+    run_python::register(&mut m);
+    m
+});
 
 /// Returns the names of all built-in tools.
 pub fn builtin_names() -> Vec<&'static str> {
-    BUILTIN_TOOLS.to_vec()
+    let mut names: Vec<&'static str> = BUILTIN_TOOLS.keys().copied().collect();
+    names.sort();
+    names
 }
 
 pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
-    match name {
-        "send_email" | "email" => Some(email::declaration()),
-        "create_task" => Some(create_task::declaration()),
-        "assign_agent" => Some(assign_agent::declaration()),
-        "add_log" => Some(add_log::declaration()),
-        "add_okr" => Some(add_okr::declaration()),
-        "list_tasks" => Some(list_tasks::declaration()),
-        "list_agents" => Some(list_agents::declaration()),
-        "run_bash" => Some(run_bash::declaration()),
-        "run_python" => Some(run_python::declaration()),
-        "get_description" => Some(get_description::declaration()),
-        _ => None,
-    }
+    BUILTIN_TOOLS.get(name).map(|t| t.declaration.clone())
 }
 
 pub fn execute_tool(name: &str, args: &Value) -> Result<String> {
-    match name {
-        "send_email" | "email" => email::execute(args),
-        "create_task" => create_task::execute(args),
-        "assign_agent" => assign_agent::execute(args),
-        "add_log" => add_log::execute(args),
-        "add_okr" => add_okr::execute(args),
-        "list_tasks" => list_tasks::execute(args),
-        "list_agents" => list_agents::execute(args),
-        "run_bash" => run_bash::execute(args),
-        "run_python" => run_python::execute(args),
-        "get_description" => get_description::execute(args),
-        _ => Err(anyhow::anyhow!("Unknown tool: {}", name)),
+    if let Some(tool) = BUILTIN_TOOLS.get(name) {
+        (tool.execute)(args)
+    } else {
+        Err(anyhow::anyhow!("Unknown tool: {}", name))
     }
 }

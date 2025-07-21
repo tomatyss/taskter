@@ -3,6 +3,8 @@ use serde_json::Value;
 
 use crate::agent::FunctionDeclaration;
 use crate::store::{self, KeyResult, Okr};
+use crate::tools::Tool;
+use std::collections::HashMap;
 
 const DECL_JSON: &str = include_str!("../../tools/add_okr.json");
 
@@ -35,4 +37,14 @@ pub fn execute(args: &Value) -> Result<String> {
     });
     store::save_okrs(&okrs)?;
     Ok(format!("Added OKR '{objective}'"))
+}
+
+pub fn register(map: &mut HashMap<&'static str, Tool>) {
+    map.insert(
+        "add_okr",
+        Tool {
+            declaration: declaration(),
+            execute,
+        },
+    );
 }

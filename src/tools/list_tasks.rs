@@ -3,6 +3,8 @@ use serde_json::Value;
 
 use crate::agent::FunctionDeclaration;
 use crate::store;
+use crate::tools::Tool;
+use std::collections::HashMap;
 
 const DECL_JSON: &str = include_str!("../../tools/list_tasks.json");
 
@@ -13,4 +15,14 @@ pub fn declaration() -> FunctionDeclaration {
 pub fn execute(_args: &Value) -> Result<String> {
     let board = store::load_board()?;
     Ok(serde_json::to_string_pretty(&board.tasks)?)
+}
+
+pub fn register(map: &mut HashMap<&'static str, Tool>) {
+    map.insert(
+        "list_tasks",
+        Tool {
+            declaration: declaration(),
+            execute,
+        },
+    );
 }
