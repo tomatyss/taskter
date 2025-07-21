@@ -3,7 +3,9 @@ use std::fs;
 
 use taskter::agent::{self, Agent};
 use taskter::store::{self, Board, Task, TaskStatus};
-use taskter::tools::{add_log, add_okr, assign_agent, create_task, get_description, list_agents, list_tasks};
+use taskter::tools::{
+    add_log, add_okr, assign_agent, create_task, get_description, list_agents, list_tasks,
+};
 
 fn with_temp_dir<F: FnOnce() -> T, T>(test: F) -> T {
     let tmp = tempfile::tempdir().expect("failed to create temp dir");
@@ -42,9 +44,21 @@ fn create_task_requires_title() {
 #[test]
 fn assign_agent_assigns_task() {
     with_temp_dir(|| {
-        let task = Task { id: 1, title: "t".into(), description: None, status: TaskStatus::ToDo, agent_id: None, comment: None };
+        let task = Task {
+            id: 1,
+            title: "t".into(),
+            description: None,
+            status: TaskStatus::ToDo,
+            agent_id: None,
+            comment: None,
+        };
         store::save_board(&Board { tasks: vec![task] }).unwrap();
-        let agent = Agent { id: 1, system_prompt: "p".into(), tools: vec![], model: "m".into() };
+        let agent = Agent {
+            id: 1,
+            system_prompt: "p".into(),
+            tools: vec![],
+            model: "m".into(),
+        };
         agent::save_agents(&[agent]).unwrap();
 
         let msg = assign_agent::execute(&json!({"task_id":1,"agent_id":1})).unwrap();
@@ -58,7 +72,14 @@ fn assign_agent_assigns_task() {
 #[test]
 fn assign_agent_reports_missing_agent() {
     with_temp_dir(|| {
-        let task = Task { id: 1, title: "t".into(), description: None, status: TaskStatus::ToDo, agent_id: None, comment: None };
+        let task = Task {
+            id: 1,
+            title: "t".into(),
+            description: None,
+            status: TaskStatus::ToDo,
+            agent_id: None,
+            comment: None,
+        };
         store::save_board(&Board { tasks: vec![task] }).unwrap();
         let msg = assign_agent::execute(&json!({"task_id":1,"agent_id":1})).unwrap();
         assert_eq!(msg, "Agent 1 not found");
@@ -68,7 +89,12 @@ fn assign_agent_reports_missing_agent() {
 #[test]
 fn assign_agent_reports_missing_task() {
     with_temp_dir(|| {
-        let agent = Agent { id: 1, system_prompt: "p".into(), tools: vec![], model: "m".into() };
+        let agent = Agent {
+            id: 1,
+            system_prompt: "p".into(),
+            tools: vec![],
+            model: "m".into(),
+        };
         agent::save_agents(&[agent]).unwrap();
         let msg = assign_agent::execute(&json!({"task_id":1,"agent_id":1})).unwrap();
         assert_eq!(msg, "Task 1 not found");
@@ -88,7 +114,8 @@ fn assign_agent_requires_fields() {
 #[test]
 fn add_okr_adds_entry() {
     with_temp_dir(|| {
-        let msg = add_okr::execute(&json!({"objective": "Improve", "key_results": ["speed"]})).unwrap();
+        let msg =
+            add_okr::execute(&json!({"objective": "Improve", "key_results": ["speed"]})).unwrap();
         assert_eq!(msg, "Added OKR 'Improve'");
         let okrs = store::load_okrs().unwrap();
         assert_eq!(okrs.len(), 1);
@@ -127,7 +154,12 @@ fn add_log_requires_message() {
 #[test]
 fn list_agents_outputs_json() {
     with_temp_dir(|| {
-        let agent = Agent { id: 1, system_prompt: "p".into(), tools: vec![], model: "m".into() };
+        let agent = Agent {
+            id: 1,
+            system_prompt: "p".into(),
+            tools: vec![],
+            model: "m".into(),
+        };
         agent::save_agents(&[agent.clone()]).unwrap();
         let out = list_agents::execute(&json!({})).unwrap();
         let parsed: Vec<Agent> = serde_json::from_str(&out).unwrap();
@@ -146,8 +178,18 @@ fn list_agents_empty_when_none() {
 #[test]
 fn list_tasks_outputs_json() {
     with_temp_dir(|| {
-        let task = Task { id: 1, title: "t".into(), description: None, status: TaskStatus::ToDo, agent_id: None, comment: None };
-        store::save_board(&Board { tasks: vec![task.clone()] }).unwrap();
+        let task = Task {
+            id: 1,
+            title: "t".into(),
+            description: None,
+            status: TaskStatus::ToDo,
+            agent_id: None,
+            comment: None,
+        };
+        store::save_board(&Board {
+            tasks: vec![task.clone()],
+        })
+        .unwrap();
         let out = list_tasks::execute(&json!({})).unwrap();
         let parsed: Vec<Task> = serde_json::from_str(&out).unwrap();
         assert_eq!(parsed[0].id, task.id);
@@ -178,4 +220,3 @@ fn get_description_fails_missing_file() {
         assert!(err.to_string().contains("No such file"));
     });
 }
-

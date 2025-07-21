@@ -175,10 +175,7 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
                 agent.id, tool_name, args
             ));
             let tool_response = tools::execute_tool(tool_name, args)?;
-            let _ = append_log(&format!(
-                "Tool {} responded with {}",
-                tool_name, tool_response
-            ));
+            let _ = append_log(&format!("Tool {tool_name} responded with {tool_response}"));
 
             history.push(json!({
                 "role": "model",
