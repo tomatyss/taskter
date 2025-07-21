@@ -2,9 +2,9 @@
 //! reused from integration tests and (potentially) other binaries.
 
 pub mod agent;
+pub mod cli;
 pub mod store;
 pub mod tools;
-pub mod cli;
 
 pub use cli::{Cli, Commands, ShowCommands};
 

@@ -96,7 +96,7 @@ async fn main() -> anyhow::Result<()> {
             }
             ShowCommands::Tools => {
                 for t in tools::builtin_names() {
-                    println!("{}", t);
+                    println!("{t}");
                 }
             }
         },
