@@ -133,7 +133,7 @@ fn list_and_delete_agents() {
             .stdout
             .clone();
         let output = String::from_utf8(out).unwrap();
-        assert!(output.contains("1: helper"));
+        assert!(output.contains("1: helper (model: gpt-4o, tools: send_email)"));
 
         // delete agent
         Command::cargo_bin("taskter")
