@@ -201,7 +201,7 @@ fn add_okr_log_and_description() {
         // add okr
         Command::cargo_bin("taskter")
             .unwrap()
-            .args(["add-okr", "-o", "Improve UI", "-k", "Faster", "Better"])
+            .args(["okrs", "add", "-o", "Improve UI", "-k", "Faster", "Better"])
             .assert()
             .success()
             .stdout(predicate::str::contains("OKR added successfully"));
@@ -214,7 +214,7 @@ fn add_okr_log_and_description() {
         // add log entry
         Command::cargo_bin("taskter")
             .unwrap()
-            .args(["log", "Initial commit"])
+            .args(["logs", "add", "Initial commit"])
             .assert()
             .success()
             .stdout(predicate::str::contains("Log added successfully"));
@@ -248,7 +248,7 @@ fn show_tools_lists_builtins() {
 
         let out = Command::cargo_bin("taskter")
             .unwrap()
-            .args(["show", "tools"])
+            .args(["tools", "list"])
             .assert()
             .success()
             .get_output()

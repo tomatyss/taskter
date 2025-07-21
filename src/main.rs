@@ -189,54 +189,54 @@ async fn main() -> anyhow::Result<()> {
                 let description = fs::read_to_string(".taskter/description.md")?;
                 println!("{description}");
             }
-            ShowCommands::Okrs => {
+        },
+        Commands::Okrs { action } => match action {
+            OkrCommands::Add {
+                objective,
+                key_results,
+            } => {
+                let mut okrs = store::load_okrs()?;
+                let new_okr = store::Okr {
+                    objective: objective.clone(),
+                    key_results: key_results
+                        .iter()
+                        .map(|kr| store::KeyResult {
+                            name: kr.clone(),
+                            progress: 0.0,
+                        })
+                        .collect(),
+                };
+                okrs.push(new_okr);
+                store::save_okrs(&okrs)?;
+                println!("OKR added successfully.");
+            }
+            OkrCommands::List => {
                 let okrs = fs::read_to_string(".taskter/okrs.json")?;
                 println!("{okrs}");
             }
-            ShowCommands::Logs => {
+        },
+        Commands::Logs { action } => match action {
+            LogCommands::Add { message } => {
+                let mut file = fs::OpenOptions::new()
+                    .create(true)
+                    .append(true)
+                    .open(".taskter/logs.log")?;
+                let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
+                writeln!(file, "[{timestamp}] {message}")?;
+                println!("Log added successfully.");
+            }
+            LogCommands::List => {
                 let logs = fs::read_to_string(".taskter/logs.log")?;
                 println!("{logs}");
             }
-            ShowCommands::Agents => {
-                let agents = agent::list_agents()?;
-                for a in agents {
-                    println!("{}: {}", a.id, a.system_prompt);
-                }
-            }
-            ShowCommands::Tools => {
+        },
+        Commands::Tools { action } => match action {
+            ToolCommands::List => {
                 for t in tools::builtin_names() {
                     println!("{t}");
                 }
             }
         },
-        Commands::AddOkr {
-            objective,
-            key_results,
-        } => {
-            let mut okrs = store::load_okrs()?;
-            let new_okr = store::Okr {
-                objective: objective.clone(),
-                key_results: key_results
-                    .iter()
-                    .map(|kr| store::KeyResult {
-                        name: kr.clone(),
-                        progress: 0.0,
-                    })
-                    .collect(),
-            };
-            okrs.push(new_okr);
-            store::save_okrs(&okrs)?;
-            println!("OKR added successfully.");
-        }
-        Commands::Log { message } => {
-            let mut file = fs::OpenOptions::new()
-                .create(true)
-                .append(true)
-                .open(".taskter/logs.log")?;
-            let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
-            writeln!(file, "[{timestamp}] {message}")?;
-            println!("Log added successfully.");
-        }
         Commands::Board => {
             tui::run_tui()?;
         }

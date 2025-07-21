@@ -26,19 +26,20 @@ pub enum Commands {
         #[command(subcommand)]
         what: ShowCommands,
     },
-    /// Adds a new OKR
-    AddOkr {
-        /// The objective
-        #[arg(short, long)]
-        objective: String,
-        /// The key results
-        #[arg(short, long, num_args = 1..)]
-        key_results: Vec<String>,
+    /// Manage OKRs
+    Okrs {
+        #[command(subcommand)]
+        action: OkrCommands,
     },
-    /// Adds a log entry
-    Log {
-        /// The log message
-        message: String,
+    /// Manage logs
+    Logs {
+        #[command(subcommand)]
+        action: LogCommands,
+    },
+    /// Manage built-in tools
+    Tools {
+        #[command(subcommand)]
+        action: ToolCommands,
     },
     /// Opens the interactive board
     Board,
@@ -53,14 +54,38 @@ pub enum Commands {
 pub enum ShowCommands {
     /// Shows the project description
     Description,
-    /// Shows the project OKRs
-    Okrs,
-    /// Shows the operation logs
-    Logs,
-    /// Lists all agents
-    Agents,
-    /// Lists all built-in agent tools
-    Tools,
+}
+
+#[derive(Subcommand)]
+pub enum OkrCommands {
+    /// Adds a new OKR
+    Add {
+        /// The objective
+        #[arg(short, long)]
+        objective: String,
+        /// The key results
+        #[arg(short, long, num_args = 1..)]
+        key_results: Vec<String>,
+    },
+    /// Lists all OKRs
+    List,
+}
+
+#[derive(Subcommand)]
+pub enum LogCommands {
+    /// Adds a log entry
+    Add {
+        /// The log message
+        message: String,
+    },
+    /// Lists log entries
+    List,
+}
+
+#[derive(Subcommand)]
+pub enum ToolCommands {
+    /// Lists built-in tools
+    List,
 }
 
 #[derive(Subcommand)]

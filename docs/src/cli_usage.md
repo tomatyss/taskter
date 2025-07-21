@@ -33,7 +33,7 @@ taskter agent list
 You can list the built-in tools with:
 
 ```bash
-taskter show tools
+taskter tools list
 ```
 
 ### 3. Create a task

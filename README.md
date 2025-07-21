@@ -228,26 +228,26 @@ In the interactive board, you can use the following keys:
 
 - **Show project OKRs:**
   ```bash
-  taskter show okrs
+  taskter okrs list
   ```
 
 - **Show operation logs:**
   ```bash
-  taskter show logs
+  taskter logs list
   ```
 
 ### Manage OKRs
 
 - **Add a new OKR:**
   ```bash
-  taskter add-okr -o "My objective" -k "Key result 1" "Key result 2"
+  taskter okrs add -o "My objective" -k "Key result 1" "Key result 2"
   ```
 
 ### Manage logs
 
 - **Add a log entry:**
   ```bash
-  taskter log "This is a log message"
+  taskter logs add "This is a log message"
   ```
 
 ### Agents
@@ -279,7 +279,7 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
   ```
 - **List available tools:**
   ```bash
-  taskter show tools
+  taskter tools list
   ```
 - **Delete an agent:**
   ```bash

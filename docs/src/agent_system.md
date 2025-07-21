@@ -27,7 +27,7 @@ Available built-in tools:
 You can display this list at any time with:
 
 ```bash
-taskter show tools
+taskter tools list
 ```
 
 ## Assigning an Agent to a Task
