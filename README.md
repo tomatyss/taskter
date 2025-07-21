@@ -292,35 +292,41 @@ In the interactive board (`taskter board`), tasks assigned to an agent will be m
 
 ### Email configuration
 
-Agent email tools read credentials from `.taskter/email_config.json`.  At the
-moment only SMTP settings are required by the `send_email` tool, but IMAP
-details can also be provided for future extensions.  Create the file with the
-following structure:
+Agent email tools read credentials from `.taskter/email_config.json`. Place this
+file inside the board directory (next to `board.json` and `agents.json`). All
+agents share the same configuration. The currently recognised keys are:
 
 ```json
 {
   "smtp_server": "smtp.example.com",
   "smtp_port": 587,
-  "imap_server": "imap.example.com",
-  "imap_port": 993,
   "username": "user@example.com",
-  "password": "secret"
+  "password": "secret",
+  "imap_server": "imap.example.com",  // optional
+  "imap_port": 993                   // optional
 }
 ```
 
-All agents will use the same configuration file. If the file is missing, the
-`send_email` tool will gracefully fall back to a no-op so tests and offline
-usage keep working.
+Only the SMTP fields are used by the built-in `send_email` tool today. There are
+no default values, so you must supply valid server details. If the file is
+missing the tool returns `Email configuration not found`. When the application
+runs without a `GEMINI_API_KEY` the email tool is skipped entirely, which keeps
+tests working even without credentials.
 
 
 ### Gemini API key
 
-Agent execution uses the Gemini API, so the `GEMINI_API_KEY` environment
-variable must be set. For example:
+Agent execution uses the Gemini API. Provide the `GEMINI_API_KEY` environment
+variable when you want agents to call the real service. If the variable is
+absent or empty, Taskter falls back to an offline mode where only built-in
+tools are executed.
 
 ```bash
 export GEMINI_API_KEY=your_key_here
 ```
+
+See the book's **Configuration** chapter for a detailed explanation of this
+variable and the email configuration file.
 
 ### Example project
 
