@@ -30,8 +30,18 @@ fn load_creates_empty_agents_file() {
 fn save_and_list_roundtrip() {
     with_temp_dir(|| {
         let agents = vec![
-            Agent { id: 1, system_prompt: "a".into(), tools: vec![], model: "m".into() },
-            Agent { id: 2, system_prompt: "b".into(), tools: vec![], model: "m".into() },
+            Agent {
+                id: 1,
+                system_prompt: "a".into(),
+                tools: vec![],
+                model: "m".into(),
+            },
+            Agent {
+                id: 2,
+                system_prompt: "b".into(),
+                tools: vec![],
+                model: "m".into(),
+            },
         ];
 
         agent::save_agents(&agents).expect("save failed");
@@ -47,8 +57,18 @@ fn save_and_list_roundtrip() {
 fn delete_removes_agent() {
     with_temp_dir(|| {
         let agents = vec![
-            Agent { id: 1, system_prompt: "a".into(), tools: vec![], model: "m".into() },
-            Agent { id: 2, system_prompt: "b".into(), tools: vec![], model: "m".into() },
+            Agent {
+                id: 1,
+                system_prompt: "a".into(),
+                tools: vec![],
+                model: "m".into(),
+            },
+            Agent {
+                id: 2,
+                system_prompt: "b".into(),
+                tools: vec![],
+                model: "m".into(),
+            },
         ];
 
         agent::save_agents(&agents).expect("save failed");
