@@ -144,7 +144,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                             }
                         }
                         KeyCode::Char('L') => {
-                            app.logs = std::fs::read_to_string(".taskter/logs.log").unwrap_or_default();
+                            app.logs =
+                                std::fs::read_to_string(".taskter/logs.log").unwrap_or_default();
                             app.current_view = View::Logs;
                         }
                         KeyCode::Char('A') => {
@@ -199,7 +200,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                         let board_clone = Arc::clone(&app.board);
                                         tokio::spawn(async move {
                                             let result =
-                                                agent::execute_task(&agent_clone, &task_clone).await;
+                                                agent::execute_task(&agent_clone, &task_clone)
+                                                    .await;
                                             let mut board = board_clone.lock().unwrap();
                                             if let Some(task) = board
                                                 .tasks
@@ -208,11 +210,15 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                             {
                                                 match result {
                                                     Ok(result) => match result {
-                                                        agent::ExecutionResult::Success { comment } => {
+                                                        agent::ExecutionResult::Success {
+                                                            comment,
+                                                        } => {
                                                             task.status = store::TaskStatus::Done;
                                                             task.comment = Some(comment);
                                                         }
-                                                        agent::ExecutionResult::Failure { comment } => {
+                                                        agent::ExecutionResult::Failure {
+                                                            comment,
+                                                        } => {
                                                             task.status = store::TaskStatus::ToDo;
                                                             task.comment = Some(comment);
                                                             task.agent_id = None;
@@ -220,7 +226,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                                     },
                                                     Err(_) => {
                                                         task.status = store::TaskStatus::ToDo;
-                                                        task.comment = Some("Failed to execute task.".to_string());
+                                                        task.comment = Some(
+                                                            "Failed to execute task.".to_string(),
+                                                        );
                                                         task.agent_id = None;
                                                     }
                                                 }

@@ -1,10 +1,10 @@
 use super::app::{App, View};
+use crate::store::TaskStatus;
 use ratatui::{
     prelude::*,
     text::{Line, Span},
     widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Wrap},
 };
-use crate::store::TaskStatus;
 
 pub(crate) fn ui(f: &mut Frame, app: &mut App) {
     render_board(f, app);

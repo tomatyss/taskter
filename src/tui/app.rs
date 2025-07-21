@@ -126,12 +126,13 @@ impl App {
     }
 
     fn move_task(&mut self, direction: i8) {
-        let task_id_to_move = if let Some(selected_index) = self.selected_task[self.selected_column].selected() {
-            let tasks_in_column = self.tasks_in_current_column();
-            tasks_in_column.get(selected_index).map(|t| t.id)
-        } else {
-            None
-        };
+        let task_id_to_move =
+            if let Some(selected_index) = self.selected_task[self.selected_column].selected() {
+                let tasks_in_column = self.tasks_in_current_column();
+                tasks_in_column.get(selected_index).map(|t| t.id)
+            } else {
+                None
+            };
 
         if let Some(task_id) = task_id_to_move {
             if let Some(task) = self
