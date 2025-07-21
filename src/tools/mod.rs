@@ -16,11 +16,13 @@ pub mod list_tasks;
 pub mod run_bash;
 pub mod run_python;
 
+/// Runtime representation of a callable tool.
 pub struct Tool {
     pub declaration: FunctionDeclaration,
     pub execute: fn(&Value) -> Result<String>,
 }
 
+/// Registry of all tools bundled with Taskter.
 pub static BUILTIN_TOOLS: Lazy<HashMap<&'static str, Tool>> = Lazy::new(|| {
     let mut m = HashMap::new();
     add_log::register(&mut m);
@@ -43,10 +45,14 @@ pub fn builtin_names() -> Vec<&'static str> {
     names
 }
 
+/// Retrieves the declaration for a built-in tool by name.
 pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
     BUILTIN_TOOLS.get(name).map(|t| t.declaration.clone())
 }
 
+/// Executes a named built-in tool.
+///
+/// Individual tools may read or write files in `.taskter/`.
 pub fn execute_tool(name: &str, args: &Value) -> Result<String> {
     if let Some(tool) = BUILTIN_TOOLS.get(name) {
         (tool.execute)(args)

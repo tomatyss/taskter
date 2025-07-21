@@ -8,10 +8,12 @@ use std::collections::HashMap;
 
 const DECL_JSON: &str = include_str!("../../tools/create_task.json");
 
+/// Returns the function declaration for this tool.
 pub fn declaration() -> FunctionDeclaration {
     serde_json::from_str(DECL_JSON).expect("invalid create_task.json")
 }
 
+/// Creates a new task in `.taskter/board.json`.
 pub fn execute(args: &Value) -> Result<String> {
     let title = args["title"]
         .as_str()
@@ -36,6 +38,7 @@ pub fn execute(args: &Value) -> Result<String> {
     Ok(format!("Created task {id}"))
 }
 
+/// Registers the tool in the provided map.
 pub fn register(map: &mut HashMap<&'static str, Tool>) {
     map.insert(
         "create_task",

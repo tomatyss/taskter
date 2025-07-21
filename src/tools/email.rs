@@ -19,10 +19,12 @@ struct EmailConfig {
 
 const DECL_JSON: &str = include_str!("../../tools/send_email.json");
 
+/// Returns the function declaration for this tool.
 pub fn declaration() -> FunctionDeclaration {
     serde_json::from_str(DECL_JSON).expect("invalid send_email.json")
 }
 
+/// Sends an email using `.taskter/email_config.json` for credentials.
 pub fn execute(args: &Value) -> Result<String> {
     let to = args["to"].as_str().unwrap_or_default();
     let subject = args["subject"].as_str().unwrap_or_default();
@@ -60,6 +62,7 @@ fn send_email(to: &str, subject: &str, body: &str) -> Result<()> {
     mailer.send(&email).map(|_| ()).map_err(|e| e.into())
 }
 
+/// Registers the tool in the provided map.
 pub fn register(map: &mut HashMap<&'static str, Tool>) {
     let decl = declaration();
     map.insert(

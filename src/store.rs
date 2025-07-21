@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::Path;
 
+/// Progress state of a [`Task`].
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum TaskStatus {
     ToDo,
@@ -9,6 +10,7 @@ pub enum TaskStatus {
     Done,
 }
 
+/// A single task stored in `.taskter/board.json`.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Task {
     pub id: usize,
@@ -19,23 +21,29 @@ pub struct Task {
     pub comment: Option<String>,
 }
 
+/// Collection of tasks comprising the Kanban board.
 #[derive(Serialize, Deserialize, Default, Debug, PartialEq)]
 pub struct Board {
     pub tasks: Vec<Task>,
 }
 
+/// A measurable key result belonging to an [`Okr`].
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct KeyResult {
     pub name: String,
     pub progress: f32,
 }
 
+/// Objective with its associated key results stored in `.taskter/okrs.json`.
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct Okr {
     pub objective: String,
     pub key_results: Vec<KeyResult>,
 }
 
+/// Reads the Kanban board from `.taskter/board.json`.
+///
+/// Returns an empty board if the file does not exist.
 pub fn load_board() -> anyhow::Result<Board> {
     let path = Path::new(".taskter/board.json");
     if !path.exists() {
@@ -47,6 +55,7 @@ pub fn load_board() -> anyhow::Result<Board> {
     Ok(board)
 }
 
+/// Writes the current board state to `.taskter/board.json`.
 pub fn save_board(board: &Board) -> anyhow::Result<()> {
     let path = Path::new(".taskter/board.json");
     let content = serde_json::to_string_pretty(board)?;
@@ -54,6 +63,9 @@ pub fn save_board(board: &Board) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Loads all OKRs from `.taskter/okrs.json`.
+///
+/// Returns an empty list if the file is missing.
 pub fn load_okrs() -> anyhow::Result<Vec<Okr>> {
     let path = Path::new(".taskter/okrs.json");
     if !path.exists() {
@@ -65,6 +77,7 @@ pub fn load_okrs() -> anyhow::Result<Vec<Okr>> {
     Ok(okrs)
 }
 
+/// Persists OKRs to `.taskter/okrs.json`.
 pub fn save_okrs(okrs: &[Okr]) -> anyhow::Result<()> {
     let path = Path::new(".taskter/okrs.json");
     let content = serde_json::to_string_pretty(okrs)?;

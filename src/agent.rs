@@ -10,6 +10,7 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
 
+/// Result of running an [`Agent`] on a [`Task`].
 #[derive(Debug, PartialEq)]
 pub enum ExecutionResult {
     Success { comment: String },
@@ -26,6 +27,9 @@ fn append_log(message: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Executes a task with the given agent and records progress in `.taskter/logs.log`.
+///
+/// Tools referenced by the agent may be invoked during execution.
 pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult> {
     let client = Client::new();
     if let Err(e) = append_log(&format!(
@@ -240,6 +244,7 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
     }
 }
 
+/// Describes an available tool for the language model.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FunctionDeclaration {
     pub name: String,
@@ -252,6 +257,7 @@ fn empty_params() -> Value {
     serde_json::json!({})
 }
 
+/// Configuration for an autonomous agent stored in `.taskter/agents.json`.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Agent {
     pub id: usize,
@@ -260,6 +266,9 @@ pub struct Agent {
     pub model: String,
 }
 
+/// Loads the list of agents from `.taskter/agents.json`.
+///
+/// The file is created if it does not exist.
 pub fn load_agents() -> anyhow::Result<Vec<Agent>> {
     let path = Path::new(".taskter/agents.json");
     if !path.exists() {
@@ -272,6 +281,7 @@ pub fn load_agents() -> anyhow::Result<Vec<Agent>> {
     Ok(agents)
 }
 
+/// Writes the provided agents to `.taskter/agents.json`.
 pub fn save_agents(agents: &[Agent]) -> anyhow::Result<()> {
     let path = Path::new(".taskter/agents.json");
     let content = serde_json::to_string_pretty(agents)?;
@@ -279,10 +289,12 @@ pub fn save_agents(agents: &[Agent]) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Convenience wrapper around [`load_agents`].
 pub fn list_agents() -> anyhow::Result<Vec<Agent>> {
     load_agents()
 }
 
+/// Removes an agent from `.taskter/agents.json` by ID.
 pub fn delete_agent(id: usize) -> anyhow::Result<()> {
     let mut agents = load_agents()?;
     if let Some(pos) = agents.iter().position(|a| a.id == id) {
@@ -292,6 +304,7 @@ pub fn delete_agent(id: usize) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Updates an existing agent in `.taskter/agents.json`.
 pub fn update_agent(
     id: usize,
     prompt: String,
