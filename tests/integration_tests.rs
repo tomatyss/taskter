@@ -1,23 +1,9 @@
-use std::fs;
-
 use serde_json::json;
 use taskter::agent::{self, Agent, ExecutionResult, FunctionDeclaration};
 use taskter::store::{self, Board, KeyResult, Okr, Task, TaskStatus};
 
-// Helper that creates a temporary workspace and changes the current directory to it.
-fn with_temp_dir<F: FnOnce() -> T, T>(test: F) -> T {
-    let tmp = tempfile::tempdir().expect("failed to create temp dir");
-    let original_dir = std::env::current_dir().expect("cannot read current dir");
-    std::env::set_current_dir(tmp.path()).expect("cannot set current dir");
-
-    // Each Taskter invocation expects the .taskter directory to exist. We'll ensure it's present.
-    fs::create_dir(".taskter").unwrap();
-
-    let result = test();
-
-    std::env::set_current_dir(original_dir).expect("cannot restore current dir");
-    result
-}
+mod common;
+pub use common::with_temp_dir;
 
 #[test]
 fn board_roundtrip_persists_tasks() {

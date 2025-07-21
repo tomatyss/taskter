@@ -7,18 +7,8 @@ use taskter::tools::{
     add_log, add_okr, assign_agent, create_task, get_description, list_agents, list_tasks,
 };
 
-fn with_temp_dir<F: FnOnce() -> T, T>(test: F) -> T {
-    let tmp = tempfile::tempdir().expect("failed to create temp dir");
-    let original_dir = std::env::current_dir().expect("cannot read current dir");
-    std::env::set_current_dir(tmp.path()).expect("cannot set current dir");
-
-    fs::create_dir(".taskter").unwrap();
-
-    let result = test();
-
-    std::env::set_current_dir(original_dir).expect("cannot restore current dir");
-    result
-}
+mod common;
+pub use common::with_temp_dir;
 
 #[test]
 fn create_task_adds_task() {
