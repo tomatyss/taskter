@@ -176,8 +176,8 @@
                         <h1 id="agent-system"><a class="header" href="#agent-system">Agent System</a></h1>
 <p>Taskter supports LLM-based agents that can be assigned to tasks. These agents can execute tasks using a mocked Gemini API for tool-calling.</p>
 <h2 id="creating-an-agent"><a class="header" href="#creating-an-agent">Creating an Agent</a></h2>
-<p>You can create an agent using the <code>add-agent</code> subcommand. You need to provide a prompt, a list of tools, and a model.</p>
-<pre><code class="language-bash">taskter add-agent --prompt "You are a helpful assistant." --tools "email" "calendar" --model "gemini-pro"
+<p>You can create an agent using the <code>agent add</code> subcommand. You need to provide a prompt, a list of tools, and a model.</p>
+<pre><code class="language-bash">taskter agent add --prompt "You are a helpful assistant." --tools "email" "calendar" --model "gemini-pro"
 </code></pre>
 <p>The <code>--tools</code> option accepts either paths to JSON files describing a tool or the name of a built-in tool. Built-in tools are located in the <code>tools/</code> directory of the repository.</p>
 <p>Available built-in tools:</p>
@@ -194,15 +194,15 @@
 <li><code>send_email</code></li>
 </ul>
 <p>You can display this list at any time with:</p>
-<pre><code class="language-bash">taskter show tools
+<pre><code class="language-bash">taskter tools list
 </code></pre>
 <h2 id="assigning-an-agent-to-a-task"><a class="header" href="#assigning-an-agent-to-a-task">Assigning an Agent to a Task</a></h2>
 <p>Once you have created an agent, you can assign it to a task using the <code>assign</code> subcommand:</p>
-<pre><code class="language-bash">taskter assign --task-id 1 --agent-id 1
+<pre><code class="language-bash">taskter task assign --task-id 1 --agent-id 1
 </code></pre>
 <h2 id="executing-a-task"><a class="header" href="#executing-a-task">Executing a Task</a></h2>
 <p>To execute a task with an assigned agent, use the <code>execute</code> subcommand:</p>
-<pre><code class="language-bash">taskter execute --task-id 1
+<pre><code class="language-bash">taskter task execute --task-id 1
 </code></pre>
 <p>When a task is executed, the agent will attempt to perform the task. If successful, the task is marked as "Done". If it fails, the task is moved back to "To Do", unassigned, and a comment from the agent is added.</p>
 <p>In the interactive board (<code>taskter board</code>), tasks assigned to an agent will be marked with a <code>*</code>. You can view the assigned agent ID and any comments by selecting the task and pressing <code>Enter</code>.</p>
