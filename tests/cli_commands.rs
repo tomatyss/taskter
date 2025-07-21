@@ -261,5 +261,6 @@ fn show_tools_lists_builtins() {
         let output = String::from_utf8(out).unwrap();
         assert!(output.contains("create_task"));
         assert!(output.contains("run_bash"));
+        assert!(output.contains("web_search"));
     });
 }

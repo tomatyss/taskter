@@ -15,6 +15,11 @@ pub mod list_agents;
 pub mod list_tasks;
 pub mod run_bash;
 pub mod run_python;
+pub mod taskter_agent;
+pub mod taskter_okrs;
+pub mod taskter_task;
+pub mod taskter_tools;
+pub mod web_search;
 
 /// Runtime representation of a callable tool.
 pub struct Tool {
@@ -35,6 +40,11 @@ pub static BUILTIN_TOOLS: Lazy<HashMap<&'static str, Tool>> = Lazy::new(|| {
     list_tasks::register(&mut m);
     run_bash::register(&mut m);
     run_python::register(&mut m);
+    web_search::register(&mut m);
+    taskter_task::register(&mut m);
+    taskter_agent::register(&mut m);
+    taskter_okrs::register(&mut m);
+    taskter_tools::register(&mut m);
     m
 });
 

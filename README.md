@@ -262,7 +262,12 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
   the name of a built-in tool. Built-ins live under the `tools/` directory of
   the repository. For example `email` resolves to `tools/send_email.json`.
   Other built-ins include `create_task`, `assign_agent`, `add_log`, `add_okr`,
-  `list_tasks`, `list_agents`, `get_description`, `run_bash`, and `run_python`.
+  `list_tasks`, `list_agents`, `get_description`, `run_bash`, `run_python`,
+  `taskter_task`, `taskter_agent`, `taskter_okrs`, and `taskter_tools`.
+  The `taskter_*` tools wrap the corresponding CLI subcommands. Example:
+  ```json
+  {"tool": "taskter_task", "args": {"args": ["list"]}}
+  ```
 
 - **Assign an agent to a task:**
   ```bash

@@ -1,0 +1,11 @@
+{
+  "name": "web_search",
+  "description": "Search the web and return a brief summary of the top result",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "query": { "type": "string", "description": "Search query" }
+    },
+    "required": ["query"]
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "name": "taskter_okrs",
+  "description": "Run the `taskter okrs` command. Subcommands:\n- `add` --objective <OBJECTIVE> --key-results <KR>...\n- `list`\nExamples:\n`{\"args\": [\"list\"]}` lists OKRs.\n`{\"args\": [\"add\", \"--objective\", \"Improve\", \"--key-results\", \"Speed\"]}` adds an OKR.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "args": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "Arguments for the `taskter okrs` subcommand"
+      }
+    },
+    "required": ["args"]
+  }
+}
