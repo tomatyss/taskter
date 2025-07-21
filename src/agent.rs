@@ -16,7 +16,7 @@ pub enum ExecutionResult {
     Failure { comment: String },
 }
 
-fn append_log(message: &str) -> Result<()> {
+fn append_log(message: &str) -> anyhow::Result<()> {
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
@@ -28,10 +28,12 @@ fn append_log(message: &str) -> Result<()> {
 
 pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult> {
     let client = Client::new();
-    let _ = append_log(&format!(
+    if let Err(e) = append_log(&format!(
         "Agent {} executing task {}: {}",
         agent.id, task.id, task.title
-    ));
+    )) {
+        eprintln!("Failed to write log: {e}");
+    }
     // Obtain the API key if it is available.  In a testing or offline environment the
     // variable is typically missing.  Rather than crashing the whole process with
     // `expect`, we fall back to a mocked implementation that evaluates the task purely
@@ -55,17 +57,25 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
     // available, otherwise fail.
     if api_key.is_none() {
         if has_send_email_tool {
-            let _ = append_log("Executing without API key - success via built-in tool");
+            if let Err(e) = append_log("Executing without API key - success via built-in tool") {
+                eprintln!("Failed to write log: {e}");
+            }
             let msg = "No API key found. Task considered complete.".to_string();
-            let _ = append_log(&format!(
+            if let Err(e) = append_log(&format!(
                 "Agent {} finished successfully: {}",
                 agent.id, msg
-            ));
+            )) {
+                eprintln!("Failed to write log: {e}");
+            }
             return Ok(ExecutionResult::Success { comment: msg });
         } else {
-            let _ = append_log("Executing without API key - required tool missing");
+            if let Err(e) = append_log("Executing without API key - required tool missing") {
+                eprintln!("Failed to write log: {e}");
+            }
             let msg = "Required tool not available.".to_string();
-            let _ = append_log(&format!("Agent {} failed: {}", agent.id, msg));
+            if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
+                eprintln!("Failed to write log: {e}");
+            }
             return Ok(ExecutionResult::Failure { comment: msg });
         }
     }
@@ -109,17 +119,23 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
         {
             Ok(resp) => resp,
             Err(_) => {
-                let _ = append_log("API request failed; falling back to local simulation");
+                if let Err(e) = append_log("API request failed; falling back to local simulation") {
+                    eprintln!("Failed to write log: {e}");
+                }
                 return Ok(if has_send_email_tool {
                     let msg = "Tool available. Task considered complete.".to_string();
-                    let _ = append_log(&format!(
+                    if let Err(e) = append_log(&format!(
                         "Agent {} finished successfully: {}",
                         agent.id, msg
-                    ));
+                    )) {
+                        eprintln!("Failed to write log: {e}");
+                    }
                     ExecutionResult::Success { comment: msg }
                 } else {
                     let msg = "Required tool not available.".to_string();
-                    let _ = append_log(&format!("Agent {} failed: {}", agent.id, msg));
+                    if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
+                        eprintln!("Failed to write log: {e}");
+                    }
                     ExecutionResult::Failure { comment: msg }
                 });
             }
@@ -129,17 +145,25 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
             // When the API rejects the request (for example due to an invalid key)
             // we once again fall back to the local simulation.  This keeps normal
             // development and CI runs independent from external services.
-            let _ = append_log("API returned error status; falling back to local simulation");
+            if let Err(e) =
+                append_log("API returned error status; falling back to local simulation")
+            {
+                eprintln!("Failed to write log: {e}");
+            }
             return Ok(if has_send_email_tool {
                 let msg = "Tool available. Task considered complete.".to_string();
-                let _ = append_log(&format!(
+                if let Err(e) = append_log(&format!(
                     "Agent {} finished successfully: {}",
                     agent.id, msg
-                ));
+                )) {
+                    eprintln!("Failed to write log: {e}");
+                }
                 ExecutionResult::Success { comment: msg }
             } else {
                 let msg = "Required tool not available.".to_string();
-                let _ = append_log(&format!("Agent {} failed: {}", agent.id, msg));
+                if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
+                    eprintln!("Failed to write log: {e}");
+                }
                 ExecutionResult::Failure { comment: msg }
             });
         }
@@ -147,18 +171,25 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
         let response_json: Value = match response.json().await {
             Ok(json) => json,
             Err(_) => {
-                let _ =
-                    append_log("Failed to parse API response; falling back to local simulation");
+                if let Err(e) =
+                    append_log("Failed to parse API response; falling back to local simulation")
+                {
+                    eprintln!("Failed to write log: {e}");
+                }
                 return Ok(if has_send_email_tool {
                     let msg = "Tool available. Task considered complete.".to_string();
-                    let _ = append_log(&format!(
+                    if let Err(e) = append_log(&format!(
                         "Agent {} finished successfully: {}",
                         agent.id, msg
-                    ));
+                    )) {
+                        eprintln!("Failed to write log: {e}");
+                    }
                     ExecutionResult::Success { comment: msg }
                 } else {
                     let msg = "Required tool not available.".to_string();
-                    let _ = append_log(&format!("Agent {} failed: {}", agent.id, msg));
+                    if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
+                        eprintln!("Failed to write log: {e}");
+                    }
                     ExecutionResult::Failure { comment: msg }
                 });
             }
@@ -170,12 +201,17 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
         if let Some(function_call) = part.get("functionCall") {
             let tool_name = function_call["name"].as_str().unwrap();
             let args = &function_call["args"];
-            let _ = append_log(&format!(
+            if let Err(e) = append_log(&format!(
                 "Agent {} calling tool {} with args {}",
                 agent.id, tool_name, args
-            ));
+            )) {
+                eprintln!("Failed to write log: {e}");
+            }
             let tool_response = tools::execute_tool(tool_name, args)?;
-            let _ = append_log(&format!("Tool {tool_name} responded with {tool_response}"));
+            if let Err(e) = append_log(&format!("Tool {tool_name} responded with {tool_response}"))
+            {
+                eprintln!("Failed to write log: {e}");
+            }
 
             history.push(json!({
                 "role": "model",
@@ -187,14 +223,18 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
             }));
         } else if let Some(text) = part.get("text") {
             let comment = text.as_str().unwrap().to_string();
-            let _ = append_log(&format!(
+            if let Err(e) = append_log(&format!(
                 "Agent {} finished successfully: {}",
                 agent.id, comment
-            ));
+            )) {
+                eprintln!("Failed to write log: {e}");
+            }
             return Ok(ExecutionResult::Success { comment });
         } else {
             let msg = "No tool call or text response from the model".to_string();
-            let _ = append_log(&format!("Agent {} failed: {}", agent.id, msg));
+            if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
+                eprintln!("Failed to write log: {e}");
+            }
             return Ok(ExecutionResult::Failure { comment: msg });
         }
     }
