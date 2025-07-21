@@ -277,6 +277,10 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
   ```bash
   taskter show agents
   ```
+- **List available tools:**
+  ```bash
+  taskter show tools
+  ```
 - **Delete an agent:**
   ```bash
   taskter delete-agent --agent-id 1

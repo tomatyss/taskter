@@ -10,7 +10,6 @@ mod store;
 mod tools;
 mod tui;
 
-
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
@@ -93,6 +92,11 @@ async fn main() -> anyhow::Result<()> {
                 let agents = agent::list_agents()?;
                 for a in agents {
                     println!("{}: {}", a.id, a.system_prompt);
+                }
+            }
+            ShowCommands::Tools => {
+                for t in tools::builtin_names() {
+                    println!("{t}");
                 }
             }
         },

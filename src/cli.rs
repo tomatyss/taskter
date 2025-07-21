@@ -109,4 +109,6 @@ pub enum ShowCommands {
     Logs,
     /// Lists all agents
     Agents,
+    /// Lists all built-in agent tools
+    Tools,
 }
