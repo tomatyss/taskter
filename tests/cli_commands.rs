@@ -3,16 +3,8 @@ use predicates::prelude::*;
 use serde_json::Value;
 use std::fs;
 
-fn with_temp_dir<F: FnOnce() -> T, T>(test: F) -> T {
-    let tmp = tempfile::tempdir().expect("failed to create temp dir");
-    let original_dir = std::env::current_dir().expect("cannot read current dir");
-    std::env::set_current_dir(tmp.path()).expect("cannot set current dir");
-
-    let result = test();
-
-    std::env::set_current_dir(original_dir).expect("cannot restore current dir");
-    result
-}
+mod common;
+pub use common::with_temp_dir;
 
 #[test]
 fn add_list_done_workflow() {
