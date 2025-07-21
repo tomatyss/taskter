@@ -97,6 +97,19 @@ pub enum Commands {
         #[arg(short, long)]
         agent_id: usize,
     },
+    /// Updates an agent's prompt and tools
+    #[command(name = "update-agent")]
+    UpdateAgent {
+        /// The id of the agent to update
+        #[arg(short = 'i', long)]
+        agent_id: usize,
+        /// The new system prompt for the agent
+        #[arg(short, long)]
+        prompt: String,
+        /// The new tools the agent can use
+        #[arg(short, long, num_args = 1..)]
+        tools: Vec<String>,
+    },
 }
 
 #[derive(Subcommand)]

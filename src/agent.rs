@@ -291,3 +291,17 @@ pub fn delete_agent(id: usize) -> anyhow::Result<()> {
     }
     Ok(())
 }
+
+pub fn update_agent(
+    id: usize,
+    prompt: String,
+    tools: Vec<FunctionDeclaration>,
+) -> anyhow::Result<()> {
+    let mut agents = load_agents()?;
+    if let Some(agent) = agents.iter_mut().find(|a| a.id == id) {
+        agent.system_prompt = prompt;
+        agent.tools = tools;
+        save_agents(&agents)?;
+    }
+    Ok(())
+}
