@@ -4,10 +4,10 @@ Taskter supports LLM-based agents that can be assigned to tasks. These agents ca
 
 ## Creating an Agent
 
-You can create an agent using the `add-agent` subcommand. You need to provide a prompt, a list of tools, and a model.
+You can create an agent using the `agent add` subcommand. You need to provide a prompt, a list of tools, and a model.
 
 ```bash
-taskter add-agent --prompt "You are a helpful assistant." --tools "email" "calendar" --model "gemini-pro"
+taskter agent add --prompt "You are a helpful assistant." --tools "email" "calendar" --model "gemini-pro"
 ```
 
 The `--tools` option accepts either paths to JSON files describing a tool or the name of a built-in tool. Built-in tools are located in the `tools/` directory of the repository.
@@ -27,7 +27,7 @@ Available built-in tools:
 You can display this list at any time with:
 
 ```bash
-taskter show tools
+taskter tools list
 ```
 
 ## Assigning an Agent to a Task
@@ -35,7 +35,7 @@ taskter show tools
 Once you have created an agent, you can assign it to a task using the `assign` subcommand:
 
 ```bash
-taskter assign --task-id 1 --agent-id 1
+taskter task assign --task-id 1 --agent-id 1
 ```
 
 ## Executing a Task
@@ -43,7 +43,7 @@ taskter assign --task-id 1 --agent-id 1
 To execute a task with an assigned agent, use the `execute` subcommand:
 
 ```bash
-taskter execute --task-id 1
+taskter task execute --task-id 1
 ```
 
 When a task is executed, the agent will attempt to perform the task. If successful, the task is marked as "Done". If it fails, the task is moved back to "To Do", unassigned, and a comment from the agent is added.

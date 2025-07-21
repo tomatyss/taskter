@@ -11,6 +11,121 @@ pub struct Cli {
 pub enum Commands {
     /// Initializes a new Taskter board
     Init,
+    /// Task management commands
+    Task {
+        #[command(subcommand)]
+        action: TaskCommands,
+    },
+    /// Agent management commands
+    Agent {
+        #[command(subcommand)]
+        action: AgentCommands,
+    },
+    /// Show project information
+    Show {
+        #[command(subcommand)]
+        what: ShowCommands,
+    },
+    /// Manage OKRs
+    Okrs {
+        #[command(subcommand)]
+        action: OkrCommands,
+    },
+    /// Manage logs
+    Logs {
+        #[command(subcommand)]
+        action: LogCommands,
+    },
+    /// Manage built-in tools
+    Tools {
+        #[command(subcommand)]
+        action: ToolCommands,
+    },
+    /// Opens the interactive board
+    Board,
+    /// Sets the project description
+    Description {
+        /// The project description
+        description: String,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum ShowCommands {
+    /// Shows the project description
+    Description,
+}
+
+#[derive(Subcommand)]
+pub enum OkrCommands {
+    /// Adds a new OKR
+    Add {
+        /// The objective
+        #[arg(short, long)]
+        objective: String,
+        /// The key results
+        #[arg(short, long, num_args = 1..)]
+        key_results: Vec<String>,
+    },
+    /// Lists all OKRs
+    List,
+}
+
+#[derive(Subcommand)]
+pub enum LogCommands {
+    /// Adds a log entry
+    Add {
+        /// The log message
+        message: String,
+    },
+    /// Lists log entries
+    List,
+}
+
+#[derive(Subcommand)]
+pub enum ToolCommands {
+    /// Lists built-in tools
+    List,
+}
+
+#[derive(Subcommand)]
+pub enum AgentCommands {
+    /// Adds a new agent
+    Add {
+        /// The system prompt for the agent
+        #[arg(short, long)]
+        prompt: String,
+        /// The tools the agent can use
+        #[arg(short, long, num_args = 1..)]
+        tools: Vec<String>,
+        /// The model to use for the agent
+        #[arg(short, long)]
+        model: String,
+    },
+    /// Lists all agents
+    List,
+    /// Removes an agent by id
+    Remove {
+        /// The id of the agent to delete
+        #[arg(long)]
+        id: usize,
+    },
+    /// Updates an agent's prompt and tools
+    Update {
+        /// The id of the agent to update
+        #[arg(long)]
+        id: usize,
+        /// The new system prompt for the agent
+        #[arg(short, long)]
+        prompt: String,
+        /// The new tools the agent can use
+        #[arg(short, long, num_args = 1..)]
+        tools: Vec<String>,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum TaskCommands {
     /// Adds a new task
     Add {
         /// The title of the task
@@ -22,9 +137,10 @@ pub enum Commands {
     },
     /// Lists all tasks
     List,
-    /// Marks a task as done
-    Done {
+    /// Marks a task as complete
+    Complete {
         /// The id of the task to mark as done
+        #[arg(long)]
         id: usize,
     },
     /// Adds a comment to a task
@@ -35,45 +151,6 @@ pub enum Commands {
         /// The comment text
         #[arg(short, long)]
         comment: String,
-    },
-    /// Show project information
-    Show {
-        #[command(subcommand)]
-        what: ShowCommands,
-    },
-    /// Adds a new OKR
-    AddOkr {
-        /// The objective
-        #[arg(short, long)]
-        objective: String,
-        /// The key results
-        #[arg(short, long, num_args = 1..)]
-        key_results: Vec<String>,
-    },
-    /// Adds a log entry
-    Log {
-        /// The log message
-        message: String,
-    },
-    /// Opens the interactive board
-    Board,
-    /// Sets the project description
-    Description {
-        /// The project description
-        description: String,
-    },
-    /// Adds a new agent
-    #[command(name = "add-agent")]
-    AddAgent {
-        /// The system prompt for the agent
-        #[arg(short, long)]
-        prompt: String,
-        /// The tools the agent can use
-        #[arg(short, long, num_args = 1..)]
-        tools: Vec<String>,
-        /// The model to use for the agent
-        #[arg(short, long)]
-        model: String,
     },
     /// Executes a task with an agent
     Execute {
@@ -90,38 +167,4 @@ pub enum Commands {
         #[arg(short, long)]
         agent_id: usize,
     },
-    /// Deletes an agent by id
-    #[command(name = "delete-agent")]
-    DeleteAgent {
-        /// The id of the agent to delete
-        #[arg(short, long)]
-        agent_id: usize,
-    },
-    /// Updates an agent's prompt and tools
-    #[command(name = "update-agent")]
-    UpdateAgent {
-        /// The id of the agent to update
-        #[arg(short = 'i', long)]
-        agent_id: usize,
-        /// The new system prompt for the agent
-        #[arg(short, long)]
-        prompt: String,
-        /// The new tools the agent can use
-        #[arg(short, long, num_args = 1..)]
-        tools: Vec<String>,
-    },
-}
-
-#[derive(Subcommand)]
-pub enum ShowCommands {
-    /// Shows the project description
-    Description,
-    /// Shows the project OKRs
-    Okrs,
-    /// Shows the operation logs
-    Logs,
-    /// Lists all agents
-    Agents,
-    /// Lists all built-in agent tools
-    Tools,
 }
