@@ -1,0 +1,15 @@
+{
+  "name": "taskter_task",
+  "description": "Run the `taskter task` command. Available subcommands:\n- `add` --title <TITLE> [--description <DESC>]\n- `list`\n- `complete` --id <ID>\n- `comment` --task-id <TASK_ID> --comment <COMMENT>\n- `assign` --task-id <TASK_ID> --agent-id <AGENT_ID>\n- `execute` --task-id <TASK_ID>\nExamples:\n`{\"args\": [\"list\"]}` lists tasks.\n`{\"args\": [\"add\", \"--title\", \"Demo\"]}` adds a task.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "args": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "Arguments for the `taskter task` subcommand"
+      }
+    },
+    "required": ["args"]
+  }
+}
