@@ -128,7 +128,7 @@ fn add_okr_requires_fields() {
 fn add_log_appends_message() {
     with_temp_dir(|| {
         add_log::execute(&json!({"message":"hello"})).unwrap();
-        let content = fs::read_to_string(".taskter/logs.log").unwrap();
+        let content = fs::read_to_string(taskter::config::LOG_FILE).unwrap();
         assert!(content.contains("hello"));
     });
 }
@@ -197,7 +197,7 @@ fn list_tasks_empty_when_none() {
 #[test]
 fn get_description_reads_file() {
     with_temp_dir(|| {
-        fs::write(".taskter/description.md", "desc").unwrap();
+        fs::write(taskter::config::DESCRIPTION_FILE, "desc").unwrap();
         let out = get_description::execute(&json!({})).unwrap();
         assert_eq!(out, "desc");
     });

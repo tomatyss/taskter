@@ -5,6 +5,7 @@ use std::fs::OpenOptions;
 use std::io::Write;
 
 use crate::agent::FunctionDeclaration;
+use crate::config;
 use crate::tools::Tool;
 use std::collections::HashMap;
 
@@ -21,7 +22,7 @@ pub fn execute(args: &Value) -> Result<String> {
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
-        .open(".taskter/logs.log")?;
+        .open(config::log_path())?;
     let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
     writeln!(file, "[{timestamp}] {message}")?;
     Ok("Log entry added".to_string())

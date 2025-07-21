@@ -3,6 +3,7 @@ use serde_json::Value;
 use std::fs;
 
 use crate::agent::FunctionDeclaration;
+use crate::config;
 use crate::tools::Tool;
 use std::collections::HashMap;
 
@@ -13,7 +14,7 @@ pub fn declaration() -> FunctionDeclaration {
 }
 
 pub fn execute(_args: &Value) -> Result<String> {
-    let content = fs::read_to_string(".taskter/description.md")?;
+    let content = fs::read_to_string(config::description_path())?;
     Ok(content)
 }
 
