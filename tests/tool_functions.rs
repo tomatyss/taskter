@@ -210,3 +210,33 @@ fn get_description_fails_missing_file() {
         assert!(err.to_string().contains("No such file"));
     });
 }
+
+#[test]
+fn run_bash_reports_error() {
+    with_temp_dir(|| {
+        let err = taskter::tools::run_bash::execute(&json!({"command": "exit 1"})).unwrap_err();
+        assert!(err.to_string().contains("Command failed"));
+    });
+}
+
+#[test]
+fn run_python_reports_error() {
+    with_temp_dir(|| {
+        let err = taskter::tools::run_python::execute(&json!({"code": "import sys; sys.exit(1)"}))
+            .unwrap_err();
+        assert!(err.to_string().contains("Python execution failed"));
+    });
+}
+
+#[test]
+fn send_email_fails_without_config() {
+    with_temp_dir(|| {
+        let msg = taskter::tools::email::execute(&json!({
+            "to": "a@example.com",
+            "subject": "hi",
+            "body": "test"
+        }))
+        .unwrap();
+        assert!(msg.contains("Failed to send email"));
+    });
+}
