@@ -17,12 +17,12 @@ pub fn execute(args: &Value) -> Result<String> {
     let base = std::env::var("SEARCH_API_BASE_URL")
         .unwrap_or_else(|_| "https://api.duckduckgo.com/".to_string());
     let url = format!("{base}?q={query}&format=json&no_redirect=1&skip_disambig=1");
-    let client = Client::new();
-    let resp = client.get(&url).send()?;
+    let client = Client::builder().user_agent("taskter/0.1.0").build()?;
+    let resp = client.get(&url).send().map_err(|e| anyhow!(e))?;
     if !resp.status().is_success() {
-        return Err(anyhow!("request failed"));
+        return Err(anyhow!("request failed: {}", resp.status()));
     }
-    let json: Value = resp.json()?;
+    let json: Value = resp.json().map_err(|e| anyhow!(e))?;
     let heading = json.get("Heading").and_then(|v| v.as_str()).unwrap_or("");
     let abstract_text = json
         .get("AbstractText")
