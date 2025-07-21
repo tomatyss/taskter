@@ -161,6 +161,53 @@ fn list_and_delete_agents() {
 }
 
 #[test]
+fn update_agent_changes_configuration() {
+    with_temp_dir(|| {
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .arg("init")
+            .assert()
+            .success();
+
+        // add an agent
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args([
+                "add-agent",
+                "--prompt",
+                "helper",
+                "--tools",
+                "email",
+                "--model",
+                "gpt-4o",
+            ])
+            .assert()
+            .success();
+
+        // update the agent
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args([
+                "update-agent",
+                "--agent-id",
+                "1",
+                "--prompt",
+                "new helper",
+                "--tools",
+                "create_task",
+            ])
+            .assert()
+            .success()
+            .stdout(predicate::str::contains("Agent 1 updated."));
+
+        let agents: Vec<Value> =
+            serde_json::from_str(&fs::read_to_string(".taskter/agents.json").unwrap()).unwrap();
+        assert_eq!(agents[0]["system_prompt"], "new helper");
+        assert_eq!(agents[0]["tools"][0]["name"], "create_task");
+    });
+}
+
+#[test]
 fn add_okr_log_and_description() {
     with_temp_dir(|| {
         Command::cargo_bin("taskter")

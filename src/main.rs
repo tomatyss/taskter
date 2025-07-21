@@ -212,6 +212,28 @@ async fn main() -> anyhow::Result<()> {
                 println!("Task with id {task_id} not found.");
             }
         }
+        Commands::UpdateAgent {
+            agent_id,
+            prompt,
+            tools,
+        } => {
+            let mut function_declarations = Vec::new();
+            for spec in tools {
+                let decl = if Path::new(spec).exists() {
+                    let tool_content = fs::read_to_string(spec)?;
+                    let tool_json: serde_json::Value = serde_json::from_str(&tool_content)?;
+                    serde_json::from_value(tool_json)?
+                } else if let Some(built) = tools::builtin_declaration(spec) {
+                    built
+                } else {
+                    return Err(anyhow::anyhow!(format!("Unknown tool: {spec}")));
+                };
+                function_declarations.push(decl);
+            }
+
+            agent::update_agent(*agent_id, prompt.clone(), function_declarations)?;
+            println!("Agent {agent_id} updated.");
+        }
         Commands::DeleteAgent { agent_id } => {
             agent::delete_agent(*agent_id)?;
             println!("Agent {agent_id} deleted.");
