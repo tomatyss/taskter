@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# Autofix linter issues
+./scripts/autofix.sh
+
 # Format code
 cargo fmt --all -- --check || exit 1
 
