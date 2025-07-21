@@ -3,6 +3,8 @@ use serde_json::Value;
 use std::process::Command;
 
 use crate::agent::FunctionDeclaration;
+use crate::tools::Tool;
+use std::collections::HashMap;
 
 const DECL_JSON: &str = include_str!("../../tools/run_bash.json");
 
@@ -25,4 +27,14 @@ pub fn execute(args: &Value) -> Result<String> {
             String::from_utf8_lossy(&output.stderr)
         ))
     }
+}
+
+pub fn register(map: &mut HashMap<&'static str, Tool>) {
+    map.insert(
+        "run_bash",
+        Tool {
+            declaration: declaration(),
+            execute,
+        },
+    );
 }

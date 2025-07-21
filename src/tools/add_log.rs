@@ -5,6 +5,8 @@ use std::fs::OpenOptions;
 use std::io::Write;
 
 use crate::agent::FunctionDeclaration;
+use crate::tools::Tool;
+use std::collections::HashMap;
 
 const DECL_JSON: &str = include_str!("../../tools/add_log.json");
 
@@ -23,4 +25,14 @@ pub fn execute(args: &Value) -> Result<String> {
     let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
     writeln!(file, "[{timestamp}] {message}")?;
     Ok("Log entry added".to_string())
+}
+
+pub fn register(map: &mut HashMap<&'static str, Tool>) {
+    map.insert(
+        "add_log",
+        Tool {
+            declaration: declaration(),
+            execute,
+        },
+    );
 }
