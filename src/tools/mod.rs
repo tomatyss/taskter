@@ -14,6 +14,7 @@ pub mod list_tasks;
 pub mod run_bash;
 pub mod run_python;
 
+/// Return the [`FunctionDeclaration`] for one of the built-in tools.
 pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
     match name {
         "send_email" | "email" => Some(email::declaration()),
@@ -30,6 +31,9 @@ pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
     }
 }
 
+/// Execute a built-in tool by name.
+///
+/// Many tools persist data under the `.taskter/` directory.
 pub fn execute_tool(name: &str, args: &Value) -> Result<String> {
     match name {
         "send_email" | "email" => email::execute(args),

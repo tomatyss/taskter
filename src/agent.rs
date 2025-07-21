@@ -10,9 +10,12 @@ use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::Path;
 
+/// Result of a task execution performed by an [`Agent`].
 #[derive(Debug, PartialEq)]
 pub enum ExecutionResult {
+    /// The task completed successfully and produced a comment.
     Success { comment: String },
+    /// The task failed and produced a comment describing the failure.
     Failure { comment: String },
 }
 
@@ -26,6 +29,10 @@ fn append_log(message: &str) -> Result<()> {
     Ok(())
 }
 
+/// Execute a [`Task`] with the given [`Agent`].
+///
+/// A log entry is appended to `.taskter/logs.log` for each execution attempt.
+/// This function may perform network requests when an API key is available.
 pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult> {
     let client = Client::new();
     let _ = append_log(&format!(
@@ -200,10 +207,14 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
     }
 }
 
+/// Metadata describing a callable tool.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FunctionDeclaration {
+    /// Name used by the model when invoking the tool.
     pub name: String,
+    /// Optional human description of the tool.
     pub description: Option<String>,
+    /// JSON Schema describing the argument object.
     #[serde(default = "empty_params")]
     pub parameters: Value,
 }
@@ -212,14 +223,22 @@ fn empty_params() -> Value {
     serde_json::json!({})
 }
 
+/// Configuration for an autonomous agent capable of executing tasks.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Agent {
+    /// Unique identifier persisted in `.taskter/agents.json`.
     pub id: usize,
+    /// Prompt used to initialise the conversation with the model.
     pub system_prompt: String,
+    /// Tools this agent is allowed to call.
     pub tools: Vec<FunctionDeclaration>,
+    /// Name of the underlying language model.
     pub model: String,
 }
 
+/// Load all agents from `.taskter/agents.json`.
+///
+/// If the file does not exist it will be created.
 pub fn load_agents() -> anyhow::Result<Vec<Agent>> {
     let path = Path::new(".taskter/agents.json");
     if !path.exists() {
@@ -232,6 +251,7 @@ pub fn load_agents() -> anyhow::Result<Vec<Agent>> {
     Ok(agents)
 }
 
+/// Persist the provided list of agents to `.taskter/agents.json`.
 pub fn save_agents(agents: &[Agent]) -> anyhow::Result<()> {
     let path = Path::new(".taskter/agents.json");
     let content = serde_json::to_string_pretty(agents)?;
@@ -239,10 +259,12 @@ pub fn save_agents(agents: &[Agent]) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Return the list of known agents.
 pub fn list_agents() -> anyhow::Result<Vec<Agent>> {
     load_agents()
 }
 
+/// Remove an agent by id from `.taskter/agents.json`.
 pub fn delete_agent(id: usize) -> anyhow::Result<()> {
     let mut agents = load_agents()?;
     if let Some(pos) = agents.iter().position(|a| a.id == id) {

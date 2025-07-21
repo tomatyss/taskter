@@ -6,10 +6,12 @@ use crate::agent::FunctionDeclaration;
 
 const DECL_JSON: &str = include_str!("../../tools/run_python.json");
 
+/// Return the declaration for executing Python code.
 pub fn declaration() -> FunctionDeclaration {
     serde_json::from_str(DECL_JSON).expect("invalid run_python.json")
 }
 
+/// Execute a Python snippet using the local interpreter.
 pub fn execute(args: &Value) -> Result<String> {
     let code = args["code"]
         .as_str()

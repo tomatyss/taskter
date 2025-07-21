@@ -17,10 +17,12 @@ struct EmailConfig {
 
 const DECL_JSON: &str = include_str!("../../tools/send_email.json");
 
+/// Return the declaration for the email sending tool.
 pub fn declaration() -> FunctionDeclaration {
     serde_json::from_str(DECL_JSON).expect("invalid send_email.json")
 }
 
+/// Send an email using the configuration stored in `.taskter/email_config.json`.
 pub fn execute(args: &Value) -> Result<String> {
     let to = args["to"].as_str().unwrap_or_default();
     let subject = args["subject"].as_str().unwrap_or_default();

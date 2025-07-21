@@ -6,10 +6,12 @@ use crate::store;
 
 const DECL_JSON: &str = include_str!("../../tools/assign_agent.json");
 
+/// Return the declaration for the agent assignment tool.
 pub fn declaration() -> FunctionDeclaration {
     serde_json::from_str(DECL_JSON).expect("invalid assign_agent.json")
 }
 
+/// Assign an agent to a task in `.taskter/board.json`.
 pub fn execute(args: &Value) -> Result<String> {
     let task_id = args["task_id"]
         .as_u64()

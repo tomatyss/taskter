@@ -8,10 +8,12 @@ use crate::agent::FunctionDeclaration;
 
 const DECL_JSON: &str = include_str!("../../tools/add_log.json");
 
+/// Return the declaration describing this tool.
 pub fn declaration() -> FunctionDeclaration {
     serde_json::from_str(DECL_JSON).expect("invalid add_log.json")
 }
 
+/// Append a message to `.taskter/logs.log`.
 pub fn execute(args: &Value) -> Result<String> {
     let message = args["message"]
         .as_str()

@@ -6,10 +6,12 @@ use crate::agent::FunctionDeclaration;
 
 const DECL_JSON: &str = include_str!("../../tools/run_bash.json");
 
+/// Return the declaration for executing shell commands.
 pub fn declaration() -> FunctionDeclaration {
     serde_json::from_str(DECL_JSON).expect("invalid run_bash.json")
 }
 
+/// Run a bash command locally and return its output.
 pub fn execute(args: &Value) -> Result<String> {
     let command = args["command"]
         .as_str()

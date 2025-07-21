@@ -6,10 +6,12 @@ use crate::store::{self, KeyResult, Okr};
 
 const DECL_JSON: &str = include_str!("../../tools/add_okr.json");
 
+/// Return the declaration for the OKR creation tool.
 pub fn declaration() -> FunctionDeclaration {
     serde_json::from_str(DECL_JSON).expect("invalid add_okr.json")
 }
 
+/// Add an OKR to `.taskter/okrs.json`.
 pub fn execute(args: &Value) -> Result<String> {
     let objective = args["objective"]
         .as_str()
