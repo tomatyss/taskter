@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="overview.html"><strong aria-hidden="true">1.</strong> Overview</a></li><li class="chapter-item expanded "><a href="installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="cli_usage.html"><strong aria-hidden="true">3.</strong> CLI Usage</a></li><li class="chapter-item expanded "><a href="tui_guide.html"><strong aria-hidden="true">4.</strong> TUI Guide</a></li><li class="chapter-item expanded "><a href="agent_system.html"><strong aria-hidden="true">5.</strong> Agent System</a></li><li class="chapter-item expanded "><a href="contributing.html"><strong aria-hidden="true">6.</strong> Contributing</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="overview.html"><strong aria-hidden="true">1.</strong> Overview</a></li><li class="chapter-item expanded "><a href="installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="cli_usage.html"><strong aria-hidden="true">3.</strong> CLI Usage</a></li><li class="chapter-item expanded "><a href="tui_guide.html"><strong aria-hidden="true">4.</strong> TUI Guide</a></li><li class="chapter-item expanded "><a href="agent_system.html"><strong aria-hidden="true">5.</strong> Agent System</a></li><li class="chapter-item expanded "><a href="configuration.html"><strong aria-hidden="true">6.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="contributing.html"><strong aria-hidden="true">7.</strong> Contributing</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -335,6 +335,29 @@ You can make <code>taskter</code> available system-wide by copying it to a direc
 </code></pre>
 <p>When a task is executed, the agent will attempt to perform the task. If successful, the task is marked as "Done". If it fails, the task is moved back to "To Do", unassigned, and a comment from the agent is added.</p>
 <p>In the interactive board (<code>taskter board</code>), tasks assigned to an agent will be marked with a <code>*</code>. You can view the assigned agent ID and any comments by selecting the task and pressing <code>Enter</code>.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
+<p>This chapter describes runtime configuration files and environment variables used by Taskter.</p>
+<h2 id="email-configuration-file"><a class="header" href="#email-configuration-file">Email configuration file</a></h2>
+<p>Email-based tools expect credentials in <code>.taskter/email_config.json</code> inside your project. Every agent reads the same file.</p>
+<pre><code class="language-json">{
+  "smtp_server": "smtp.example.com",
+  "smtp_port": 587,
+  "username": "user@example.com",
+  "password": "secret",
+  "imap_server": "imap.example.com",  // optional
+  "imap_port": 993                    // optional
+}
+</code></pre>
+<p>Currently only the SMTP fields are used by the <code>send_email</code> tool. The IMAP keys are accepted for future extensions. No default values are provided, so fill in the details that match your mail provider.</p>
+<p>If the file is missing the tool outputs <code>Email configuration not found</code>. When Taskter runs without a <code>GEMINI_API_KEY</code>, email tools are skipped entirely so the file is not required for tests.</p>
+<h2 id="environment-variables"><a class="header" href="#environment-variables">Environment variables</a></h2>
+<p>Taskter looks for a single environment variable:</p>
+<ul>
+<li><code>GEMINI_API_KEY</code> — API key for the Gemini model. When set, agents can call the remote API. If absent or empty Taskter stays in offline mode and only uses built-in tools.</li>
+</ul>
+<p>Set it directly in your shell or via Docker Compose:</p>
+<pre><code class="language-bash">export GEMINI_API_KEY=your_key_here
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="contributing"><a class="header" href="#contributing">Contributing</a></h1>
 <p>Contributions are welcome! This guide will help you get started with setting up your development environment and submitting your changes.</p>
 <h2 id="development-environment"><a class="header" href="#development-environment">Development Environment</a></h2>
