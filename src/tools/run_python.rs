@@ -8,10 +8,12 @@ use std::collections::HashMap;
 
 const DECL_JSON: &str = include_str!("../../tools/run_python.json");
 
+/// Returns the function declaration for this tool.
 pub fn declaration() -> FunctionDeclaration {
     serde_json::from_str(DECL_JSON).expect("invalid run_python.json")
 }
 
+/// Executes a Python snippet using the system `python3`.
 pub fn execute(args: &Value) -> Result<String> {
     let code = args["code"]
         .as_str()
@@ -29,6 +31,7 @@ pub fn execute(args: &Value) -> Result<String> {
     }
 }
 
+/// Registers the tool in the provided map.
 pub fn register(map: &mut HashMap<&'static str, Tool>) {
     map.insert(
         "run_python",

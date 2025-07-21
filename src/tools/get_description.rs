@@ -9,15 +9,18 @@ use std::collections::HashMap;
 
 const DECL_JSON: &str = include_str!("../../tools/get_description.json");
 
+/// Returns the function declaration for this tool.
 pub fn declaration() -> FunctionDeclaration {
     serde_json::from_str(DECL_JSON).expect("invalid get_description.json")
 }
 
+/// Reads `.taskter/description.md` and returns its contents.
 pub fn execute(_args: &Value) -> Result<String> {
     let content = fs::read_to_string(config::description_path())?;
     Ok(content)
 }
 
+/// Registers the tool in the provided map.
 pub fn register(map: &mut HashMap<&'static str, Tool>) {
     map.insert(
         "get_description",

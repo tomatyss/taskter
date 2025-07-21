@@ -8,10 +8,12 @@ use std::collections::HashMap;
 
 const DECL_JSON: &str = include_str!("../../tools/add_okr.json");
 
+/// Returns the function declaration for this tool.
 pub fn declaration() -> FunctionDeclaration {
     serde_json::from_str(DECL_JSON).expect("invalid add_okr.json")
 }
 
+/// Adds a new OKR to `.taskter/okrs.json`.
 pub fn execute(args: &Value) -> Result<String> {
     let objective = args["objective"]
         .as_str()
@@ -39,6 +41,7 @@ pub fn execute(args: &Value) -> Result<String> {
     Ok(format!("Added OKR '{objective}'"))
 }
 
+/// Registers the tool in the provided map.
 pub fn register(map: &mut HashMap<&'static str, Tool>) {
     map.insert(
         "add_okr",
