@@ -160,7 +160,16 @@ async fn main() -> anyhow::Result<()> {
             AgentCommands::List => {
                 let agents = agent::list_agents()?;
                 for a in agents {
-                    println!("{}: {}", a.id, a.system_prompt);
+                    let tool_names = a
+                        .tools
+                        .iter()
+                        .map(|t| t.name.clone())
+                        .collect::<Vec<_>>()
+                        .join(", ");
+                    println!(
+                        "{}: {} (model: {}, tools: {})",
+                        a.id, a.system_prompt, a.model, tool_names
+                    );
                 }
             }
             AgentCommands::Remove { id } => {
