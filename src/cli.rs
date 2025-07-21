@@ -11,30 +11,15 @@ pub struct Cli {
 pub enum Commands {
     /// Initializes a new Taskter board
     Init,
-    /// Adds a new task
-    Add {
-        /// The title of the task
-        #[arg(short, long)]
-        title: String,
-        /// The description of the task
-        #[arg(short, long)]
-        description: Option<String>,
+    /// Task management commands
+    Task {
+        #[command(subcommand)]
+        action: TaskCommands,
     },
-    /// Lists all tasks
-    List,
-    /// Marks a task as done
-    Done {
-        /// The id of the task to mark as done
-        id: usize,
-    },
-    /// Adds a comment to a task
-    Comment {
-        /// The id of the task to comment on
-        #[arg(short, long)]
-        task_id: usize,
-        /// The comment text
-        #[arg(short, long)]
-        comment: String,
+    /// Agent management commands
+    Agent {
+        #[command(subcommand)]
+        action: AgentCommands,
     },
     /// Show project information
     Show {
@@ -62,9 +47,26 @@ pub enum Commands {
         /// The project description
         description: String,
     },
+}
+
+#[derive(Subcommand)]
+pub enum ShowCommands {
+    /// Shows the project description
+    Description,
+    /// Shows the project OKRs
+    Okrs,
+    /// Shows the operation logs
+    Logs,
+    /// Lists all agents
+    Agents,
+    /// Lists all built-in agent tools
+    Tools,
+}
+
+#[derive(Subcommand)]
+pub enum AgentCommands {
     /// Adds a new agent
-    #[command(name = "add-agent")]
-    AddAgent {
+    Add {
         /// The system prompt for the agent
         #[arg(short, long)]
         prompt: String,
@@ -74,6 +76,56 @@ pub enum Commands {
         /// The model to use for the agent
         #[arg(short, long)]
         model: String,
+    },
+    /// Lists all agents
+    List,
+    /// Removes an agent by id
+    Remove {
+        /// The id of the agent to delete
+        #[arg(long)]
+        id: usize,
+    },
+    /// Updates an agent's prompt and tools
+    Update {
+        /// The id of the agent to update
+        #[arg(long)]
+        id: usize,
+        /// The new system prompt for the agent
+        #[arg(short, long)]
+        prompt: String,
+        /// The new tools the agent can use
+        #[arg(short, long, num_args = 1..)]
+        tools: Vec<String>,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum TaskCommands {
+    /// Adds a new task
+    Add {
+        /// The title of the task
+        #[arg(short, long)]
+        title: String,
+        /// The description of the task
+        #[arg(short, long)]
+        description: Option<String>,
+    },
+    /// Lists all tasks
+    List,
+    /// Marks a task as complete
+    Complete {
+        /// The id of the task to mark as done
+        #[arg(long)]
+        id: usize,
+    },
+    /// Adds a comment to a task
+    Comment {
+        /// The id of the task to comment on
+        #[arg(short, long)]
+        task_id: usize,
+        /// The comment text
+        #[arg(short, long)]
+        comment: String,
     },
     /// Executes a task with an agent
     Execute {
@@ -90,38 +142,4 @@ pub enum Commands {
         #[arg(short, long)]
         agent_id: usize,
     },
-    /// Deletes an agent by id
-    #[command(name = "delete-agent")]
-    DeleteAgent {
-        /// The id of the agent to delete
-        #[arg(short, long)]
-        agent_id: usize,
-    },
-    /// Updates an agent's prompt and tools
-    #[command(name = "update-agent")]
-    UpdateAgent {
-        /// The id of the agent to update
-        #[arg(short = 'i', long)]
-        agent_id: usize,
-        /// The new system prompt for the agent
-        #[arg(short, long)]
-        prompt: String,
-        /// The new tools the agent can use
-        #[arg(short, long, num_args = 1..)]
-        tools: Vec<String>,
-    },
-}
-
-#[derive(Subcommand)]
-pub enum ShowCommands {
-    /// Shows the project description
-    Description,
-    /// Shows the project OKRs
-    Okrs,
-    /// Shows the operation logs
-    Logs,
-    /// Lists all agents
-    Agents,
-    /// Lists all built-in agent tools
-    Tools,
 }

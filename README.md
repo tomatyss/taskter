@@ -36,13 +36,13 @@ This will create a `.taskter` directory to store all your tasks, agents, and pro
 Next, create an agent to help you with your tasks. For this example, we'll create a simple agent that can run bash commands:
 
 ```bash
-taskter add-agent --prompt "You are a helpful assistant that can run bash commands." --tools "run_bash" --model "gemini-2.5-pro"
+taskter agent add --prompt "You are a helpful assistant that can run bash commands." --tools "run_bash" --model "gemini-2.5-pro"
 ```
 
 You can list all available agents using:
 
 ```bash
-taskter show agents
+taskter agent list
 ```
 
 ### 3. Create a task
@@ -50,13 +50,13 @@ taskter show agents
 Now, let's create a task for your agent to complete:
 
 ```bash
-taskter add -t "List files in the current directory" -d "Use the ls -la command to list all files and folders in the current directory."
+taskter task add -t "List files in the current directory" -d "Use the ls -la command to list all files and folders in the current directory."
 ```
 
 You can see all your tasks by running:
 
 ```bash
-taskter list
+taskter task list
 ```
 
 ### 4. Assign the task to an agent
@@ -64,7 +64,7 @@ taskter list
 Assign the newly created task to your agent:
 
 ```bash
-taskter assign --task-id 1 --agent-id 1
+taskter task assign --task-id 1 --agent-id 1
 ```
 
 ### 5. Execute the task
@@ -72,7 +72,7 @@ taskter assign --task-id 1 --agent-id 1
 Finally, execute the task:
 
 ```bash
-taskter execute --task-id 1
+taskter task execute --task-id 1
 ```
 
 The agent will now run the task. If it's successful, the task will be marked as "Done". You can view the board at any time using the interactive UI:
@@ -197,7 +197,7 @@ In the interactive board, you can use the following keys:
 
 - **Add a new task:**
   ```bash
-  taskter add -t "My new task" -d "A description for my task"
+  taskter task add -t "My new task" -d "A description for my task"
   ```
 -  In the interactive board (`taskter board`), press `n` to add a task interactively. Enter the title, press `Enter`, then provide the description and press `Enter` again.
 
@@ -207,16 +207,16 @@ In the interactive board, you can use the following keys:
 
 - **List all tasks:**
   ```bash
-  taskter list
+  taskter task list
   ```
 
 - **Mark a task as done:**
   ```bash
-  taskter done <task_id>
+  taskter task complete --id <task_id>
   ```
 - **Add a comment to a task:**
   ```bash
-  taskter comment --task-id <task_id> --comment "Your note"
+  taskter task comment --task-id <task_id> --comment "Your note"
   ```
 
 ### Project information
@@ -256,7 +256,7 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
 
 - **Add a new agent:**
   ```bash
-  taskter add-agent --prompt "You are a helpful assistant." --tools "email" "calendar" --model "gemini-pro"
+  taskter agent add --prompt "You are a helpful assistant." --tools "email" "calendar" --model "gemini-pro"
   ```
   The `--tools` option accepts either paths to JSON files describing a tool or
   the name of a built-in tool. Built-ins live under the `tools/` directory of
@@ -266,16 +266,16 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
 
 - **Assign an agent to a task:**
   ```bash
-  taskter assign --task-id 1 --agent-id 1
+  taskter task assign --task-id 1 --agent-id 1
   ```
 
 - **Execute a task with an agent:**
   ```bash
-  taskter execute --task-id 1
+  taskter task execute --task-id 1
   ```
 - **List available agents:**
   ```bash
-  taskter show agents
+  taskter agent list
   ```
 - **List available tools:**
   ```bash
@@ -283,7 +283,7 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
   ```
 - **Delete an agent:**
   ```bash
-  taskter delete-agent --agent-id 1
+  taskter agent remove --id 1
   ```
 
 When a task is executed, the agent will attempt to perform the task. If successful, the task is marked as "Done". If it fails, the task is moved back to "To Do", unassigned, and a comment from the agent is added.
@@ -340,7 +340,7 @@ provided helper script:
 The script removes any existing `.taskter` directory, creates a new board with a
 few example tasks, sets a project description, defines OKRs and adds an agent
 using the built-in email tool. Once it finishes you can inspect the board with
-`taskter list` or launch the TUI via `taskter board`.
+`taskter task list` or launch the TUI via `taskter board`.
 
 
 ## Development

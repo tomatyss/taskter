@@ -19,7 +19,7 @@ fn add_list_done_workflow() {
         // Add a task
         Command::cargo_bin("taskter")
             .unwrap()
-            .args(["add", "--title", "Test task"])
+            .args(["task", "add", "--title", "Test task"])
             .assert()
             .success()
             .stdout(predicate::str::contains("Task added successfully"));
@@ -27,7 +27,7 @@ fn add_list_done_workflow() {
         // Verify list output contains the task
         let out = Command::cargo_bin("taskter")
             .unwrap()
-            .arg("list")
+            .args(["task", "list"])
             .assert()
             .success()
             .get_output()
@@ -39,7 +39,7 @@ fn add_list_done_workflow() {
         // Mark the task as done
         Command::cargo_bin("taskter")
             .unwrap()
-            .args(["done", "1"])
+            .args(["task", "complete", "--id", "1"])
             .assert()
             .success()
             .stdout(predicate::str::contains("marked as done"));
@@ -64,7 +64,7 @@ fn add_agent_and_execute_task() {
         // add a task
         Command::cargo_bin("taskter")
             .unwrap()
-            .args(["add", "--title", "Send email"])
+            .args(["task", "add", "--title", "Send email"])
             .assert()
             .success();
 
@@ -72,7 +72,8 @@ fn add_agent_and_execute_task() {
         Command::cargo_bin("taskter")
             .unwrap()
             .args([
-                "add-agent",
+                "agent",
+                "add",
                 "--prompt",
                 "email agent",
                 "--tools",
@@ -86,14 +87,14 @@ fn add_agent_and_execute_task() {
         // assign agent to task
         Command::cargo_bin("taskter")
             .unwrap()
-            .args(["assign", "--task-id", "1", "--agent-id", "1"])
+            .args(["task", "assign", "--task-id", "1", "--agent-id", "1"])
             .assert()
             .success();
 
         // execute the task
         Command::cargo_bin("taskter")
             .unwrap()
-            .args(["execute", "--task-id", "1"])
+            .args(["task", "execute", "--task-id", "1"])
             .assert()
             .success();
 
@@ -115,13 +116,7 @@ fn list_and_delete_agents() {
         Command::cargo_bin("taskter")
             .unwrap()
             .args([
-                "add-agent",
-                "--prompt",
-                "helper",
-                "--tools",
-                "email",
-                "--model",
-                "gpt-4o",
+                "agent", "add", "--prompt", "helper", "--tools", "email", "--model", "gpt-4o",
             ])
             .assert()
             .success();
@@ -129,7 +124,7 @@ fn list_and_delete_agents() {
         // list agents
         let out = Command::cargo_bin("taskter")
             .unwrap()
-            .args(["show", "agents"])
+            .args(["agent", "list"])
             .assert()
             .success()
             .get_output()
@@ -141,7 +136,7 @@ fn list_and_delete_agents() {
         // delete agent
         Command::cargo_bin("taskter")
             .unwrap()
-            .args(["delete-agent", "--agent-id", "1"])
+            .args(["agent", "remove", "--id", "1"])
             .assert()
             .success()
             .stdout(predicate::str::contains("Agent 1 deleted."));
@@ -165,13 +160,7 @@ fn update_agent_changes_configuration() {
         Command::cargo_bin("taskter")
             .unwrap()
             .args([
-                "add-agent",
-                "--prompt",
-                "helper",
-                "--tools",
-                "email",
-                "--model",
-                "gpt-4o",
+                "agent", "add", "--prompt", "helper", "--tools", "email", "--model", "gpt-4o",
             ])
             .assert()
             .success();
@@ -180,8 +169,9 @@ fn update_agent_changes_configuration() {
         Command::cargo_bin("taskter")
             .unwrap()
             .args([
-                "update-agent",
-                "--agent-id",
+                "agent",
+                "update",
+                "--id",
                 "1",
                 "--prompt",
                 "new helper",
