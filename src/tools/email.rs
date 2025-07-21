@@ -3,9 +3,9 @@ use lettre::{transport::smtp::authentication::Credentials, Message, SmtpTranspor
 use serde::Deserialize;
 use serde_json::Value;
 use std::fs;
-use std::path::Path;
 
 use crate::agent::FunctionDeclaration;
+use crate::config;
 use crate::tools::Tool;
 use std::collections::HashMap;
 
@@ -36,7 +36,7 @@ pub fn execute(args: &Value) -> Result<String> {
 }
 
 fn send_email(to: &str, subject: &str, body: &str) -> Result<()> {
-    let config_path = Path::new(".taskter/email_config.json");
+    let config_path = config::email_config_path();
     let config_str = match fs::read_to_string(config_path) {
         Ok(content) => content,
         Err(_) => return Err(anyhow::anyhow!("Email configuration not found")),

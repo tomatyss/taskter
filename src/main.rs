@@ -4,6 +4,8 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 
+use taskter::config;
+
 use taskter::cli::*;
 mod agent;
 mod store;
@@ -16,7 +18,7 @@ async fn main() -> anyhow::Result<()> {
 
     match &cli.command {
         Commands::Init => {
-            let path = Path::new(".taskter");
+            let path = config::dir();
             if path.exists() {
                 println!("Taskter board already initialized.");
             } else {
@@ -186,7 +188,7 @@ async fn main() -> anyhow::Result<()> {
         },
         Commands::Show { what } => match what {
             ShowCommands::Description => {
-                let description = fs::read_to_string(".taskter/description.md")?;
+                let description = fs::read_to_string(config::description_path())?;
                 println!("{description}");
             }
         },
@@ -211,7 +213,7 @@ async fn main() -> anyhow::Result<()> {
                 println!("OKR added successfully.");
             }
             OkrCommands::List => {
-                let okrs = fs::read_to_string(".taskter/okrs.json")?;
+                let okrs = fs::read_to_string(config::okrs_path())?;
                 println!("{okrs}");
             }
         },
@@ -220,13 +222,13 @@ async fn main() -> anyhow::Result<()> {
                 let mut file = fs::OpenOptions::new()
                     .create(true)
                     .append(true)
-                    .open(".taskter/logs.log")?;
+                    .open(config::log_path())?;
                 let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
                 writeln!(file, "[{timestamp}] {message}")?;
                 println!("Log added successfully.");
             }
             LogCommands::List => {
-                let logs = fs::read_to_string(".taskter/logs.log")?;
+                let logs = fs::read_to_string(config::log_path())?;
                 println!("{logs}");
             }
         },
@@ -241,7 +243,7 @@ async fn main() -> anyhow::Result<()> {
             tui::run_tui()?;
         }
         Commands::Description { description } => {
-            fs::write(".taskter/description.md", description)?;
+            fs::write(config::description_path(), description)?;
             println!("Project description updated successfully.");
         }
     }

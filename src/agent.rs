@@ -8,7 +8,8 @@ use serde_json::{json, Value};
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
-use std::path::Path;
+
+use crate::config;
 
 #[derive(Debug, PartialEq)]
 pub enum ExecutionResult {
@@ -20,7 +21,7 @@ fn append_log(message: &str) -> anyhow::Result<()> {
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
-        .open(".taskter/logs.log")?;
+        .open(config::log_path())?;
     let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
     writeln!(file, "[{timestamp}] {message}")?;
     Ok(())
@@ -261,7 +262,7 @@ pub struct Agent {
 }
 
 pub fn load_agents() -> anyhow::Result<Vec<Agent>> {
-    let path = Path::new(".taskter/agents.json");
+    let path = config::agents_path();
     if !path.exists() {
         fs::create_dir_all(path.parent().unwrap())?;
         fs::write(path, "[]")?;
@@ -273,7 +274,7 @@ pub fn load_agents() -> anyhow::Result<Vec<Agent>> {
 }
 
 pub fn save_agents(agents: &[Agent]) -> anyhow::Result<()> {
-    let path = Path::new(".taskter/agents.json");
+    let path = config::agents_path();
     let content = serde_json::to_string_pretty(agents)?;
     fs::write(path, content)?;
     Ok(())
