@@ -1,0 +1,15 @@
+{
+  "name": "taskter_agent",
+  "description": "Run the `taskter agent` command. Supported subcommands:\n- `add` --prompt <PROMPT> --tools <TOOLS>... --model <MODEL>\n- `list`\n- `remove` --id <ID>\n- `update` --id <ID> --prompt <PROMPT> [--tools <TOOLS>...]\nExamples:\n`{\"args\": [\"list\"]}` lists agents.\n`{\"args\": [\"add\", \"--prompt\", \"helper\", \"--tools\", \"run_bash\", \"--model\", \"gemini-pro\"]}` adds an agent.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "args": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "Arguments for the `taskter agent` subcommand"
+      }
+    },
+    "required": ["args"]
+  }
+}

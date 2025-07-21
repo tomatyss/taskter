@@ -1,3 +1,4 @@
+use assert_cmd::Command;
 use serde_json::json;
 use std::fs;
 
@@ -232,5 +233,103 @@ fn web_search_fetches_result() {
         assert_eq!(out, "Rust lang");
         std::env::remove_var("SEARCH_API_ENDPOINT");
         _m.assert();
+    });
+}
+
+#[test]
+fn taskter_task_tool_lists_tasks() {
+    with_temp_dir(|| {
+        let cmd = Command::cargo_bin("taskter").unwrap();
+        let bin = cmd.get_program().to_owned();
+        std::env::set_var("TASKTER_BIN", &bin);
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .arg("init")
+            .assert()
+            .success();
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args(["task", "add", "--title", "Demo"])
+            .assert()
+            .success();
+
+        let out = taskter::tools::execute_tool("taskter_task", &json!({"args": ["list"]})).unwrap();
+        assert!(out.contains("Demo"));
+        std::env::remove_var("TASKTER_BIN");
+    });
+}
+
+#[test]
+fn taskter_agent_tool_lists_agents() {
+    with_temp_dir(|| {
+        let cmd = Command::cargo_bin("taskter").unwrap();
+        let bin = cmd.get_program().to_owned();
+        std::env::set_var("TASKTER_BIN", &bin);
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .arg("init")
+            .assert()
+            .success();
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args([
+                "agent", "add", "--prompt", "helper", "--tools", "run_bash", "--model", "gpt-4o",
+            ])
+            .assert()
+            .success();
+
+        let out =
+            taskter::tools::execute_tool("taskter_agent", &json!({"args": ["list"]})).unwrap();
+        assert!(out.contains("helper"));
+        std::env::remove_var("TASKTER_BIN");
+    });
+}
+
+#[test]
+fn taskter_okrs_tool_lists_okrs() {
+    with_temp_dir(|| {
+        let cmd = Command::cargo_bin("taskter").unwrap();
+        let bin = cmd.get_program().to_owned();
+        std::env::set_var("TASKTER_BIN", &bin);
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .arg("init")
+            .assert()
+            .success();
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args(["okrs", "add", "-o", "Improve", "-k", "Speed"])
+            .assert()
+            .success();
+
+        let out = taskter::tools::execute_tool("taskter_okrs", &json!({"args": ["list"]})).unwrap();
+        assert!(out.contains("Improve"));
+        std::env::remove_var("TASKTER_BIN");
+    });
+}
+
+#[test]
+fn taskter_tools_tool_lists_builtins() {
+    with_temp_dir(|| {
+        let cmd = Command::cargo_bin("taskter").unwrap();
+        let bin = cmd.get_program().to_owned();
+        std::env::set_var("TASKTER_BIN", &bin);
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .arg("init")
+            .assert()
+            .success();
+
+        let out =
+            taskter::tools::execute_tool("taskter_tools", &json!({"args": ["list"]})).unwrap();
+        assert!(out.contains("run_bash"));
+        std::env::remove_var("TASKTER_BIN");
     });
 }

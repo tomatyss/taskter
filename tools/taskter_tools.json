@@ -1,0 +1,15 @@
+{
+  "name": "taskter_tools",
+  "description": "Run the `taskter tools` command. The only subcommand is `list` which displays built-in tools.\nExample: `{\"args\": [\"list\"]}`",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "args": {
+        "type": "array",
+        "items": {"type": "string"},
+        "description": "Arguments for the `taskter tools` subcommand"
+      }
+    },
+    "required": ["args"]
+  }
+}
