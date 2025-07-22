@@ -330,6 +330,7 @@ fn taskter_tools_tool_lists_builtins() {
         let out =
             taskter::tools::execute_tool("taskter_tools", &json!({"args": ["list"]})).unwrap();
         assert!(out.contains("run_bash"));
+        assert!(out.contains("file_ops"));
         std::env::remove_var("TASKTER_BIN");
     });
 }

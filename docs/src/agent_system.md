@@ -22,6 +22,7 @@ Available built-in tools:
 - `get_description`
 - `run_bash`
 - `run_python`
+- `file_ops`
 - `send_email`
 - `web_search`
 

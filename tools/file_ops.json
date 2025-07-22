@@ -1,0 +1,18 @@
+{
+  "name": "file_ops",
+  "description": "Read, search, update or create text files in the project directory",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "action": {
+        "type": "string",
+        "enum": ["read", "write", "search"],
+        "description": "Operation to perform"
+      },
+      "path": { "type": "string", "description": "Relative path to the text file" },
+      "text": { "type": "string", "description": "Text to write or search for" }
+    },
+    "required": ["action", "path"],
+    "additionalProperties": false
+  }
+}
