@@ -30,6 +30,7 @@ pub(crate) struct App {
     pub(crate) editing_description: bool,
     pub(crate) logs: String,
     pub(crate) okrs: Vec<Okr>,
+    pub(crate) popup_scroll: u16,
 }
 
 impl App {
@@ -51,6 +52,7 @@ impl App {
             editing_description: false,
             logs: std::fs::read_to_string(".taskter/logs.log").unwrap_or_default(),
             okrs: store::load_okrs().unwrap_or_default(),
+            popup_scroll: 0,
         };
         app.selected_task[0].select(Some(0));
         app

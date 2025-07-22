@@ -17,7 +17,7 @@ pub(crate) fn ui(f: &mut Frame, app: &mut App) {
         View::Logs => render_logs(f, app),
         View::Agents => render_agents_list(f, app),
         View::Okrs => render_okrs(f, app),
-        View::Commands => render_commands(f),
+        View::Commands => render_commands(f, app),
         _ => {}
     }
 }
@@ -95,7 +95,10 @@ fn render_task_description(f: &mut Frame, app: &mut App) {
         let block = Block::default()
             .title("Task Description")
             .borders(Borders::ALL);
-        let paragraph = Paragraph::new(text).block(block).wrap(Wrap { trim: true });
+        let paragraph = Paragraph::new(text)
+            .block(block)
+            .wrap(Wrap { trim: true })
+            .scroll((app.popup_scroll, 0));
         let area = centered_rect(60, 25, f.area());
         f.render_widget(Clear, area);
         f.render_widget(paragraph, area);
@@ -137,7 +140,8 @@ fn render_add_comment(f: &mut Frame, app: &mut App) {
     let block = Block::default().title("Add Comment").borders(Borders::ALL);
     let paragraph = Paragraph::new(app.comment_input.as_str())
         .block(block)
-        .wrap(Wrap { trim: true });
+        .wrap(Wrap { trim: true })
+        .scroll((app.popup_scroll, 0));
     let area = centered_rect(60, 25, f.area());
     f.render_widget(Clear, area);
     f.render_widget(paragraph, area);
@@ -166,7 +170,8 @@ fn render_add_task(f: &mut Frame, app: &mut App) {
         ]),
     ])
     .block(block)
-    .wrap(Wrap { trim: true });
+    .wrap(Wrap { trim: true })
+    .scroll((app.popup_scroll, 0));
     let area = centered_rect(60, 15, f.area());
     f.render_widget(Clear, area);
     f.render_widget(paragraph, area);
@@ -195,7 +200,8 @@ fn render_update_task(f: &mut Frame, app: &mut App) {
         ]),
     ])
     .block(block)
-    .wrap(Wrap { trim: true });
+    .wrap(Wrap { trim: true })
+    .scroll((app.popup_scroll, 0));
     let area = centered_rect(60, 15, f.area());
     f.render_widget(Clear, area);
     f.render_widget(paragraph, area);
@@ -205,7 +211,8 @@ fn render_logs(f: &mut Frame, app: &mut App) {
     let block = Block::default().title("Logs").borders(Borders::ALL);
     let paragraph = Paragraph::new(app.logs.as_str())
         .block(block)
-        .wrap(Wrap { trim: true });
+        .wrap(Wrap { trim: true })
+        .scroll((app.popup_scroll, 0));
     let area = centered_rect(60, 50, f.area());
     f.render_widget(Clear, area);
     f.render_widget(paragraph, area);
@@ -240,13 +247,16 @@ fn render_okrs(f: &mut Frame, app: &mut App) {
         lines.push(Line::raw(""));
     }
     let block = Block::default().title("OKRs").borders(Borders::ALL);
-    let paragraph = Paragraph::new(lines).block(block).wrap(Wrap { trim: true });
+    let paragraph = Paragraph::new(lines)
+        .block(block)
+        .wrap(Wrap { trim: true })
+        .scroll((app.popup_scroll, 0));
     let area = centered_rect(60, 50, f.area());
     f.render_widget(Clear, area);
     f.render_widget(paragraph, area);
 }
 
-fn render_commands(f: &mut Frame) {
+fn render_commands(f: &mut Frame, app: &mut App) {
     let lines = vec![
         Line::from("q - Quit"),
         Line::from("←/→ or Tab - Switch columns"),
@@ -262,7 +272,10 @@ fn render_commands(f: &mut Frame) {
         Line::from("O - Show OKRs"),
     ];
     let block = Block::default().title("Commands").borders(Borders::ALL);
-    let paragraph = Paragraph::new(lines).block(block).wrap(Wrap { trim: true });
+    let paragraph = Paragraph::new(lines)
+        .block(block)
+        .wrap(Wrap { trim: true })
+        .scroll((app.popup_scroll, 0));
     let area = centered_rect(60, 50, f.area());
     f.render_widget(Clear, area);
     f.render_widget(paragraph, area);
