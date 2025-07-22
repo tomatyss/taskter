@@ -192,6 +192,7 @@ In the interactive board, you can use the following keys:
 - `A`: List available agents
 - `O`: Show OKRs
 - `?`: Show available commands
+- In popups (logs, OKRs, etc.), use `↑` / `↓` to scroll
 
 ### Manage tasks
 

@@ -109,12 +109,14 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                             if app.get_selected_task().is_some() {
                                 app.current_view = View::AssignAgent;
                                 app.agent_list_state.select(Some(0));
+                                app.popup_scroll = 0;
                             }
                         }
                         KeyCode::Char('c') => {
                             if app.get_selected_task().is_some() {
                                 app.current_view = View::AddComment;
                                 app.comment_input.clear();
+                                app.popup_scroll = 0;
                             }
                         }
                         KeyCode::Char('n') => {
@@ -122,6 +124,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                             app.new_task_description.clear();
                             app.editing_description = false;
                             app.current_view = View::AddTask;
+                            app.popup_scroll = 0;
                         }
                         KeyCode::Char('u') => {
                             if let Some(task) = app.get_selected_task() {
@@ -129,6 +132,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                 app.new_task_description = task.description.unwrap_or_default();
                                 app.editing_description = false;
                                 app.current_view = View::UpdateTask;
+                                app.popup_scroll = 0;
                             }
                         }
                         KeyCode::Char('d') => {
@@ -147,29 +151,41 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                             app.logs =
                                 std::fs::read_to_string(".taskter/logs.log").unwrap_or_default();
                             app.current_view = View::Logs;
+                            app.popup_scroll = 0;
                         }
                         KeyCode::Char('A') => {
                             app.agents = crate::agent::load_agents().unwrap_or_default();
                             app.current_view = View::Agents;
+                            app.popup_scroll = 0;
                         }
                         KeyCode::Char('O') => {
                             app.okrs = store::load_okrs().unwrap_or_default();
                             app.current_view = View::Okrs;
+                            app.popup_scroll = 0;
                         }
                         KeyCode::Char('?') => {
                             app.current_view = View::Commands;
+                            app.popup_scroll = 0;
                         }
                         _ => {}
                     },
                     View::TaskDescription => match key.code {
                         KeyCode::Char('q') | KeyCode::Esc => {
                             app.current_view = View::Board;
+                            app.popup_scroll = 0;
+                        }
+                        KeyCode::Down => {
+                            app.popup_scroll = app.popup_scroll.saturating_add(1);
+                        }
+                        KeyCode::Up => {
+                            app.popup_scroll = app.popup_scroll.saturating_sub(1);
                         }
                         _ => {}
                     },
                     View::AssignAgent => match key.code {
                         KeyCode::Char('q') | KeyCode::Esc => {
                             app.current_view = View::Board;
+                            app.popup_scroll = 0;
                         }
                         KeyCode::Down => {
                             let i = match app.agent_list_state.selected() {
@@ -245,6 +261,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     View::AddComment => match key.code {
                         KeyCode::Char('q') | KeyCode::Esc => {
                             app.current_view = View::Board;
+                            app.popup_scroll = 0;
                         }
                         KeyCode::Enter => {
                             if let Some(task_id) = app.get_selected_task().map(|t| t.id) {
@@ -303,6 +320,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                 app.board.lock().unwrap().tasks.push(task);
                                 store::save_board(&app.board.lock().unwrap()).unwrap();
                                 app.current_view = View::Board;
+                                app.popup_scroll = 0;
                                 app.editing_description = false;
                             } else {
                                 app.editing_description = true;
@@ -310,6 +328,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         }
                         KeyCode::Esc => {
                             app.current_view = View::Board;
+                            app.popup_scroll = 0;
                             app.editing_description = false;
                         }
                         _ => {}
@@ -357,6 +376,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         }
                         KeyCode::Esc => {
                             app.current_view = View::Board;
+                            app.popup_scroll = 0;
                             app.editing_description = false;
                         }
                         _ => {}
@@ -364,6 +384,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     View::Logs | View::Agents | View::Okrs | View::Commands => match key.code {
                         KeyCode::Char('q') | KeyCode::Esc | KeyCode::Char('?') => {
                             app.current_view = View::Board;
+                            app.popup_scroll = 0;
+                        }
+                        KeyCode::Down => {
+                            app.popup_scroll = app.popup_scroll.saturating_add(1);
+                        }
+                        KeyCode::Up => {
+                            app.popup_scroll = app.popup_scroll.saturating_sub(1);
                         }
                         _ => {}
                     },
