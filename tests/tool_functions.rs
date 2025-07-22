@@ -333,3 +333,36 @@ fn taskter_tools_tool_lists_builtins() {
         std::env::remove_var("TASKTER_BIN");
     });
 }
+
+#[test]
+fn file_manager_create_and_read() {
+    with_temp_dir(|| {
+        taskter::tools::execute_tool(
+            "file_manager",
+            &json!({"action": "create", "path": "note.txt", "content": "hello"}),
+        )
+        .unwrap();
+        let out = taskter::tools::execute_tool(
+            "file_manager",
+            &json!({"action": "read", "path": "note.txt"}),
+        )
+        .unwrap();
+        assert_eq!(out, "hello");
+    });
+}
+
+#[test]
+fn file_manager_search_finds_files() {
+    with_temp_dir(|| {
+        std::fs::write("a.txt", "search me").unwrap();
+        std::fs::write("b.txt", "nothing").unwrap();
+        let out = taskter::tools::execute_tool(
+            "file_manager",
+            &json!({"action": "search", "query": "search"}),
+        )
+        .unwrap();
+        let paths: Vec<String> = serde_json::from_str(&out).unwrap();
+        assert!(paths.iter().any(|p| p.ends_with("a.txt")));
+        assert!(!paths.iter().any(|p| p.ends_with("b.txt")));
+    });
+}

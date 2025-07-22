@@ -10,6 +10,7 @@ pub mod add_okr;
 pub mod assign_agent;
 pub mod create_task;
 pub mod email;
+pub mod file_manager;
 pub mod get_description;
 pub mod list_agents;
 pub mod list_tasks;
@@ -40,6 +41,7 @@ pub static BUILTIN_TOOLS: Lazy<HashMap<&'static str, Tool>> = Lazy::new(|| {
     list_tasks::register(&mut m);
     run_bash::register(&mut m);
     run_python::register(&mut m);
+    file_manager::register(&mut m);
     web_search::register(&mut m);
     taskter_task::register(&mut m);
     taskter_agent::register(&mut m);

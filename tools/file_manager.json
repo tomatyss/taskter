@@ -1,0 +1,14 @@
+{
+  "name": "file_manager",
+  "description": "Create, read, search, and update text files in the project directory",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "action": { "type": "string", "description": "One of: create, read, update, search" },
+      "path": { "type": "string", "description": "File path for create, read or update" },
+      "content": { "type": "string", "description": "Content for create or update" },
+      "query": { "type": "string", "description": "Text to search for" }
+    },
+    "required": ["action"]
+  }
+}

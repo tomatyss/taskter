@@ -24,6 +24,7 @@ Available built-in tools:
 - `run_python`
 - `send_email`
 - `web_search`
+- `file_manager`
 
 You can display this list at any time with:
 
