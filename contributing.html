@@ -185,6 +185,9 @@ cd taskter
 <p>Before committing any changes, please run the pre-commit script to ensure your code is formatted, linted, and passes all tests:</p>
 <pre><code class="language-bash">./scripts/precommit.sh
 </code></pre>
+<p>You can also automatically apply formatting and Clippy suggestions with:</p>
+<pre><code class="language-bash">./scripts/fix_lints.sh
+</code></pre>
 <p>You can also set this up as a pre-commit hook to run automatically:</p>
 <pre><code class="language-bash">ln -s ../../scripts/precommit.sh .git/hooks/pre-commit
 </code></pre>
