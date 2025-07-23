@@ -358,6 +358,12 @@ formatted, linted and all tests pass:
 ./scripts/precommit.sh
 ```
 
+To automatically format the project and apply Clippy suggestions, you can run:
+
+```bash
+./scripts/fix_lints.sh
+```
+
 If you want Git to run it automatically, create a pre-commit hook:
 
 ```bash
