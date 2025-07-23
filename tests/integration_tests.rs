@@ -151,6 +151,8 @@ async fn agent_execution_fails_on_network_error_without_tool() {
         system_prompt: "General agent".into(),
         tools: vec![],
         model: "gpt-4o".into(),
+        schedule: None,
+        repeat: false,
     };
 
     let task = Task {
