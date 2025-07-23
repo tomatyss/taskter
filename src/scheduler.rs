@@ -7,14 +7,14 @@ use tokio_cron_scheduler::{Job, JobScheduler};
 
 pub async fn run() -> anyhow::Result<()> {
     let agents = agent::load_agents()?;
-    let mut sched = JobScheduler::new().await?;
+    let sched = JobScheduler::new().await?;
 
     for ag in agents {
         if let Some(expr) = &ag.schedule {
             let job_agent = ag.clone();
             let cron_expr = expr.clone();
-            let mut job =
-                Job::new_async_tz(cron_expr, New_York, move |_id, mut l| {
+            let job =
+                Job::new_async_tz(cron_expr, New_York, move |_id, l| {
                     let a = job_agent.clone();
                     Box::pin(async move {
                         if let Ok(mut board) = store::load_board() {
