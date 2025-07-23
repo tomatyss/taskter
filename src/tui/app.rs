@@ -153,6 +153,16 @@ impl App {
                     _ => TaskStatus::Done,
                 };
             }
+
+            // Adjust selection if the task moved out of the current column
+            let tasks_left = self.tasks_in_current_column();
+            if tasks_left.is_empty() {
+                self.selected_task[self.selected_column].select(None);
+            } else if let Some(idx) = self.selected_task[self.selected_column].selected() {
+                if idx >= tasks_left.len() {
+                    self.selected_task[self.selected_column].select(Some(tasks_left.len() - 1));
+                }
+            }
         }
     }
 
