@@ -207,6 +207,11 @@
 </code></pre>
 <p>When a task is executed, the agent will attempt to perform the task. If successful, the task is marked as "Done". If it fails, the task is moved back to "To Do", unassigned, and a comment from the agent is added.</p>
 <p>In the interactive board (<code>taskter board</code>), tasks assigned to an agent will be marked with a <code>*</code>. You can view the assigned agent ID and any comments by selecting the task and pressing <code>Enter</code>.</p>
+<h2 id="updating-an-agent"><a class="header" href="#updating-an-agent">Updating an Agent</a></h2>
+<p>Use the <code>agent update</code> command to modify an existing agent's configuration:</p>
+<pre><code class="language-bash">taskter agent update --id 1 --prompt "New prompt" --tools "create_task" --model "gemini-pro"
+</code></pre>
+<p>All three options are required and the previous configuration is overwritten.</p>
 
                     </main>
 
