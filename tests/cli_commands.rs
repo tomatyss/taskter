@@ -264,3 +264,63 @@ fn show_tools_lists_builtins() {
         assert!(output.contains("web_search"));
     });
 }
+
+#[test]
+fn schedule_agent_updates_file() {
+    with_temp_dir(|| {
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .arg("init")
+            .assert()
+            .success();
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args([
+                "agent", "add", "--prompt", "helper", "--tools", "email", "--model", "gpt-4o",
+            ])
+            .assert()
+            .success();
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args([
+                "agent",
+                "schedule",
+                "set",
+                "--id",
+                "1",
+                "--cron",
+                "*/5 * * * * *",
+            ])
+            .assert()
+            .success();
+
+        let agents: Vec<Value> =
+            serde_json::from_str(&fs::read_to_string(taskter::config::AGENTS_FILE).unwrap())
+                .unwrap();
+        assert_eq!(agents[0]["schedule"], "*/5 * * * * *");
+
+        let out = Command::cargo_bin("taskter")
+            .unwrap()
+            .args(["agent", "schedule", "list"])
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone();
+        let output = String::from_utf8(out).unwrap();
+        assert!(output.contains("*/5 * * * * *"));
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args(["agent", "schedule", "remove", "--id", "1"])
+            .assert()
+            .success();
+
+        let agents: Vec<Value> =
+            serde_json::from_str(&fs::read_to_string(taskter::config::AGENTS_FILE).unwrap())
+                .unwrap();
+        assert!(agents[0]["schedule"].is_null());
+    });
+}

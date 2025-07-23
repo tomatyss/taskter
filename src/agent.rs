@@ -265,6 +265,10 @@ pub struct Agent {
     pub system_prompt: String,
     pub tools: Vec<FunctionDeclaration>,
     pub model: String,
+    #[serde(default)]
+    pub schedule: Option<String>,
+    #[serde(default)]
+    pub repeat: bool,
 }
 
 /// Loads the list of agents from `.taskter/agents.json`.

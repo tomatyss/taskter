@@ -4,6 +4,7 @@
 pub mod agent;
 pub mod cli;
 pub mod config;
+pub mod scheduler;
 pub mod store;
 pub mod tools;
 

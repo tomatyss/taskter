@@ -89,6 +89,8 @@ async fn agent_executes_email_task_successfully() {
             parameters: json!({}),
         }],
         model: "gpt-4o".into(),
+        schedule: None,
+        repeat: false,
     };
 
     let task = Task {
@@ -117,6 +119,8 @@ async fn agent_execution_fails_without_tool() {
         system_prompt: "General agent".into(),
         tools: vec![],
         model: "gpt-4o".into(),
+        schedule: None,
+        repeat: false,
     };
 
     let task = Task {

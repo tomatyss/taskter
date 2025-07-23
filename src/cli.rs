@@ -41,6 +41,11 @@ pub enum Commands {
         #[command(subcommand)]
         action: ToolCommands,
     },
+    /// Run the agent scheduler
+    Scheduler {
+        #[command(subcommand)]
+        action: SchedulerCommands,
+    },
     /// Opens the interactive board
     Board,
     /// Sets the project description
@@ -122,6 +127,37 @@ pub enum AgentCommands {
         #[arg(short, long, num_args = 1..)]
         tools: Vec<String>,
     },
+    /// Schedule operations for an agent
+    Schedule {
+        #[command(subcommand)]
+        action: ScheduleCommands,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum ScheduleCommands {
+    /// Set a cron expression for an agent
+    Set {
+        #[arg(long)]
+        id: usize,
+        #[arg(long)]
+        cron: String,
+        #[arg(long)]
+        once: bool,
+    },
+    /// List scheduled agents
+    List,
+    /// Remove a schedule from an agent
+    Remove {
+        #[arg(long)]
+        id: usize,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum SchedulerCommands {
+    /// Run the scheduler loop
+    Run,
 }
 
 #[derive(Subcommand)]
