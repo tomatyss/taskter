@@ -283,7 +283,14 @@ fn taskter_agent_tool_lists_agents() {
         Command::cargo_bin("taskter")
             .unwrap()
             .args([
-                "agent", "add", "--prompt", "helper", "--tools", "run_bash", "--model", "gpt-4o",
+                "agent",
+                "add",
+                "--prompt",
+                "helper",
+                "--tools",
+                "run_bash",
+                "--model",
+                "gemini-2.5-flash",
             ])
             .assert()
             .success();

@@ -88,7 +88,7 @@ async fn agent_executes_email_task_successfully() {
             description: Some("".into()),
             parameters: json!({}),
         }],
-        model: "gpt-4o".into(),
+        model: "gemini-2.5-flash".into(),
         schedule: None,
         repeat: false,
     };
@@ -118,7 +118,7 @@ async fn agent_execution_fails_without_tool() {
         id: 1,
         system_prompt: "General agent".into(),
         tools: vec![],
-        model: "gpt-4o".into(),
+        model: "gemini-2.5-flash".into(),
         schedule: None,
         repeat: false,
     };
@@ -150,7 +150,7 @@ async fn agent_execution_fails_on_network_error_without_tool() {
         id: 1,
         system_prompt: "General agent".into(),
         tools: vec![],
-        model: "gpt-4o".into(),
+        model: "gemini-2.5-flash".into(),
         schedule: None,
         repeat: false,
     };
