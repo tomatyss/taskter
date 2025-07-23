@@ -137,6 +137,37 @@ async fn agent_execution_fails_without_tool() {
     assert!(matches!(result, ExecutionResult::Failure { .. }));
 }
 
+#[tokio::test]
+async fn agent_execution_fails_on_network_error_without_tool() {
+    std::env::set_var("GEMINI_API_KEY", "dummy");
+    std::env::set_var("https_proxy", "http://127.0.0.1:9");
+
+    let agent = Agent {
+        id: 1,
+        system_prompt: "General agent".into(),
+        tools: vec![],
+        model: "gpt-4o".into(),
+    };
+
+    let task = Task {
+        id: 1,
+        title: "Test".into(),
+        description: None,
+        status: TaskStatus::ToDo,
+        agent_id: Some(1),
+        comment: None,
+    };
+
+    let result = agent::execute_task(&agent, &task)
+        .await
+        .expect("execution failed");
+
+    assert!(matches!(result, ExecutionResult::Failure { .. }));
+
+    std::env::remove_var("GEMINI_API_KEY");
+    std::env::remove_var("https_proxy");
+}
+
 #[test]
 fn run_python_tool_executes_code() {
     let result = taskter::tools::execute_tool("run_python", &json!({ "code": "print(40 + 2)" }))
