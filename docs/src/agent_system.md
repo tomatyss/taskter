@@ -50,3 +50,13 @@ taskter task execute --task-id 1
 When a task is executed, the agent will attempt to perform the task. If successful, the task is marked as "Done". If it fails, the task is moved back to "To Do", unassigned, and a comment from the agent is added.
 
 In the interactive board (`taskter board`), tasks assigned to an agent will be marked with a `*`. You can view the assigned agent ID and any comments by selecting the task and pressing `Enter`.
+
+## Updating an Agent
+
+Use the `agent update` command to modify an existing agent's configuration:
+
+```bash
+taskter agent update --id 1 --prompt "New prompt" --tools "create_task" --model "gemini-pro"
+```
+
+All three options are required and the previous configuration is overwritten.

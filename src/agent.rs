@@ -310,11 +310,13 @@ pub fn update_agent(
     id: usize,
     prompt: String,
     tools: Vec<FunctionDeclaration>,
+    model: String,
 ) -> anyhow::Result<()> {
     let mut agents = load_agents()?;
     if let Some(agent) = agents.iter_mut().find(|a| a.id == id) {
         agent.system_prompt = prompt;
         agent.tools = tools;
+        agent.model = model;
         save_agents(&agents)?;
     }
     Ok(())
