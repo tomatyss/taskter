@@ -126,6 +126,9 @@ pub enum AgentCommands {
         /// The new tools the agent can use
         #[arg(short, long, num_args = 1..)]
         tools: Vec<String>,
+        /// The new model for the agent
+        #[arg(short, long)]
+        model: String,
     },
     /// Schedule operations for an agent
     Schedule {

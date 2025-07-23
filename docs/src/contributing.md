@@ -21,6 +21,12 @@ Before committing any changes, please run the pre-commit script to ensure your c
 ./scripts/precommit.sh
 ```
 
+You can also automatically apply formatting and Clippy suggestions with:
+
+```bash
+./scripts/fix_lints.sh
+```
+
 You can also set this up as a pre-commit hook to run automatically:
 
 ```bash

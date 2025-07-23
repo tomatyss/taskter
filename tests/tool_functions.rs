@@ -339,3 +339,46 @@ fn taskter_tools_tool_lists_builtins() {
         std::env::remove_var("TASKTER_BIN");
     });
 }
+
+#[test]
+fn run_bash_requires_command_argument() {
+    with_temp_dir(|| {
+        let err = taskter::tools::execute_tool("run_bash", &json!({})).unwrap_err();
+        assert!(err.to_string().contains("command missing"));
+    });
+}
+
+#[test]
+fn run_bash_reports_command_failure() {
+    with_temp_dir(|| {
+        let err =
+            taskter::tools::execute_tool("run_bash", &json!({"command": "exit 1"})).unwrap_err();
+        assert!(err.to_string().contains("Command failed"));
+    });
+}
+
+#[test]
+fn run_python_requires_code_argument() {
+    with_temp_dir(|| {
+        let err = taskter::tools::execute_tool("run_python", &json!({})).unwrap_err();
+        assert!(err.to_string().contains("code missing"));
+    });
+}
+
+#[test]
+fn run_python_reports_execution_error() {
+    with_temp_dir(|| {
+        let err =
+            taskter::tools::execute_tool("run_python", &json!({"code": "import sys; sys.exit(1)"}))
+                .unwrap_err();
+        assert!(err.to_string().contains("Python execution failed"));
+    });
+}
+
+#[test]
+fn unknown_tool_returns_error() {
+    with_temp_dir(|| {
+        let err = taskter::tools::execute_tool("no_such_tool", &json!({})).unwrap_err();
+        assert!(err.to_string().contains("Unknown tool"));
+    });
+}

@@ -180,7 +180,12 @@ async fn main() -> anyhow::Result<()> {
                 agent::delete_agent(*id)?;
                 println!("Agent {id} deleted.");
             }
-            AgentCommands::Update { id, prompt, tools } => {
+            AgentCommands::Update {
+                id,
+                prompt,
+                tools,
+                model,
+            } => {
                 let mut function_declarations = Vec::new();
                 for spec in tools {
                     let decl = if Path::new(spec).exists() {
@@ -195,7 +200,7 @@ async fn main() -> anyhow::Result<()> {
                     function_declarations.push(decl);
                 }
 
-                agent::update_agent(*id, prompt.clone(), function_declarations)?;
+                agent::update_agent(*id, prompt.clone(), function_declarations, model.clone())?;
                 println!("Agent {id} updated.");
             }
             AgentCommands::Schedule { action } => match action {
