@@ -180,6 +180,8 @@ fn update_agent_changes_configuration() {
                 "new helper",
                 "--tools",
                 "create_task",
+                "--model",
+                "gpt-4o-small",
             ])
             .assert()
             .success()
@@ -190,6 +192,7 @@ fn update_agent_changes_configuration() {
                 .unwrap();
         assert_eq!(agents[0]["system_prompt"], "new helper");
         assert_eq!(agents[0]["tools"][0]["name"], "create_task");
+        assert_eq!(agents[0]["model"], "gpt-4o-small");
     });
 }
 
