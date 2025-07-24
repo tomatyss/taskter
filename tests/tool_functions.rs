@@ -51,6 +51,8 @@ fn assign_agent_assigns_task() {
             system_prompt: "p".into(),
             tools: vec![],
             model: "m".into(),
+            schedule: None,
+            repeat: false,
         };
         agent::save_agents(&[agent]).unwrap();
 
@@ -87,6 +89,8 @@ fn assign_agent_reports_missing_task() {
             system_prompt: "p".into(),
             tools: vec![],
             model: "m".into(),
+            schedule: None,
+            repeat: false,
         };
         agent::save_agents(&[agent]).unwrap();
         let msg = assign_agent::execute(&json!({"task_id":1,"agent_id":1})).unwrap();
@@ -152,6 +156,8 @@ fn list_agents_outputs_json() {
             system_prompt: "p".into(),
             tools: vec![],
             model: "m".into(),
+            schedule: None,
+            repeat: false,
         };
         agent::save_agents(&[agent.clone()]).unwrap();
         let out = list_agents::execute(&json!({})).unwrap();
@@ -277,7 +283,14 @@ fn taskter_agent_tool_lists_agents() {
         Command::cargo_bin("taskter")
             .unwrap()
             .args([
-                "agent", "add", "--prompt", "helper", "--tools", "run_bash", "--model", "gpt-4o",
+                "agent",
+                "add",
+                "--prompt",
+                "helper",
+                "--tools",
+                "run_bash",
+                "--model",
+                "gemini-2.5-flash",
             ])
             .assert()
             .success();

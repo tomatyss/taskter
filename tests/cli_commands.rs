@@ -80,7 +80,7 @@ fn add_agent_and_execute_task() {
                 "--tools",
                 "email",
                 "--model",
-                "gpt-4o",
+                "gemini-2.5-flash",
             ])
             .assert()
             .success();
@@ -118,7 +118,14 @@ fn list_and_delete_agents() {
         Command::cargo_bin("taskter")
             .unwrap()
             .args([
-                "agent", "add", "--prompt", "helper", "--tools", "email", "--model", "gpt-4o",
+                "agent",
+                "add",
+                "--prompt",
+                "helper",
+                "--tools",
+                "email",
+                "--model",
+                "gemini-2.5-flash",
             ])
             .assert()
             .success();
@@ -133,7 +140,7 @@ fn list_and_delete_agents() {
             .stdout
             .clone();
         let output = String::from_utf8(out).unwrap();
-        assert!(output.contains("1: helper (model: gpt-4o, tools: send_email)"));
+        assert!(output.contains("1: helper (model: gemini-2.5-flash, tools: send_email)"));
 
         // delete agent
         Command::cargo_bin("taskter")
@@ -163,7 +170,14 @@ fn update_agent_changes_configuration() {
         Command::cargo_bin("taskter")
             .unwrap()
             .args([
-                "agent", "add", "--prompt", "helper", "--tools", "email", "--model", "gpt-4o",
+                "agent",
+                "add",
+                "--prompt",
+                "helper",
+                "--tools",
+                "email",
+                "--model",
+                "gemini-2.5-flash",
             ])
             .assert()
             .success();
@@ -181,7 +195,7 @@ fn update_agent_changes_configuration() {
                 "--tools",
                 "create_task",
                 "--model",
-                "gpt-4o-small",
+                "gemini-2.5-flash",
             ])
             .assert()
             .success()
@@ -192,7 +206,7 @@ fn update_agent_changes_configuration() {
                 .unwrap();
         assert_eq!(agents[0]["system_prompt"], "new helper");
         assert_eq!(agents[0]["tools"][0]["name"], "create_task");
-        assert_eq!(agents[0]["model"], "gpt-4o-small");
+        assert_eq!(agents[0]["model"], "gemini-2.5-flash");
     });
 }
 
@@ -265,5 +279,72 @@ fn show_tools_lists_builtins() {
         assert!(output.contains("create_task"));
         assert!(output.contains("run_bash"));
         assert!(output.contains("web_search"));
+    });
+}
+
+#[test]
+fn schedule_agent_updates_file() {
+    with_temp_dir(|| {
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .arg("init")
+            .assert()
+            .success();
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args([
+                "agent",
+                "add",
+                "--prompt",
+                "helper",
+                "--tools",
+                "email",
+                "--model",
+                "gemini-2.5-flash",
+            ])
+            .assert()
+            .success();
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args([
+                "agent",
+                "schedule",
+                "set",
+                "--id",
+                "1",
+                "--cron",
+                "*/5 * * * * *",
+            ])
+            .assert()
+            .success();
+
+        let agents: Vec<Value> =
+            serde_json::from_str(&fs::read_to_string(taskter::config::AGENTS_FILE).unwrap())
+                .unwrap();
+        assert_eq!(agents[0]["schedule"], "*/5 * * * * *");
+
+        let out = Command::cargo_bin("taskter")
+            .unwrap()
+            .args(["agent", "schedule", "list"])
+            .assert()
+            .success()
+            .get_output()
+            .stdout
+            .clone();
+        let output = String::from_utf8(out).unwrap();
+        assert!(output.contains("*/5 * * * * *"));
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args(["agent", "schedule", "remove", "--id", "1"])
+            .assert()
+            .success();
+
+        let agents: Vec<Value> =
+            serde_json::from_str(&fs::read_to_string(taskter::config::AGENTS_FILE).unwrap())
+                .unwrap();
+        assert!(agents[0]["schedule"].is_null());
     });
 }

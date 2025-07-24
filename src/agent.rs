@@ -31,12 +31,17 @@ fn append_log(message: &str) -> anyhow::Result<()> {
 /// Executes a task with the given agent and records progress in `.taskter/logs.log`.
 ///
 /// Tools referenced by the agent may be invoked during execution.
-pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult> {
+pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<ExecutionResult> {
     let client = Client::new();
-    if let Err(e) = append_log(&format!(
-        "Agent {} executing task {}: {}",
-        agent.id, task.id, task.title
-    )) {
+    let log_message = if let Some(task) = task {
+        format!(
+            "Agent {} executing task {}: {}",
+            agent.id, task.id, task.title
+        )
+    } else {
+        format!("Agent {} executing without a task", agent.id)
+    };
+    if let Err(e) = append_log(&log_message) {
         eprintln!("Failed to write log: {e}");
     }
     // Obtain the API key if it is available.  In a testing or offline environment the
@@ -87,13 +92,17 @@ pub async fn execute_task(agent: &Agent, task: &Task) -> Result<ExecutionResult>
 
     let api_key = api_key.unwrap();
 
-    let user_prompt = if let Some(description) = &task.description {
-        format!(
-            "Task Title: {}\nTask Description: {}",
-            task.title, description
-        )
+    let user_prompt = if let Some(task) = task {
+        if let Some(description) = &task.description {
+            format!(
+                "Task Title: {}\nTask Description: {}",
+                task.title, description
+            )
+        } else {
+            task.title.clone()
+        }
     } else {
-        task.title.clone()
+        String::new()
     };
 
     let mut history = vec![json!({
@@ -265,6 +274,10 @@ pub struct Agent {
     pub system_prompt: String,
     pub tools: Vec<FunctionDeclaration>,
     pub model: String,
+    #[serde(default)]
+    pub schedule: Option<String>,
+    #[serde(default)]
+    pub repeat: bool,
 }
 
 /// Loads the list of agents from `.taskter/agents.json`.

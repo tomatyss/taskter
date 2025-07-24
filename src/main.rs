@@ -8,9 +8,11 @@ use taskter::config;
 
 use taskter::cli::*;
 mod agent;
+mod scheduler;
 mod store;
 mod tools;
 mod tui;
+use tokio_cron_scheduler::Job;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -85,7 +87,7 @@ async fn main() -> anyhow::Result<()> {
                 if let Some(task) = board.tasks.iter_mut().find(|t| t.id == *task_id) {
                     if let Some(agent_id) = task.agent_id {
                         if let Some(agent) = agents.iter().find(|a| a.id == agent_id) {
-                            match agent::execute_task(agent, task).await {
+                            match agent::execute_task(agent, Some(task)).await {
                                 Ok(result) => match result {
                                     agent::ExecutionResult::Success { comment } => {
                                         task.status = store::TaskStatus::Done;
@@ -152,6 +154,8 @@ async fn main() -> anyhow::Result<()> {
                     system_prompt: prompt.clone(),
                     tools: function_declarations,
                     model: model.clone(),
+                    schedule: None,
+                    repeat: false,
                 };
                 agents.push(new_agent);
                 agent::save_agents(&agents)?;
@@ -199,6 +203,45 @@ async fn main() -> anyhow::Result<()> {
                 agent::update_agent(*id, prompt.clone(), function_declarations, model.clone())?;
                 println!("Agent {id} updated.");
             }
+            AgentCommands::Schedule { action } => match action {
+                ScheduleCommands::Set { id, cron, once } => {
+                    if Job::new_async(cron, |_id, _| Box::pin(async {})).is_err() {
+                        println!("Invalid cron expression");
+                    } else {
+                        let mut agents = agent::load_agents()?;
+                        if let Some(a) = agents.iter_mut().find(|a| a.id == *id) {
+                            a.schedule = Some(cron.clone());
+                            a.repeat = !*once;
+                            agent::save_agents(&agents)?;
+                            println!("Agent {id} scheduled.");
+                        } else {
+                            println!("Agent {id} not found.");
+                        }
+                    }
+                }
+                ScheduleCommands::List => {
+                    let agents = agent::load_agents()?;
+                    for a in agents.into_iter().filter(|a| a.schedule.is_some()) {
+                        println!(
+                            "{}: {} (repeat: {})",
+                            a.id,
+                            a.schedule.as_deref().unwrap_or(""),
+                            a.repeat
+                        );
+                    }
+                }
+                ScheduleCommands::Remove { id } => {
+                    let mut agents = agent::load_agents()?;
+                    if let Some(a) = agents.iter_mut().find(|a| a.id == *id) {
+                        a.schedule = None;
+                        a.repeat = false;
+                        agent::save_agents(&agents)?;
+                        println!("Schedule removed for agent {id}.");
+                    } else {
+                        println!("Agent {id} not found.");
+                    }
+                }
+            },
         },
         Commands::Show { what } => match what {
             ShowCommands::Description => {
@@ -251,6 +294,11 @@ async fn main() -> anyhow::Result<()> {
                 for t in tools::builtin_names() {
                     println!("{t}");
                 }
+            }
+        },
+        Commands::Scheduler { action } => match action {
+            SchedulerCommands::Run => {
+                scheduler::run().await?;
             }
         },
         Commands::Board => {
