@@ -37,7 +37,7 @@ async fn main() -> anyhow::Result<()> {
             TaskCommands::Add { title, description } => {
                 let mut board = store::load_board()?;
                 let new_task = store::Task {
-                    id: board.tasks.len() + 1,
+                    id: board.next_task_id(),
                     title: title.clone(),
                     description: description.clone(),
                     status: store::TaskStatus::ToDo,

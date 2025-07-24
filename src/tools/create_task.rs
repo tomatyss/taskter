@@ -24,7 +24,7 @@ pub fn execute(args: &Value) -> Result<String> {
         .map(String::from);
 
     let mut board = store::load_board()?;
-    let id = board.tasks.len() + 1;
+    let id = board.next_task_id();
     let task = Task {
         id,
         title: title.to_string(),
