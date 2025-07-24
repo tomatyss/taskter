@@ -5,7 +5,7 @@ use std::fs;
 use taskter::agent::{self, Agent};
 use taskter::store::{self, Board, Task, TaskStatus};
 use taskter::tools::{
-    add_log, add_okr, assign_agent, create_task, get_description, list_agents, list_tasks,
+    add_log, add_okr, assign_agent, create_task, get_description, list_agents, list_tasks, file_ops,
 };
 
 use mockito::{Matcher, Server};
@@ -387,5 +387,49 @@ fn unknown_tool_returns_error() {
     with_temp_dir(|| {
         let err = taskter::tools::execute_tool("no_such_tool", &json!({})).unwrap_err();
         assert!(err.to_string().contains("Unknown tool"));
+    });
+}
+
+#[test]
+fn file_ops_create_and_read() {
+    with_temp_dir(|| {
+        file_ops::execute(&json!({
+            "action": "create",
+            "path": "note.txt",
+            "content": "hello"
+        }))
+        .unwrap();
+
+        let out = file_ops::execute(&json!({"action": "read", "path": "note.txt"})).unwrap();
+        assert_eq!(out, "hello");
+    });
+}
+
+#[test]
+fn file_ops_search_returns_lines() {
+    with_temp_dir(|| {
+        fs::write("note.txt", "hello\nworld\nhello world").unwrap();
+        let out = file_ops::execute(&json!({
+            "action": "search",
+            "path": "note.txt",
+            "query": "world"
+        }))
+        .unwrap();
+        assert!(out.contains("2:world"));
+    });
+}
+
+#[test]
+fn file_ops_update_overwrites_file() {
+    with_temp_dir(|| {
+        fs::write("note.txt", "old").unwrap();
+        file_ops::execute(&json!({
+            "action": "update",
+            "path": "note.txt",
+            "content": "new"
+        }))
+        .unwrap();
+        let content = fs::read_to_string("note.txt").unwrap();
+        assert_eq!(content, "new");
     });
 }
