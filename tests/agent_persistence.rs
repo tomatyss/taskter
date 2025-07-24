@@ -1,5 +1,4 @@
 use taskter::agent::{self, Agent, FunctionDeclaration};
-use serde_json;
 
 mod common;
 pub use common::with_temp_dir;
@@ -27,7 +26,8 @@ fn save_agents_persists_to_disk() {
         };
         agent::save_agents(&[agent.clone()]).expect("save failed");
         let stored: Vec<Agent> =
-            serde_json::from_str(&std::fs::read_to_string(".taskter/agents.json").unwrap()).unwrap();
+            serde_json::from_str(&std::fs::read_to_string(".taskter/agents.json").unwrap())
+                .unwrap();
         assert_eq!(stored.len(), 1);
         assert_eq!(stored[0].id, agent.id);
         assert_eq!(stored[0].system_prompt, agent.system_prompt);
@@ -40,7 +40,11 @@ fn list_agents_returns_saved_agents() {
         let agent = Agent {
             id: 1,
             system_prompt: "p".into(),
-            tools: vec![FunctionDeclaration { name: "t".into(), description: None, parameters: serde_json::json!({}) }],
+            tools: vec![FunctionDeclaration {
+                name: "t".into(),
+                description: None,
+                parameters: serde_json::json!({}),
+            }],
             model: "m".into(),
         };
         agent::save_agents(&[agent.clone()]).unwrap();
@@ -54,8 +58,18 @@ fn list_agents_returns_saved_agents() {
 #[test]
 fn delete_agent_removes_entry() {
     with_temp_dir(|| {
-        let a1 = Agent { id: 1, system_prompt: "p1".into(), tools: vec![], model: "m".into() };
-        let a2 = Agent { id: 2, system_prompt: "p2".into(), tools: vec![], model: "m".into() };
+        let a1 = Agent {
+            id: 1,
+            system_prompt: "p1".into(),
+            tools: vec![],
+            model: "m".into(),
+        };
+        let a2 = Agent {
+            id: 2,
+            system_prompt: "p2".into(),
+            tools: vec![],
+            model: "m".into(),
+        };
         agent::save_agents(&[a1.clone(), a2.clone()]).unwrap();
         agent::delete_agent(1).unwrap();
         let remaining = agent::load_agents().unwrap();
