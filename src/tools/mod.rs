@@ -5,14 +5,8 @@ use std::collections::HashMap;
 
 use crate::agent::FunctionDeclaration;
 
-pub mod add_log;
-pub mod add_okr;
-pub mod assign_agent;
-pub mod create_task;
 pub mod email;
 pub mod get_description;
-pub mod list_agents;
-pub mod list_tasks;
 pub mod run_bash;
 pub mod run_python;
 pub mod taskter_agent;
@@ -30,14 +24,8 @@ pub struct Tool {
 /// Registry of all tools bundled with Taskter.
 pub static BUILTIN_TOOLS: Lazy<HashMap<&'static str, Tool>> = Lazy::new(|| {
     let mut m = HashMap::new();
-    add_log::register(&mut m);
-    add_okr::register(&mut m);
-    assign_agent::register(&mut m);
-    create_task::register(&mut m);
     email::register(&mut m);
     get_description::register(&mut m);
-    list_agents::register(&mut m);
-    list_tasks::register(&mut m);
     run_bash::register(&mut m);
     run_python::register(&mut m);
     web_search::register(&mut m);

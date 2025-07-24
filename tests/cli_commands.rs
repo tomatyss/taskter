@@ -193,7 +193,7 @@ fn update_agent_changes_configuration() {
                 "--prompt",
                 "new helper",
                 "--tools",
-                "create_task",
+                "taskter_task",
                 "--model",
                 "gemini-2.5-flash",
             ])
@@ -205,7 +205,7 @@ fn update_agent_changes_configuration() {
             serde_json::from_str(&fs::read_to_string(taskter::config::AGENTS_FILE).unwrap())
                 .unwrap();
         assert_eq!(agents[0]["system_prompt"], "new helper");
-        assert_eq!(agents[0]["tools"][0]["name"], "create_task");
+        assert_eq!(agents[0]["tools"][0]["name"], "taskter_task");
         assert_eq!(agents[0]["model"], "gemini-2.5-flash");
     });
 }
@@ -276,7 +276,7 @@ fn show_tools_lists_builtins() {
             .stdout
             .clone();
         let output = String::from_utf8(out).unwrap();
-        assert!(output.contains("create_task"));
+        assert!(output.contains("taskter_task"));
         assert!(output.contains("run_bash"));
         assert!(output.contains("web_search"));
     });

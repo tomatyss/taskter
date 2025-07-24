@@ -1,9 +1,0 @@
-{
-  "name": "list_tasks",
-  "description": "Return the current list of tasks in JSON form",
-  "parameters": {
-    "type": "object",
-    "properties": {},
-    "required": []
-  }
-}

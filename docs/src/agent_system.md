@@ -13,12 +13,10 @@ taskter agent add --prompt "You are a helpful assistant." --tools "email" "calen
 The `--tools` option accepts either paths to JSON files describing a tool or the name of a built-in tool. Built-in tools are located in the `tools/` directory of the repository.
 
 Available built-in tools:
-- `create_task`
-- `assign_agent`
-- `add_log`
-- `add_okr`
-- `list_tasks`
-- `list_agents`
+- `taskter_task`
+- `taskter_agent`
+- `taskter_okrs`
+- `taskter_tools`
 - `get_description`
 - `run_bash`
 - `run_python`
@@ -56,7 +54,7 @@ In the interactive board (`taskter board`), tasks assigned to an agent will be m
 Use the `agent update` command to modify an existing agent's configuration:
 
 ```bash
-taskter agent update --id 1 --prompt "New prompt" --tools "create_task" --model "gemini-pro"
+taskter agent update --id 1 --prompt "New prompt" --tools "taskter_task" --model "gemini-pro"
 ```
 
 All three options are required and the previous configuration is overwritten.
