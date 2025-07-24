@@ -87,7 +87,7 @@ async fn main() -> anyhow::Result<()> {
                 if let Some(task) = board.tasks.iter_mut().find(|t| t.id == *task_id) {
                     if let Some(agent_id) = task.agent_id {
                         if let Some(agent) = agents.iter().find(|a| a.id == agent_id) {
-                            match agent::execute_task(agent, task).await {
+                            match agent::execute_task(agent, Some(task)).await {
                                 Ok(result) => match result {
                                     agent::ExecutionResult::Success { comment } => {
                                         task.status = store::TaskStatus::Done;

@@ -103,7 +103,7 @@ async fn agent_executes_email_task_successfully() {
     };
 
     // When
-    let result = agent::execute_task(&agent, &task)
+    let result = agent::execute_task(&agent, Some(&task))
         .await
         .expect("execution failed");
 
@@ -133,7 +133,7 @@ async fn agent_execution_fails_without_tool() {
     };
 
     // When
-    let result = agent::execute_task(&agent, &task)
+    let result = agent::execute_task(&agent, Some(&task))
         .await
         .expect("execution failed");
 
@@ -164,7 +164,7 @@ async fn agent_execution_fails_on_network_error_without_tool() {
         comment: None,
     };
 
-    let result = agent::execute_task(&agent, &task)
+    let result = agent::execute_task(&agent, Some(&task))
         .await
         .expect("execution failed");
 

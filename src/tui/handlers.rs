@@ -215,9 +215,11 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                         let task_clone = task.clone();
                                         let board_clone = Arc::clone(&app.board);
                                         tokio::spawn(async move {
-                                            let result =
-                                                agent::execute_task(&agent_clone, &task_clone)
-                                                    .await;
+                                            let result = agent::execute_task(
+                                                &agent_clone,
+                                                Some(&task_clone),
+                                            )
+                                            .await;
                                             let mut board = board_clone.lock().unwrap();
                                             if let Some(task) = board
                                                 .tasks
