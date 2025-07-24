@@ -311,12 +311,10 @@ You can make <code>taskter</code> available system-wide by copying it to a direc
 <p>The <code>--tools</code> option accepts either paths to JSON files describing a tool or the name of a built-in tool. Built-in tools are located in the <code>tools/</code> directory of the repository.</p>
 <p>Available built-in tools:</p>
 <ul>
-<li><code>create_task</code></li>
-<li><code>assign_agent</code></li>
-<li><code>add_log</code></li>
-<li><code>add_okr</code></li>
-<li><code>list_tasks</code></li>
-<li><code>list_agents</code></li>
+<li><code>taskter_task</code></li>
+<li><code>taskter_agent</code></li>
+<li><code>taskter_okrs</code></li>
+<li><code>taskter_tools</code></li>
 <li><code>get_description</code></li>
 <li><code>run_bash</code></li>
 <li><code>run_python</code></li>
@@ -338,7 +336,7 @@ You can make <code>taskter</code> available system-wide by copying it to a direc
 <p>In the interactive board (<code>taskter board</code>), tasks assigned to an agent will be marked with a <code>*</code>. You can view the assigned agent ID and any comments by selecting the task and pressing <code>Enter</code>.</p>
 <h2 id="updating-an-agent"><a class="header" href="#updating-an-agent">Updating an Agent</a></h2>
 <p>Use the <code>agent update</code> command to modify an existing agent's configuration:</p>
-<pre><code class="language-bash">taskter agent update --id 1 --prompt "New prompt" --tools "create_task" --model "gemini-pro"
+<pre><code class="language-bash">taskter agent update --id 1 --prompt "New prompt" --tools "taskter_task" --model "gemini-pro"
 </code></pre>
 <p>All three options are required and the previous configuration is overwritten.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="scheduling-agents"><a class="header" href="#scheduling-agents">Scheduling Agents</a></h1>
