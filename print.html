@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="overview.html"><strong aria-hidden="true">1.</strong> Overview</a></li><li class="chapter-item expanded "><a href="installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="cli_usage.html"><strong aria-hidden="true">3.</strong> CLI Usage</a></li><li class="chapter-item expanded "><a href="tui_guide.html"><strong aria-hidden="true">4.</strong> TUI Guide</a></li><li class="chapter-item expanded "><a href="agent_system.html"><strong aria-hidden="true">5.</strong> Agent System</a></li><li class="chapter-item expanded "><a href="configuration.html"><strong aria-hidden="true">6.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="contributing.html"><strong aria-hidden="true">7.</strong> Contributing</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="overview.html"><strong aria-hidden="true">1.</strong> Overview</a></li><li class="chapter-item expanded "><a href="installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="cli_usage.html"><strong aria-hidden="true">3.</strong> CLI Usage</a></li><li class="chapter-item expanded "><a href="tui_guide.html"><strong aria-hidden="true">4.</strong> TUI Guide</a></li><li class="chapter-item expanded "><a href="agent_system.html"><strong aria-hidden="true">5.</strong> Agent System</a></li><li class="chapter-item expanded "><a href="scheduling.html"><strong aria-hidden="true">6.</strong> Scheduling Agents</a></li><li class="chapter-item expanded "><a href="configuration.html"><strong aria-hidden="true">7.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="contributing.html"><strong aria-hidden="true">8.</strong> Contributing</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -341,6 +341,26 @@ You can make <code>taskter</code> available system-wide by copying it to a direc
 <pre><code class="language-bash">taskter agent update --id 1 --prompt "New prompt" --tools "create_task" --model "gemini-pro"
 </code></pre>
 <p>All three options are required and the previous configuration is overwritten.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="scheduling-agents"><a class="header" href="#scheduling-agents">Scheduling Agents</a></h1>
+<p>Taskter can run agents automatically based on cron expressions. A scheduler daemon reads the agent configuration and executes the assigned tasks at the defined times.</p>
+<h2 id="setting-a-schedule"><a class="header" href="#setting-a-schedule">Setting a Schedule</a></h2>
+<p>Use the <code>agent schedule set</code> command to assign a cron expression to an agent. The expression is parsed in the <code>America/New_York</code> timezone.</p>
+<pre><code class="language-bash"># Run every minute
+taskter agent schedule set --id 1 --cron "0 * * * * *"
+</code></pre>
+<p>Pass <code>--once</code> to remove the schedule after the first run.</p>
+<h2 id="listing-and-removing"><a class="header" href="#listing-and-removing">Listing and Removing</a></h2>
+<p>List all scheduled agents with:</p>
+<pre><code class="language-bash">taskter agent schedule list
+</code></pre>
+<p>Remove a schedule:</p>
+<pre><code class="language-bash">taskter agent schedule remove --id 1
+</code></pre>
+<h2 id="running-the-scheduler"><a class="header" href="#running-the-scheduler">Running the Scheduler</a></h2>
+<p>Start the scheduler loop with:</p>
+<pre><code class="language-bash">taskter scheduler run
+</code></pre>
+<p>The scheduler will execute agents at the configured times and update tasks just as if <code>task execute</code> was run manually.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
 <p>This chapter describes runtime configuration files and environment variables used by Taskter.</p>
 <h2 id="email-configuration-file"><a class="header" href="#email-configuration-file">Email configuration file</a></h2>
