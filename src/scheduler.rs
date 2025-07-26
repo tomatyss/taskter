@@ -28,8 +28,11 @@ pub async fn run() -> anyhow::Result<()> {
                             let _ = agent::execute_task(&a, None).await;
                         } else {
                             for task_id in tasks {
-                                let task =
-                                    board.tasks.iter_mut().find(|t| t.id == task_id).unwrap();
+                                let task = board
+                                    .tasks
+                                    .iter_mut()
+                                    .find(|t| t.id == task_id)
+                                    .expect("task id from board lookup");
                                 if let Ok(res) = agent::execute_task(&a, Some(task)).await {
                                     match res {
                                         ExecutionResult::Success { comment } => {

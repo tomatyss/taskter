@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_lines, clippy::if_not_else, clippy::single_match_else)]
+
 use super::app::{App, View};
 use super::render::ui;
 use crate::agent::{self};
@@ -65,7 +67,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                 for p in event.paths {
                     if p.ends_with("board.json") {
                         if let Ok(board) = store::load_board() {
-                            *app.board.lock().unwrap() = board;
+                            *app.board.lock().expect("board mutex poisoned") = board;
                         }
                     } else if p.ends_with("okrs.json") {
                         if let Ok(okrs) = store::load_okrs() {
@@ -91,7 +93,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                 match app.current_view {
                     View::Board => match key.code {
                         KeyCode::Char('q') => {
-                            store::save_board(&app.board.lock().unwrap()).unwrap();
+                            store::save_board(&app.board.lock().expect("board mutex poisoned"))
+                                .expect("save failed");
                             return Ok(());
                         }
                         KeyCode::Right | KeyCode::Tab => app.next_column(),
@@ -137,14 +140,19 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         }
                         KeyCode::Char('d') => {
                             if let Some(task_id) = app.get_selected_task().map(|t| t.id) {
-                                app.board.lock().unwrap().tasks.retain(|t| t.id != task_id);
+                                app.board
+                                    .lock()
+                                    .expect("board mutex poisoned")
+                                    .tasks
+                                    .retain(|t| t.id != task_id);
                                 let tasks = app.tasks_in_current_column();
                                 if !tasks.is_empty() {
                                     app.selected_task[app.selected_column].select(Some(0));
                                 } else {
                                     app.selected_task[app.selected_column].select(None);
                                 }
-                                store::save_board(&app.board.lock().unwrap()).unwrap();
+                                store::save_board(&app.board.lock().expect("board mutex poisoned"))
+                                    .expect("save failed");
                             }
                         }
                         KeyCode::Char('L') => {
@@ -205,7 +213,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                             if let Some(selected_agent_index) = app.agent_list_state.selected() {
                                 if let Some(agent) = app.agents.get(selected_agent_index).cloned() {
                                     if let Some(task) = app.get_selected_task() {
-                                        let mut board = app.board.lock().unwrap();
+                                        let mut board =
+                                            app.board.lock().expect("board mutex poisoned");
                                         if let Some(task_to_update) =
                                             board.tasks.iter_mut().find(|t| t.id == task.id)
                                         {
@@ -220,7 +229,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                                 Some(&task_clone),
                                             )
                                             .await;
-                                            let mut board = board_clone.lock().unwrap();
+                                            let mut board =
+                                                board_clone.lock().expect("board mutex poisoned");
                                             if let Some(task) = board
                                                 .tasks
                                                 .iter_mut()
@@ -251,7 +261,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                                     }
                                                 }
                                             }
-                                            store::save_board(&board).unwrap();
+                                            store::save_board(&board).expect("save failed");
                                         });
                                     }
                                 }
@@ -270,14 +280,15 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                 if let Some(task) = app
                                     .board
                                     .lock()
-                                    .unwrap()
+                                    .expect("board mutex poisoned")
                                     .tasks
                                     .iter_mut()
                                     .find(|t| t.id == task_id)
                                 {
                                     task.comment = Some(app.comment_input.clone());
                                 }
-                                store::save_board(&app.board.lock().unwrap()).unwrap();
+                                store::save_board(&app.board.lock().expect("board mutex poisoned"))
+                                    .expect("save failed");
                             }
                             app.current_view = View::Board;
                         }
@@ -306,7 +317,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         }
                         KeyCode::Enter => {
                             if app.editing_description {
-                                let new_id = app.board.lock().unwrap().tasks.len() + 1;
+                                let new_id =
+                                    app.board.lock().expect("board mutex poisoned").tasks.len() + 1;
                                 let task = Task {
                                     id: new_id,
                                     title: app.new_task_title.clone(),
@@ -319,8 +331,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                     agent_id: None,
                                     comment: None,
                                 };
-                                app.board.lock().unwrap().tasks.push(task);
-                                store::save_board(&app.board.lock().unwrap()).unwrap();
+                                app.board
+                                    .lock()
+                                    .expect("board mutex poisoned")
+                                    .tasks
+                                    .push(task);
+                                store::save_board(&app.board.lock().expect("board mutex poisoned"))
+                                    .expect("save failed");
                                 app.current_view = View::Board;
                                 app.popup_scroll = 0;
                                 app.editing_description = false;
@@ -356,19 +373,22 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                     if let Some(task) = app
                                         .board
                                         .lock()
-                                        .unwrap()
+                                        .expect("board mutex poisoned")
                                         .tasks
                                         .iter_mut()
                                         .find(|t| t.id == task_id)
                                     {
-                                        task.title = app.new_task_title.clone();
+                                        task.title.clone_from(&app.new_task_title);
                                         task.description = if app.new_task_description.is_empty() {
                                             None
                                         } else {
                                             Some(app.new_task_description.clone())
                                         };
                                     }
-                                    store::save_board(&app.board.lock().unwrap()).unwrap();
+                                    store::save_board(
+                                        &app.board.lock().expect("board mutex poisoned"),
+                                    )
+                                    .expect("save failed");
                                 }
                                 app.current_view = View::Board;
                                 app.editing_description = false;
@@ -384,7 +404,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         _ => {}
                     },
                     View::Logs | View::Agents | View::Okrs | View::Commands => match key.code {
-                        KeyCode::Char('q') | KeyCode::Esc | KeyCode::Char('?') => {
+                        KeyCode::Char('q' | '?') | KeyCode::Esc => {
                             app.current_view = View::Board;
                             app.popup_scroll = 0;
                         }

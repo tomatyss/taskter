@@ -1,3 +1,5 @@
+#![allow(clippy::pedantic)]
+
 use taskter::agent::{self, Agent, FunctionDeclaration};
 
 mod common;
@@ -23,6 +25,8 @@ fn save_agents_persists_to_disk() {
             system_prompt: "p".into(),
             tools: vec![],
             model: "m".into(),
+            schedule: None,
+            repeat: false,
         };
         agent::save_agents(&[agent.clone()]).expect("save failed");
         let stored: Vec<Agent> =
@@ -46,6 +50,8 @@ fn list_agents_returns_saved_agents() {
                 parameters: serde_json::json!({}),
             }],
             model: "m".into(),
+            schedule: None,
+            repeat: false,
         };
         agent::save_agents(&[agent.clone()]).unwrap();
         let listed = agent::list_agents().unwrap();
@@ -63,12 +69,16 @@ fn delete_agent_removes_entry() {
             system_prompt: "p1".into(),
             tools: vec![],
             model: "m".into(),
+            schedule: None,
+            repeat: false,
         };
         let a2 = Agent {
             id: 2,
             system_prompt: "p2".into(),
             tools: vec![],
             model: "m".into(),
+            schedule: None,
+            repeat: false,
         };
         agent::save_agents(&[a1.clone(), a2.clone()]).unwrap();
         agent::delete_agent(1).unwrap();

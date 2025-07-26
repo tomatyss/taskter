@@ -9,18 +9,28 @@ use std::collections::HashMap;
 const DECL_JSON: &str = include_str!("../../tools/assign_agent.json");
 
 /// Returns the function declaration for this tool.
+///
+/// # Panics
+/// Panics if the embedded JSON declaration is invalid.
 pub fn declaration() -> FunctionDeclaration {
     serde_json::from_str(DECL_JSON).expect("invalid assign_agent.json")
 }
 
 /// Assigns an agent to a task in `.taskter/board.json`.
+///
+/// # Errors
+/// Returns an error if the board cannot be read or written.
 pub fn execute(args: &Value) -> Result<String> {
-    let task_id = args["task_id"]
-        .as_u64()
-        .ok_or_else(|| anyhow!("task_id missing"))? as usize;
-    let agent_id = args["agent_id"]
-        .as_u64()
-        .ok_or_else(|| anyhow!("agent_id missing"))? as usize;
+    let task_id = usize::try_from(
+        args["task_id"]
+            .as_u64()
+            .ok_or_else(|| anyhow!("task_id missing"))?,
+    )?;
+    let agent_id = usize::try_from(
+        args["agent_id"]
+            .as_u64()
+            .ok_or_else(|| anyhow!("agent_id missing"))?,
+    )?;
 
     let agents = agent::load_agents()?;
     if !agents.iter().any(|a| a.id == agent_id) {
@@ -38,7 +48,7 @@ pub fn execute(args: &Value) -> Result<String> {
 }
 
 /// Registers the tool in the provided map.
-pub fn register(map: &mut HashMap<&'static str, Tool>) {
+pub fn register<S: std::hash::BuildHasher>(map: &mut HashMap<&'static str, Tool, S>) {
     map.insert(
         "assign_agent",
         Tool {

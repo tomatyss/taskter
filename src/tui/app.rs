@@ -111,7 +111,7 @@ impl App {
         };
         self.board
             .lock()
-            .unwrap()
+            .expect("board mutex poisoned")
             .tasks
             .iter()
             .filter(|t| t.status == status)
@@ -140,7 +140,7 @@ impl App {
             if let Some(task) = self
                 .board
                 .lock()
-                .unwrap()
+                .expect("board mutex poisoned")
                 .tasks
                 .iter_mut()
                 .find(|t| t.id == task_id)

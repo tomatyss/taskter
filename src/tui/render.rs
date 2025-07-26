@@ -18,7 +18,7 @@ pub(crate) fn ui(f: &mut Frame, app: &mut App) {
         View::Agents => render_agents_list(f, app),
         View::Okrs => render_okrs(f, app),
         View::Commands => render_commands(f, app),
-        _ => {}
+        View::Board => {}
     }
 }
 
@@ -42,7 +42,7 @@ fn render_board(f: &mut Frame, app: &mut App) {
         let tasks: Vec<ListItem> = app
             .board
             .lock()
-            .unwrap()
+            .expect("board mutex poisoned")
             .tasks
             .iter()
             .filter(|t| t.status == *status)
@@ -149,10 +149,10 @@ fn render_add_comment(f: &mut Frame, app: &mut App) {
 
 fn render_add_task(f: &mut Frame, app: &mut App) {
     let block = Block::default().title("New Task").borders(Borders::ALL);
-    let title_style = if !app.editing_description {
-        Style::default().fg(Color::Yellow)
-    } else {
+    let title_style = if app.editing_description {
         Style::default()
+    } else {
+        Style::default().fg(Color::Yellow)
     };
     let desc_style = if app.editing_description {
         Style::default().fg(Color::Yellow)
@@ -179,10 +179,10 @@ fn render_add_task(f: &mut Frame, app: &mut App) {
 
 fn render_update_task(f: &mut Frame, app: &mut App) {
     let block = Block::default().title("Edit Task").borders(Borders::ALL);
-    let title_style = if !app.editing_description {
-        Style::default().fg(Color::Yellow)
-    } else {
+    let title_style = if app.editing_description {
         Style::default()
+    } else {
+        Style::default().fg(Color::Yellow)
     };
     let desc_style = if app.editing_description {
         Style::default().fg(Color::Yellow)

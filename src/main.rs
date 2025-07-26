@@ -1,3 +1,11 @@
+#![allow(
+    clippy::pedantic,
+    clippy::too_many_lines,
+    clippy::manual_let_else,
+    clippy::single_match_else,
+    clippy::if_not_else
+)]
+
 use chrono::Local;
 use clap::Parser;
 use std::fs;
@@ -6,6 +14,7 @@ use std::path::Path;
 
 use taskter::config;
 
+#[allow(clippy::wildcard_imports)]
 use taskter::cli::*;
 mod agent;
 mod scheduler;

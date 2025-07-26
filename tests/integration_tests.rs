@@ -1,3 +1,5 @@
+#![allow(clippy::pedantic)]
+
 use serde_json::json;
 use taskter::agent::{self, Agent, ExecutionResult, FunctionDeclaration};
 use taskter::store::{self, Board, KeyResult, Okr, Task, TaskStatus};

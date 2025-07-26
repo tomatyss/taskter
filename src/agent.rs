@@ -1,3 +1,9 @@
+#![allow(
+    clippy::too_many_lines,
+    clippy::manual_let_else,
+    clippy::single_match_else
+)]
+
 use crate::store::Task;
 use crate::tools;
 use anyhow::Result;
@@ -31,6 +37,12 @@ fn append_log(message: &str) -> anyhow::Result<()> {
 /// Executes a task with the given agent and records progress in `.taskter/logs.log`.
 ///
 /// Tools referenced by the agent may be invoked during execution.
+///
+/// # Errors
+/// Returns an error if a tool invocation fails.
+///
+/// # Panics
+/// Panics if the GEMINI API key is missing after pre-checks.
 pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<ExecutionResult> {
     let client = Client::new();
     let log_message = if let Some(task) = task {
@@ -78,19 +90,19 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
                 eprintln!("Failed to write log: {e}");
             }
             return Ok(ExecutionResult::Success { comment: msg });
-        } else {
-            if let Err(e) = append_log("Executing without API key - required tool missing") {
-                eprintln!("Failed to write log: {e}");
-            }
-            let msg = "Required tool not available.".to_string();
-            if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
-                eprintln!("Failed to write log: {e}");
-            }
-            return Ok(ExecutionResult::Failure { comment: msg });
         }
+
+        if let Err(e) = append_log("Executing without API key - required tool missing") {
+            eprintln!("Failed to write log: {e}");
+        }
+        let msg = "Required tool not available.".to_string();
+        if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
+            eprintln!("Failed to write log: {e}");
+        }
+        return Ok(ExecutionResult::Failure { comment: msg });
     }
 
-    let api_key = api_key.unwrap();
+    let api_key = api_key.expect("checked above");
 
     let user_prompt = if let Some(task) = task {
         if let Some(description) = &task.description {
@@ -120,7 +132,7 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
         // DNS resolution error).  Instead of propagating the error we gracefully
         // fall back to the local simulation so that library users can still make
         // progress without network access.
-        let response = match client
+        let response = if let Ok(resp) = client
             .post(format!(
                 "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent",
                 agent.model
@@ -131,28 +143,27 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
             .send()
             .await
         {
-            Ok(resp) => resp,
-            Err(_) => {
-                if let Err(e) = append_log("API request failed; falling back to local simulation") {
+            resp
+        } else {
+            if let Err(e) = append_log("API request failed; falling back to local simulation") {
+                eprintln!("Failed to write log: {e}");
+            }
+            return Ok(if has_send_email_tool {
+                let msg = "Tool available. Task considered complete.".to_string();
+                if let Err(e) = append_log(&format!(
+                    "Agent {} finished successfully: {}",
+                    agent.id, msg
+                )) {
                     eprintln!("Failed to write log: {e}");
                 }
-                return Ok(if has_send_email_tool {
-                    let msg = "Tool available. Task considered complete.".to_string();
-                    if let Err(e) = append_log(&format!(
-                        "Agent {} finished successfully: {}",
-                        agent.id, msg
-                    )) {
-                        eprintln!("Failed to write log: {e}");
-                    }
-                    ExecutionResult::Success { comment: msg }
-                } else {
-                    let msg = "Required tool not available.".to_string();
-                    if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
-                        eprintln!("Failed to write log: {e}");
-                    }
-                    ExecutionResult::Failure { comment: msg }
-                });
-            }
+                ExecutionResult::Success { comment: msg }
+            } else {
+                let msg = "Required tool not available.".to_string();
+                if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
+                    eprintln!("Failed to write log: {e}");
+                }
+                ExecutionResult::Failure { comment: msg }
+            });
         };
 
         if !response.status().is_success() {
@@ -213,7 +224,9 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
         let part = &candidate["content"]["parts"][0];
 
         if let Some(function_call) = part.get("functionCall") {
-            let tool_name = function_call["name"].as_str().unwrap();
+            let tool_name = function_call["name"]
+                .as_str()
+                .expect("tool name must be a string");
             let args = &function_call["args"];
             if let Err(e) = append_log(&format!(
                 "Agent {} calling tool {} with args {}",
@@ -236,7 +249,10 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
                 "parts": [{"functionResponse": {"name": tool_name, "response": {"content": tool_response}}}]
             }));
         } else if let Some(text) = part.get("text") {
-            let comment = text.as_str().unwrap().to_string();
+            let comment = text
+                .as_str()
+                .expect("text response must be a string")
+                .to_string();
             if let Err(e) = append_log(&format!(
                 "Agent {} finished successfully: {}",
                 agent.id, comment
@@ -286,7 +302,10 @@ pub struct Agent {
 pub fn load_agents() -> anyhow::Result<Vec<Agent>> {
     let path = config::agents_path();
     if !path.exists() {
-        fs::create_dir_all(path.parent().unwrap())?;
+        fs::create_dir_all(
+            path.parent()
+                .expect("agents file should have a parent directory"),
+        )?;
         fs::write(path, "[]")?;
     }
 

@@ -1,4 +1,5 @@
 #![cfg(feature = "tui")]
+#![allow(clippy::pedantic)]
 
 use taskter::agent::Agent;
 use taskter::store::{Board, Task, TaskStatus};

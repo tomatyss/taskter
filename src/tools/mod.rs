@@ -1,7 +1,7 @@
 use anyhow::Result;
-use once_cell::sync::Lazy;
 use serde_json::Value;
 use std::collections::HashMap;
+use std::sync::LazyLock;
 
 use crate::agent::FunctionDeclaration;
 
@@ -28,7 +28,7 @@ pub struct Tool {
 }
 
 /// Registry of all tools bundled with Taskter.
-pub static BUILTIN_TOOLS: Lazy<HashMap<&'static str, Tool>> = Lazy::new(|| {
+pub static BUILTIN_TOOLS: LazyLock<HashMap<&'static str, Tool>> = LazyLock::new(|| {
     let mut m = HashMap::new();
     add_log::register(&mut m);
     add_okr::register(&mut m);
