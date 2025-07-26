@@ -14,7 +14,20 @@ mod tools;
 mod tui;
 use tokio_cron_scheduler::Job;
 
-#[tokio::main]
+// A multi-threaded Tokio runtime is unnecessary for a command-line application that
+// mainly executes short-lived, mostly single-threaded tasks.  Using the default
+// runtime spawns a worker thread per core which noticeably increases the memory
+// footprint of the binary and might lead to the process being killed on
+// constrained environments when users only want to display `--help` or `--version`.
+//
+// Switching to the `current_thread` flavour keeps the runtime single-threaded and
+// lightweight while still allowing us to `.await` asynchronous operations when
+// they are actually requested by the user.
+//
+// If in the future true parallel execution becomes necessary we can either
+// create a dedicated multi-threaded runtime only for that specific operation or
+// revisit this decision.
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
