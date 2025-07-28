@@ -53,6 +53,33 @@ fn add_list_done_workflow() {
 }
 
 #[test]
+fn board_command_starts_and_quits() {
+    use expectrl::{Eof, Session};
+    use std::process::Command as PCommand;
+    use std::thread;
+    use std::time::Duration;
+
+    with_temp_dir(|| {
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .arg("init")
+            .assert()
+            .success();
+
+        let bin = Command::cargo_bin("taskter").unwrap();
+        let path = bin.get_program().to_owned();
+
+        let mut cmd = PCommand::new(path);
+        cmd.arg("board");
+        let mut session = Session::spawn(cmd).unwrap();
+
+        thread::sleep(Duration::from_millis(200));
+        session.send("q").unwrap();
+        session.expect(Eof).unwrap();
+    });
+}
+
+#[test]
 fn add_agent_and_execute_task() {
     with_temp_dir(|| {
         // prepare board
