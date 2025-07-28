@@ -19,14 +19,52 @@ pub async fn handle(action: &TaskCommands) -> anyhow::Result<()> {
         }
         TaskCommands::List => {
             let board = store::load_board()?;
+            let mut todo = Vec::new();
+            let mut in_progress = Vec::new();
+            let mut done = Vec::new();
+
             for task in board.tasks {
-                println!(
-                    "[{}] {} - {:?} - {:?}",
-                    task.id,
-                    task.title,
-                    task.status,
-                    task.description.unwrap_or_default()
-                );
+                match task.status {
+                    store::TaskStatus::ToDo => todo.push(task),
+                    store::TaskStatus::InProgress => in_progress.push(task),
+                    store::TaskStatus::Done => done.push(task),
+                }
+            }
+
+            if !todo.is_empty() {
+                println!("ToDo:");
+                for task in todo {
+                    println!(
+                        "  [{}] {} - {}",
+                        task.id,
+                        task.title,
+                        task.description.unwrap_or_default()
+                    );
+                }
+            }
+
+            if !in_progress.is_empty() {
+                println!("InProgress:");
+                for task in in_progress {
+                    println!(
+                        "  [{}] {} - {}",
+                        task.id,
+                        task.title,
+                        task.description.unwrap_or_default()
+                    );
+                }
+            }
+
+            if !done.is_empty() {
+                println!("Done:");
+                for task in done {
+                    println!(
+                        "  [{}] {} - {}",
+                        task.id,
+                        task.title,
+                        task.description.unwrap_or_default()
+                    );
+                }
             }
         }
         TaskCommands::Complete { id } => {
