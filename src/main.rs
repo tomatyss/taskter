@@ -63,14 +63,20 @@ async fn main() -> anyhow::Result<()> {
             }
             TaskCommands::List => {
                 let board = store::load_board()?;
-                for task in board.tasks {
-                    println!(
-                        "[{}] {} - {:?} - {:?}",
-                        task.id,
-                        task.title,
-                        task.status,
-                        task.description.unwrap_or_default()
-                    );
+                for status in [
+                    store::TaskStatus::ToDo,
+                    store::TaskStatus::InProgress,
+                    store::TaskStatus::Done,
+                ] {
+                    println!("{status:?}:");
+                    for task in board.tasks.iter().filter(|t| t.status == status) {
+                        println!(
+                            "  [{}] {} - {}",
+                            task.id,
+                            task.title,
+                            task.description.clone().unwrap_or_default()
+                        );
+                    }
                 }
             }
             TaskCommands::Complete { id } => {
