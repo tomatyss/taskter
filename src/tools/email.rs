@@ -1,4 +1,4 @@
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use lettre::{transport::smtp::authentication::Credentials, Message, SmtpTransport, Transport};
 use serde::Deserialize;
 use serde_json::Value;
@@ -26,9 +26,15 @@ pub fn declaration() -> FunctionDeclaration {
 
 /// Sends an email using `.taskter/email_config.json` for credentials.
 pub fn execute(args: &Value) -> Result<String> {
-    let to = args["to"].as_str().unwrap_or_default();
-    let subject = args["subject"].as_str().unwrap_or_default();
-    let body = args["body"].as_str().unwrap_or_default();
+    let to = args["to"]
+        .as_str()
+        .ok_or_else(|| anyhow!("to missing"))?;
+    let subject = args["subject"]
+        .as_str()
+        .ok_or_else(|| anyhow!("subject missing"))?;
+    let body = args["body"]
+        .as_str()
+        .ok_or_else(|| anyhow!("body missing"))?;
     match send_email(to, subject, body) {
         Ok(_) => Ok(format!(
             "Email sent to {to} with subject '{subject}' and body '{body}'"
