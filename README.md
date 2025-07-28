@@ -348,6 +348,19 @@ few example tasks, sets a project description, defines OKRs and adds an agent
 using the built-in email tool. Once it finishes you can inspect the board with
 `taskter task list` or launch the TUI via `taskter board`.
 
+### Minimal agent roster
+
+When starting a new autonomous project you can automatically create a baseline
+set of agents:
+
+```bash
+./scripts/setup_agent_roster.sh
+```
+
+The script expects an initialised `.taskter` directory and adds agents for OKR
+management, task planning, recruitment, dispatching, execution, review,
+progress monitoring and archiving. All of them use the `gemini-2.5-pro` model.
+
 
 ## Development
 
