@@ -27,6 +27,7 @@ once_cell = "1.19"
 tokio-cron-scheduler = "0.14"
 chrono-tz = "0.8"
 [features]
+default = ["tui"]
 tui = []
 [dev-dependencies]
 mockito = "1.4.0"
