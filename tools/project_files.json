@@ -1,0 +1,14 @@
+{
+  "name": "project_files",
+  "description": "Create, read, search, and update text files within the project directory.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "action": { "type": "string", "description": "Operation to perform: create, read, search, or update" },
+      "path": { "type": "string", "description": "Relative file path for create, read, or update actions" },
+      "content": { "type": "string", "description": "File content for create or update" },
+      "query": { "type": "string", "description": "Search string when action is search" }
+    },
+    "required": ["action"]
+  }
+}
