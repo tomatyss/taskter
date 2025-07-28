@@ -1,3 +1,5 @@
+//! Application state and views for the text-based interface.
+
 use crate::agent::Agent;
 use crate::store::{self, Board, Okr, Task, TaskStatus};
 use ratatui::widgets::ListState;

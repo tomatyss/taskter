@@ -1,3 +1,5 @@
+//! Sends an email using configuration from `.taskter/email_config.json`.
+
 use anyhow::Result;
 use lettre::{transport::smtp::authentication::Credentials, Message, SmtpTransport, Transport};
 use serde::Deserialize;

@@ -1,3 +1,5 @@
+//! Reads the project description from `.taskter/description.md`.
+
 use anyhow::Result;
 use serde_json::Value;
 use std::fs;

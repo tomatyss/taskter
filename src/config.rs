@@ -1,3 +1,5 @@
+//! Paths and helpers for locating files within the `.taskter` directory.
+
 /// Constants for paths inside the `.taskter` directory.
 use std::path::Path;
 

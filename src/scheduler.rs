@@ -1,3 +1,5 @@
+//! Cron-based scheduler that executes agents on a periodic basis.
+
 use crate::{agent, store};
 use agent::ExecutionResult;
 use chrono_tz::America::New_York;
