@@ -266,6 +266,7 @@ fn render_commands(f: &mut Frame, app: &mut App) {
         Line::from("u - Edit task"),
         Line::from("d - Delete task"),
         Line::from("a - Assign agent"),
+        Line::from("r - Unassign agent"),
         Line::from("c - Add comment"),
         Line::from("L - View logs"),
         Line::from("A - List agents"),

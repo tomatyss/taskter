@@ -83,3 +83,23 @@ fn moving_task_updates_status() {
         );
     });
 }
+
+#[test]
+fn unassign_selected_task_clears_agent() {
+    with_temp_dir(|| {
+        let board = Board {
+            tasks: vec![Task {
+                id: 1,
+                title: "T".into(),
+                description: None,
+                status: TaskStatus::ToDo,
+                agent_id: Some(1),
+                comment: None,
+            }],
+        };
+        let mut app = App::new(board, Vec::<Agent>::new());
+        assert_eq!(app.board.lock().unwrap().tasks[0].agent_id, Some(1));
+        app.unassign_selected_task();
+        assert!(app.board.lock().unwrap().tasks[0].agent_id.is_none());
+    });
+}

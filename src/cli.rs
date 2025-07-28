@@ -206,4 +206,10 @@ pub enum TaskCommands {
         #[arg(short, long)]
         agent_id: usize,
     },
+    /// Unassigns any agent from a task
+    Unassign {
+        /// The id of the task to unassign
+        #[arg(short, long)]
+        task_id: usize,
+    },
 }

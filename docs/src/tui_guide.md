@@ -20,6 +20,7 @@ The TUI is controlled with keyboard shortcuts. Here is a list of the available k
 | `u`                 | Edit the selected task               |
 | `d`                 | Delete the selected task             |
 | `a`                 | Assign an agent to the selected task |
+| `r`                 | Unassign the selected task's agent   |
 | `c`                 | Add a comment to the selected task   |
 | `L`                 | View project logs                    |
 | `A`                 | List available agents                |
