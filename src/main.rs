@@ -199,19 +199,24 @@ async fn main() -> anyhow::Result<()> {
                 tools,
                 model,
             } => {
-                let mut function_declarations = Vec::new();
-                for spec in tools {
-                    let decl = if Path::new(spec).exists() {
-                        let tool_content = fs::read_to_string(spec)?;
-                        let tool_json: serde_json::Value = serde_json::from_str(&tool_content)?;
-                        serde_json::from_value(tool_json)?
-                    } else if let Some(built) = tools::builtin_declaration(spec) {
-                        built
-                    } else {
-                        return Err(anyhow::anyhow!(format!("Unknown tool: {spec}")));
-                    };
-                    function_declarations.push(decl);
-                }
+                let function_declarations = if let Some(tool_specs) = tools {
+                    let mut decls = Vec::new();
+                    for spec in tool_specs {
+                        let decl = if Path::new(&spec).exists() {
+                            let tool_content = fs::read_to_string(&spec)?;
+                            let tool_json: serde_json::Value = serde_json::from_str(&tool_content)?;
+                            serde_json::from_value(tool_json)?
+                        } else if let Some(built) = tools::builtin_declaration(&spec) {
+                            built
+                        } else {
+                            return Err(anyhow::anyhow!(format!("Unknown tool: {spec}")));
+                        };
+                        decls.push(decl);
+                    }
+                    Some(decls)
+                } else {
+                    None
+                };
 
                 agent::update_agent(*id, prompt.clone(), function_declarations, model.clone())?;
                 println!("Agent {id} updated.");

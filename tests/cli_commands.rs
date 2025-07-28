@@ -158,7 +158,7 @@ fn list_and_delete_agents() {
 }
 
 #[test]
-fn update_agent_changes_configuration() {
+fn update_agent_allows_partial_changes() {
     with_temp_dir(|| {
         Command::cargo_bin("taskter")
             .unwrap()
@@ -182,21 +182,10 @@ fn update_agent_changes_configuration() {
             .assert()
             .success();
 
-        // update the agent
+        // update only the tools of the agent
         Command::cargo_bin("taskter")
             .unwrap()
-            .args([
-                "agent",
-                "update",
-                "--id",
-                "1",
-                "--prompt",
-                "new helper",
-                "--tools",
-                "taskter_task",
-                "--model",
-                "gemini-2.5-flash",
-            ])
+            .args(["agent", "update", "--id", "1", "--tools", "taskter_task"])
             .assert()
             .success()
             .stdout(predicate::str::contains("Agent 1 updated."));
@@ -204,7 +193,8 @@ fn update_agent_changes_configuration() {
         let agents: Vec<Value> =
             serde_json::from_str(&fs::read_to_string(taskter::config::AGENTS_FILE).unwrap())
                 .unwrap();
-        assert_eq!(agents[0]["system_prompt"], "new helper");
+        // only tools should have changed
+        assert_eq!(agents[0]["system_prompt"], "helper");
         assert_eq!(agents[0]["tools"][0]["name"], "taskter_task");
         assert_eq!(agents[0]["model"], "gemini-2.5-flash");
     });
