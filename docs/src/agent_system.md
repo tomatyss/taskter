@@ -23,6 +23,7 @@ Available built-in tools:
 - `send_email`
 - `web_search`
 - `project_files`
+- `file_ops`
 
 You can display this list at any time with:
 

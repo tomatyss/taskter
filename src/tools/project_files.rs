@@ -71,10 +71,19 @@ pub fn execute(args: &Value) -> Result<String> {
 
 /// Registers the tool in the provided map.
 pub fn register(map: &mut HashMap<&'static str, Tool>) {
+    // Register under both "project_files" and alias "file_ops"
+    let decl = declaration();
     map.insert(
         "project_files",
         Tool {
-            declaration: declaration(),
+            declaration: decl.clone(),
+            execute,
+        },
+    );
+    map.insert(
+        "file_ops",
+        Tool {
+            declaration: decl,
             execute,
         },
     );
