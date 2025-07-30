@@ -14,7 +14,7 @@ use std::path::Path;
 use std::sync::{mpsc::channel, Arc};
 use std::time::Duration;
 
-pub fn run_tui() -> anyhow::Result<()> {
+pub async fn run_tui() -> anyhow::Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
@@ -24,7 +24,7 @@ pub fn run_tui() -> anyhow::Result<()> {
     let board = store::load_board().unwrap_or_default();
     let agents = agent::load_agents().unwrap_or_default();
     let app = App::new(board, agents);
-    let res = run_app(&mut terminal, app);
+    let res = run_app(&mut terminal, app).await;
 
     disable_raw_mode()?;
     execute!(
@@ -41,7 +41,7 @@ pub fn run_tui() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
+async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
     let (tx, rx) = channel();
     let mut watcher = recommended_watcher(move |res| {
         let _ = tx.send(res);
@@ -218,45 +218,39 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                         let agent_clone = agent.clone();
                                         let task_clone = task.clone();
                                         let board_clone = Arc::clone(&app.board);
-                                        tokio::spawn(async move {
-                                            let result = agent::execute_task(
-                                                &agent_clone,
-                                                Some(&task_clone),
-                                            )
-                                            .await;
-                                            let mut board = board_clone.lock().unwrap();
-                                            if let Some(task) = board
-                                                .tasks
-                                                .iter_mut()
-                                                .find(|t| t.id == task_clone.id)
-                                            {
-                                                match result {
-                                                    Ok(result) => match result {
-                                                        agent::ExecutionResult::Success {
-                                                            comment,
-                                                        } => {
-                                                            task.status = store::TaskStatus::Done;
-                                                            task.comment = Some(comment);
-                                                        }
-                                                        agent::ExecutionResult::Failure {
-                                                            comment,
-                                                        } => {
-                                                            task.status = store::TaskStatus::ToDo;
-                                                            task.comment = Some(comment);
-                                                            task.agent_id = None;
-                                                        }
-                                                    },
-                                                    Err(_) => {
+                                        let result = agent::execute_task(
+                                            &agent_clone,
+                                            Some(&task_clone),
+                                        )
+                                        .await;
+                                        let mut board = board_clone.lock().unwrap();
+                                        if let Some(task) = board
+                                            .tasks
+                                            .iter_mut()
+                                            .find(|t| t.id == task_clone.id)
+                                        {
+                                            match result {
+                                                Ok(result) => match result {
+                                                    agent::ExecutionResult::Success { comment } => {
+                                                        task.status = store::TaskStatus::Done;
+                                                        task.comment = Some(comment);
+                                                    }
+                                                    agent::ExecutionResult::Failure { comment } => {
                                                         task.status = store::TaskStatus::ToDo;
-                                                        task.comment = Some(
-                                                            "Failed to execute task.".to_string(),
-                                                        );
+                                                        task.comment = Some(comment);
                                                         task.agent_id = None;
                                                     }
+                                                },
+                                                Err(_) => {
+                                                    task.status = store::TaskStatus::ToDo;
+                                                    task.comment = Some(
+                                                        "Failed to execute task.".to_string(),
+                                                    );
+                                                    task.agent_id = None;
                                                 }
                                             }
-                                            store::save_board(&board).unwrap();
-                                        });
+                                        }
+                                        store::save_board(&board).unwrap();
                                     }
                                 }
                             }
