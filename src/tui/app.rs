@@ -137,21 +137,49 @@ impl App {
             };
 
         if let Some(task_id) = task_id_to_move {
-            if let Some(task) = self
+            let new_status_index;
+            {
+                if let Some(task) = self
+                    .board
+                    .lock()
+                    .unwrap()
+                    .tasks
+                    .iter_mut()
+                    .find(|t| t.id == task_id)
+                {
+                    let current_status_index = task.status.clone() as usize;
+                    let next = (current_status_index as i8 + direction + 3) % 3;
+                    task.status = match next {
+                        0 => TaskStatus::ToDo,
+                        1 => TaskStatus::InProgress,
+                        _ => TaskStatus::Done,
+                    };
+                    new_status_index = next as usize;
+                } else {
+                    return;
+                }
+            }
+
+            // Select the moved task in its new column
+            let destination_status = match new_status_index {
+                0 => TaskStatus::ToDo,
+                1 => TaskStatus::InProgress,
+                _ => TaskStatus::Done,
+            };
+            let tasks_in_destination: Vec<Task> = self
                 .board
                 .lock()
                 .unwrap()
                 .tasks
-                .iter_mut()
-                .find(|t| t.id == task_id)
+                .iter()
+                .filter(|t| t.status == destination_status)
+                .cloned()
+                .collect();
+            if let Some(idx) = tasks_in_destination
+                .iter()
+                .position(|t| t.id == task_id)
             {
-                let current_status_index = task.status.clone() as usize;
-                let next_status_index = (current_status_index as i8 + direction + 3) % 3;
-                task.status = match next_status_index {
-                    0 => TaskStatus::ToDo,
-                    1 => TaskStatus::InProgress,
-                    _ => TaskStatus::Done,
-                };
+                self.selected_task[new_status_index].select(Some(idx));
             }
 
             // Adjust selection if the task moved out of the current column
@@ -160,7 +188,8 @@ impl App {
                 self.selected_task[self.selected_column].select(None);
             } else if let Some(idx) = self.selected_task[self.selected_column].selected() {
                 if idx >= tasks_left.len() {
-                    self.selected_task[self.selected_column].select(Some(tasks_left.len() - 1));
+                    self.selected_task[self.selected_column]
+                        .select(Some(tasks_left.len() - 1));
                 }
             }
         }
