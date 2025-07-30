@@ -67,6 +67,12 @@ Assign the newly created task to your agent:
 taskter task assign --task-id 1 --agent-id 1
 ```
 
+If you need to remove the agent before execution:
+
+```bash
+taskter task unassign --task-id 1
+```
+
 ### 5. Execute the task
 
 Finally, execute the task:
@@ -184,6 +190,7 @@ In the interactive board, you can use the following keys:
 - `↑` / `↓`: Navigate between tasks
 - `h` / `l`: Move a task to the previous/next column
 - `a`: Assign an agent to the selected task
+- `r`: Unassign the selected task's agent
 - `c`: Add a comment to the selected task
 - `n`: Create a new task
 - `u`: Edit the selected task
@@ -274,6 +281,10 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
   ```bash
   taskter task assign --task-id 1 --agent-id 1
   ```
+- **Unassign an agent from a task:**
+  ```bash
+  taskter task unassign --task-id 1
+  ```
 
 - **Execute a task with an agent:**
   ```bash
@@ -347,6 +358,19 @@ The script removes any existing `.taskter` directory, creates a new board with a
 few example tasks, sets a project description, defines OKRs and adds an agent
 using the built-in email tool. Once it finishes you can inspect the board with
 `taskter task list` or launch the TUI via `taskter board`.
+
+### Minimal agent roster
+
+When starting a new autonomous project you can automatically create a baseline
+set of agents:
+
+```bash
+./scripts/setup_agent_roster.sh
+```
+
+The script expects an initialised `.taskter` directory and adds agents for OKR
+management, task planning, recruitment, dispatching, execution, review,
+progress monitoring and archiving. All of them use the `gemini-2.5-pro` model.
 
 
 ## Development

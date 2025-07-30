@@ -96,6 +96,16 @@ pub async fn handle(action: &TaskCommands) -> anyhow::Result<()> {
                 println!("Task with id {task_id} not found.");
             }
         }
+        TaskCommands::Unassign { task_id } => {
+            let mut board = store::load_board()?;
+            if let Some(task) = board.tasks.iter_mut().find(|t| t.id == *task_id) {
+                task.agent_id = None;
+                store::save_board(&board)?;
+                println!("Agent unassigned from task {task_id}.");
+            } else {
+                println!("Task with id {task_id} not found.");
+            }
+        }
     }
     Ok(())
 }
