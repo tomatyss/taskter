@@ -7,6 +7,7 @@ use crate::agent::FunctionDeclaration;
 
 pub mod email;
 pub mod get_description;
+pub mod project_files;
 pub mod run_bash;
 pub mod run_python;
 pub mod taskter_agent;
@@ -28,6 +29,7 @@ pub static BUILTIN_TOOLS: Lazy<HashMap<&'static str, Tool>> = Lazy::new(|| {
     get_description::register(&mut m);
     run_bash::register(&mut m);
     run_python::register(&mut m);
+    project_files::register(&mut m);
     web_search::register(&mut m);
     taskter_task::register(&mut m);
     taskter_agent::register(&mut m);

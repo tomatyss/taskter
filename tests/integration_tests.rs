@@ -77,7 +77,7 @@ fn comment_roundtrip_persists_changes() {
     });
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "current_thread")]
 async fn agent_executes_email_task_successfully() {
     // Given
     let agent = Agent {
@@ -111,7 +111,7 @@ async fn agent_executes_email_task_successfully() {
     assert!(matches!(result, ExecutionResult::Success { .. }));
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "current_thread")]
 async fn agent_execution_fails_without_tool() {
     // Given
     let agent = Agent {
@@ -141,7 +141,7 @@ async fn agent_execution_fails_without_tool() {
     assert!(matches!(result, ExecutionResult::Failure { .. }));
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "current_thread")]
 async fn agent_execution_fails_on_network_error_without_tool() {
     std::env::set_var("GEMINI_API_KEY", "dummy");
     std::env::set_var("https_proxy", "http://127.0.0.1:9");

@@ -2181,6 +2181,7 @@ dependencies = [
  "tempfile",
  "tokio",
  "tokio-cron-scheduler",
+ "walkdir",
 ]
 
 [[package]]
