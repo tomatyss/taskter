@@ -132,6 +132,56 @@ fn add_agent_and_execute_task() {
         assert_eq!(board["tasks"][0]["status"], "Done");
     });
 }
+
+#[test]
+fn unassign_removes_agent() {
+    with_temp_dir(|| {
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .arg("init")
+            .assert()
+            .success();
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args(["task", "add", "--title", "Test task"])
+            .assert()
+            .success();
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args([
+                "agent",
+                "add",
+                "--prompt",
+                "helper",
+                "--tools",
+                "email",
+                "--model",
+                "gemini-2.5-flash",
+            ])
+            .assert()
+            .success();
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args(["task", "assign", "--task-id", "1", "--agent-id", "1"])
+            .assert()
+            .success();
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args(["task", "unassign", "--task-id", "1"])
+            .assert()
+            .success()
+            .stdout(predicate::str::contains("unassigned"));
+
+        let board: Value =
+            serde_json::from_str(&fs::read_to_string(taskter::config::BOARD_FILE).unwrap())
+                .unwrap();
+        assert!(board["tasks"][0]["agent_id"].is_null());
+    });
+}
 #[test]
 fn list_and_delete_agents() {
     with_temp_dir(|| {

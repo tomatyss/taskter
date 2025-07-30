@@ -37,6 +37,14 @@ Once you have created an agent, you can assign it to a task using the `assign` s
 taskter task assign --task-id 1 --agent-id 1
 ```
 
+### Unassigning an Agent
+
+Remove an agent from a task without executing it:
+
+```bash
+taskter task unassign --task-id 1
+```
+
 ## Executing a Task
 
 To execute a task with an assigned agent, use the `execute` subcommand:

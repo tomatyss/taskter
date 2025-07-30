@@ -135,6 +135,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                 app.popup_scroll = 0;
                             }
                         }
+                        KeyCode::Char('r') => {
+                            app.unassign_selected_task();
+                            store::save_board(&app.board.lock().unwrap()).unwrap();
+                        }
                         KeyCode::Char('d') => {
                             if let Some(task_id) = app.get_selected_task().map(|t| t.id) {
                                 app.board.lock().unwrap().tasks.retain(|t| t.id != task_id);
