@@ -108,7 +108,7 @@ fn render_task_description(f: &mut Frame, app: &mut App) {
 fn render_assign_agent(f: &mut Frame, app: &mut App) {
     if app.agents.is_empty() {
         let block = Block::default().title("Assign Agent").borders(Borders::ALL);
-        let text = Paragraph::new("No agents available. Create one with `taskter add-agent`")
+        let text = Paragraph::new("No agents available. Create one with `taskter agent add`")
             .block(block)
             .wrap(Wrap { trim: true });
         let area = centered_rect(60, 25, f.area());
