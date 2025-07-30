@@ -310,7 +310,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         }
                         KeyCode::Enter => {
                             if app.editing_description {
-                                let new_id = app.board.lock().unwrap().tasks.len() + 1;
+                                let new_id = app.board.lock().unwrap().next_task_id();
                                 let task = Task {
                                     id: new_id,
                                     title: app.new_task_title.clone(),
