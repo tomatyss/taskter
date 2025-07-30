@@ -36,3 +36,5 @@ taskter scheduler run
 ```
 
 The scheduler will execute agents at the configured times and update tasks just as if `task execute` was run manually.
+When multiple tasks are assigned to the same agent, the scheduler now runs them
+concurrently so long-running jobs don't block each other.

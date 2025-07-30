@@ -1,6 +1,7 @@
 use crate::{agent, store};
 use agent::ExecutionResult;
 use chrono_tz::America::New_York;
+use futures::future::join_all;
 use std::time::Duration;
 use store::TaskStatus;
 use tokio_cron_scheduler::{Job, JobScheduler};
@@ -27,19 +28,40 @@ pub async fn run() -> anyhow::Result<()> {
                         if tasks.is_empty() {
                             let _ = agent::execute_task(&a, None).await;
                         } else {
-                            for task_id in tasks {
-                                let task =
-                                    board.tasks.iter_mut().find(|t| t.id == task_id).unwrap();
-                                if let Ok(res) = agent::execute_task(&a, Some(task)).await {
-                                    match res {
-                                        ExecutionResult::Success { comment } => {
-                                            task.status = TaskStatus::Done;
-                                            task.comment = Some(comment);
-                                        }
-                                        ExecutionResult::Failure { comment } => {
-                                            task.status = TaskStatus::ToDo;
-                                            task.comment = Some(comment);
-                                            task.agent_id = None;
+                            let task_data: Vec<(usize, store::Task)> = tasks
+                                .iter()
+                                .filter_map(|id| {
+                                    board
+                                        .tasks
+                                        .iter()
+                                        .find(|t| t.id == *id)
+                                        .cloned()
+                                        .map(|task| (*id, task))
+                                })
+                                .collect();
+
+                            let handles = task_data.into_iter().map(|(id, task)| {
+                                let agent_clone = a.clone();
+                                tokio::spawn(async move { (id, agent::execute_task(&agent_clone, Some(&task)).await) })
+                            });
+
+                            let results = join_all(handles).await;
+
+                            for res in results {
+                                if let Ok((task_id, Ok(exec))) = res {
+                                    if let Some(task_mut) =
+                                        board.tasks.iter_mut().find(|t| t.id == task_id)
+                                    {
+                                        match exec {
+                                            ExecutionResult::Success { comment } => {
+                                                task_mut.status = TaskStatus::Done;
+                                                task_mut.comment = Some(comment);
+                                            }
+                                            ExecutionResult::Failure { comment } => {
+                                                task_mut.status = TaskStatus::ToDo;
+                                                task_mut.comment = Some(comment);
+                                                task_mut.agent_id = None;
+                                            }
                                         }
                                     }
                                 }
