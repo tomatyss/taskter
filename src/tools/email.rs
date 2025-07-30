@@ -25,6 +25,10 @@ pub fn declaration() -> FunctionDeclaration {
 }
 
 /// Sends an email using `.taskter/email_config.json` for credentials.
+///
+/// # Errors
+///
+/// Returns an error if reading the configuration or sending the email fails.
 pub fn execute(args: &Value) -> Result<String> {
     let to = args["to"].as_str().unwrap_or_default();
     let subject = args["subject"].as_str().unwrap_or_default();
@@ -37,6 +41,12 @@ pub fn execute(args: &Value) -> Result<String> {
     }
 }
 
+/// Low level helper that sends an email using the configured SMTP server.
+///
+/// # Errors
+///
+/// Returns an error if the configuration file is missing or invalid, or if the
+/// email fails to send.
 fn send_email(to: &str, subject: &str, body: &str) -> Result<()> {
     let config_path = config::email_config_path();
     let config_str = match fs::read_to_string(config_path) {

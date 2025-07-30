@@ -14,6 +14,12 @@ use std::path::Path;
 use std::sync::{mpsc::channel, Arc};
 use std::time::Duration;
 
+/// Runs the interactive terminal user interface.
+///
+/// # Errors
+///
+/// Returns an error if the terminal cannot be initialized or if an underlying
+/// I/O operation fails.
 pub fn run_tui() -> anyhow::Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
