@@ -272,6 +272,9 @@ You can make <code>taskter</code> available system-wide by copying it to a direc
 <p>Assign the newly created task to your agent:</p>
 <pre><code class="language-bash">taskter task assign --task-id 1 --agent-id 1
 </code></pre>
+<p>To remove the agent later:</p>
+<pre><code class="language-bash">taskter task unassign --task-id 1
+</code></pre>
 <h3 id="5-execute-the-task"><a class="header" href="#5-execute-the-task">5. Execute the task</a></h3>
 <p>Finally, execute the task:</p>
 <pre><code class="language-bash">taskter task execute --task-id 1
@@ -294,6 +297,7 @@ You can make <code>taskter</code> available system-wide by copying it to a direc
 <tr><td><code>u</code></td><td>Edit the selected task</td></tr>
 <tr><td><code>d</code></td><td>Delete the selected task</td></tr>
 <tr><td><code>a</code></td><td>Assign an agent to the selected task</td></tr>
+<tr><td><code>r</code></td><td>Unassign the selected task's agent</td></tr>
 <tr><td><code>c</code></td><td>Add a comment to the selected task</td></tr>
 <tr><td><code>L</code></td><td>View project logs</td></tr>
 <tr><td><code>A</code></td><td>List available agents</td></tr>
@@ -327,6 +331,10 @@ You can make <code>taskter</code> available system-wide by copying it to a direc
 <h2 id="assigning-an-agent-to-a-task"><a class="header" href="#assigning-an-agent-to-a-task">Assigning an Agent to a Task</a></h2>
 <p>Once you have created an agent, you can assign it to a task using the <code>assign</code> subcommand:</p>
 <pre><code class="language-bash">taskter task assign --task-id 1 --agent-id 1
+</code></pre>
+<h3 id="unassigning-an-agent"><a class="header" href="#unassigning-an-agent">Unassigning an Agent</a></h3>
+<p>Remove an agent from a task without executing it:</p>
+<pre><code class="language-bash">taskter task unassign --task-id 1
 </code></pre>
 <h2 id="executing-a-task"><a class="header" href="#executing-a-task">Executing a Task</a></h2>
 <p>To execute a task with an assigned agent, use the <code>execute</code> subcommand:</p>
