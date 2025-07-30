@@ -58,6 +58,12 @@ Assign the newly created task to your agent:
 taskter task assign --task-id 1 --agent-id 1
 ```
 
+To remove the agent later:
+
+```bash
+taskter task unassign --task-id 1
+```
+
 ### 5. Execute the task
 
 Finally, execute the task:

@@ -68,6 +68,12 @@ Assign the newly created task to your agent:
 taskter task assign --task-id 1 --agent-id 1
 ```
 
+If you need to remove the agent before execution:
+
+```bash
+taskter task unassign --task-id 1
+```
+
 ### 5. Execute the task
 
 Finally, execute the task:
@@ -185,6 +191,7 @@ In the interactive board, you can use the following keys:
 - `↑` / `↓`: Navigate between tasks
 - `h` / `l`: Move a task to the previous/next column
 - `a`: Assign an agent to the selected task
+- `r`: Unassign the selected task's agent
 - `c`: Add a comment to the selected task
 - `n`: Create a new task
 - `u`: Edit the selected task
@@ -274,6 +281,10 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
 - **Assign an agent to a task:**
   ```bash
   taskter task assign --task-id 1 --agent-id 1
+  ```
+- **Unassign an agent from a task:**
+  ```bash
+  taskter task unassign --task-id 1
   ```
 
 - **Execute a task with an agent:**

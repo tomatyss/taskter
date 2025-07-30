@@ -174,4 +174,19 @@ impl App {
                 tasks_in_column.get(selected_index).cloned()
             })
     }
+
+    pub fn unassign_selected_task(&mut self) {
+        if let Some(task_id) = self.get_selected_task().map(|t| t.id) {
+            if let Some(task) = self
+                .board
+                .lock()
+                .unwrap()
+                .tasks
+                .iter_mut()
+                .find(|t| t.id == task_id)
+            {
+                task.agent_id = None;
+            }
+        }
+    }
 }
