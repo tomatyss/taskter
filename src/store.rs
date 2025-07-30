@@ -28,6 +28,13 @@ pub struct Board {
     pub tasks: Vec<Task>,
 }
 
+impl Board {
+    /// Calculates the next available task id.
+    pub fn next_task_id(&self) -> usize {
+        self.tasks.iter().map(|t| t.id).max().unwrap_or(0) + 1
+    }
+}
+
 /// A measurable key result belonging to an [`Okr`].
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct KeyResult {
