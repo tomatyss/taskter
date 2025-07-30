@@ -148,7 +148,10 @@ pub fn run_tui() -> anyhow::Result<()> {
     let board = store::load_board().unwrap_or_default();
     let agents = agent::load_agents().unwrap_or_default();
     let app = App::new(board, agents);
-    let res = run_app(&mut terminal, app);
+    // Drive the async event loop with a dedicated runtime so we can await
+    // `agent::execute_task` without spawning a new runtime for every call.
+    let runtime = tokio::runtime::Runtime::new()?;
+    let res = runtime.block_on(run_app(&mut terminal, app));
 
     disable_raw_mode()?;
     execute!(
@@ -165,7 +168,7 @@ pub fn run_tui() -> anyhow::Result<()> {
     Ok(())
 }
 
-fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
+async fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
     loop {
         terminal.draw(|f| ui(f, &mut app))?;
 
@@ -253,29 +256,9 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                         app.board.tasks.iter_mut().find(|t| t.id == task_id)
                                     {
                                         task.agent_id = Some(agent.id);
-                                        // `execute_task` is asynchronous. We are inside the synchronous
-                                        // `run_app` loop which itself is executed from an async Tokio
-                                        // runtime (the `#[tokio::main]` in `main.rs`).  We therefore
-                                        // leverage the currently-running runtime handle to synchronously
-                                        // wait on the future. Using `Handle::current().block_on(...)` keeps
-                                        // the API here synchronous without spinning up a brand-new runtime
-                                        // each time.
-                                      
-                                        // Calling `Handle::current().block_on(...)` inside an already
-                                        // running Tokio runtime panics ("Cannot start a runtime from
-                                        // within a runtime").  To remain in the synchronous context of
-                                        // the TUI while still awaiting the async `execute_task` call we
-                                        // off-load the blocking operation to Tokio's *blocking* thread
-                                        // pool via `block_in_place`.  Once on the dedicated blocking
-                                        // thread we spin up a lightweight *current-thread* runtime just
-                                        // for the duration of the task execution.
-                                        match tokio::task::block_in_place(|| {
-                                            tokio::runtime::Builder::new_current_thread()
-                                                .enable_all()
-                                                .build()
-                                                .unwrap()
-                                                .block_on(agent::execute_task(&agent, task))
-                                        }) {
+                                        // Execute the task asynchronously using the runtime driving the
+                                        // TUI event loop.
+                                        match agent::execute_task(&agent, task).await {
                                             Ok(result) => match result {
                                                 agent::ExecutionResult::Success { comment } => {
                                                     task.status = store::TaskStatus::Done;
