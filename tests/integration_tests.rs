@@ -79,6 +79,7 @@ fn comment_roundtrip_persists_changes() {
 
 #[tokio::test]
 async fn agent_executes_email_task_successfully() {
+    std::env::remove_var("GEMINI_API_KEY");
     // Given
     let agent = Agent {
         id: 1,
