@@ -1,6 +1,6 @@
 use crate::store::Task;
 use crate::tools;
-use anyhow::Result;
+use anyhow::{Context, Result};
 use chrono::Local;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -18,7 +18,12 @@ pub enum ExecutionResult {
     Failure { comment: String },
 }
 
-fn append_log(message: &str) -> anyhow::Result<()> {
+/// Appends a single line to `.taskter/logs.log`.
+///
+/// # Errors
+///
+/// Returns an error if the log file cannot be created or written to.
+fn append_log(message: &str) -> Result<()> {
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
@@ -28,9 +33,107 @@ fn append_log(message: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
+/// Creates the request body for the Gemini API.
+///
+/// # Errors
+///
+/// This function does not return errors.
+fn build_request(agent: &Agent, history: &[Value]) -> Value {
+    json!({
+        "contents": history,
+        "tools": [{"functionDeclarations": agent.tools}]
+    })
+}
+
+/// Interprets the JSON returned by the Gemini API.
+///
+/// Returns either a function call to execute or the final text response.
+///
+/// # Errors
+///
+/// Fails if the expected fields are missing or have the wrong type.
+fn parse_response(value: &Value) -> Result<ModelOutput> {
+    let candidate = value
+        .get("candidates")
+        .and_then(|c| c.get(0))
+        .context("missing candidates[0]")?;
+    let part = candidate
+        .get("content")
+        .and_then(|c| c.get("parts"))
+        .and_then(|p| p.get(0))
+        .context("missing content.parts[0]")?;
+
+    if let Some(call) = part.get("functionCall") {
+        let name = call
+            .get("name")
+            .and_then(|n| n.as_str())
+            .context("missing functionCall.name")?;
+        let args = call.get("args").context("missing functionCall.args")?;
+        return Ok(ModelOutput::FunctionCall {
+            name: name.to_string(),
+            args: args.clone(),
+        });
+    }
+
+    if let Some(text) = part.get("text") {
+        let text = text.as_str().context("text is not a string")?.to_string();
+        return Ok(ModelOutput::Text(text));
+    }
+
+    Err(anyhow::anyhow!(
+        "No tool call or text response from the model"
+    ))
+}
+
+/// Generates an execution result without calling the remote API.
+///
+/// The `reason` message is written to the log before returning the result.
+/// If `has_tool` is `true` the agent succeeds with `success_comment`.
+/// Otherwise the function logs a failure and returns `ExecutionResult::Failure`.
+///
+/// Logging failures are printed to stderr and do not cause the function to
+/// return an error.
+fn offline_fallback(
+    agent_id: usize,
+    has_tool: bool,
+    reason: &str,
+    success_comment: &str,
+) -> Result<ExecutionResult> {
+    if let Err(e) = append_log(reason) {
+        eprintln!("Failed to write log: {e}");
+    }
+    if has_tool {
+        if let Err(e) = append_log(&format!(
+            "Agent {} finished successfully: {}",
+            agent_id, success_comment
+        )) {
+            eprintln!("Failed to write log: {e}");
+        }
+        Ok(ExecutionResult::Success {
+            comment: success_comment.to_string(),
+        })
+    } else {
+        let msg = "Required tool not available.".to_string();
+        if let Err(e) = append_log(&format!("Agent {} failed: {}", agent_id, msg)) {
+            eprintln!("Failed to write log: {e}");
+        }
+        Ok(ExecutionResult::Failure { comment: msg })
+    }
+}
+
+enum ModelOutput {
+    FunctionCall { name: String, args: Value },
+    Text(String),
+}
+
 /// Executes a task with the given agent and records progress in `.taskter/logs.log`.
 ///
 /// Tools referenced by the agent may be invoked during execution.
+///
+/// # Errors
+///
+/// Returns an error if logging fails, a tool call fails, or the API response
+/// cannot be parsed.
 pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<ExecutionResult> {
     let client = Client::new();
     let log_message = if let Some(task) = task {
@@ -66,31 +169,20 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
     // behaviour expected by the integration tests: succeed when a recognised tool is
     // available, otherwise fail.
     if api_key.is_none() {
-        if has_send_email_tool {
-            if let Err(e) = append_log("Executing without API key - success via built-in tool") {
-                eprintln!("Failed to write log: {e}");
-            }
-            let msg = "No API key found. Task considered complete.".to_string();
-            if let Err(e) = append_log(&format!(
-                "Agent {} finished successfully: {}",
-                agent.id, msg
-            )) {
-                eprintln!("Failed to write log: {e}");
-            }
-            return Ok(ExecutionResult::Success { comment: msg });
+        let reason = if has_send_email_tool {
+            "Executing without API key - success via built-in tool"
         } else {
-            if let Err(e) = append_log("Executing without API key - required tool missing") {
-                eprintln!("Failed to write log: {e}");
-            }
-            let msg = "Required tool not available.".to_string();
-            if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
-                eprintln!("Failed to write log: {e}");
-            }
-            return Ok(ExecutionResult::Failure { comment: msg });
-        }
+            "Executing without API key - required tool missing"
+        };
+        return offline_fallback(
+            agent.id,
+            has_send_email_tool,
+            reason,
+            "No API key found. Task considered complete.",
+        );
     }
 
-    let api_key = api_key.unwrap();
+    let api_key = api_key.context("API key missing")?;
 
     let user_prompt = if let Some(task) = task {
         if let Some(description) = &task.description {
@@ -111,10 +203,7 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
     })];
 
     loop {
-        let request_body = json!({
-            "contents": history,
-            "tools": [{"functionDeclarations": agent.tools}]
-        });
+        let request_body = build_request(agent, &history);
 
         // Try to contact the remote API.  In offline scenarios this can fail (e.g.
         // DNS resolution error).  Instead of propagating the error we gracefully
@@ -133,123 +222,67 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
         {
             Ok(resp) => resp,
             Err(_) => {
-                if let Err(e) = append_log("API request failed; falling back to local simulation") {
-                    eprintln!("Failed to write log: {e}");
-                }
-                return Ok(if has_send_email_tool {
-                    let msg = "Tool available. Task considered complete.".to_string();
-                    if let Err(e) = append_log(&format!(
-                        "Agent {} finished successfully: {}",
-                        agent.id, msg
-                    )) {
-                        eprintln!("Failed to write log: {e}");
-                    }
-                    ExecutionResult::Success { comment: msg }
-                } else {
-                    let msg = "Required tool not available.".to_string();
-                    if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
-                        eprintln!("Failed to write log: {e}");
-                    }
-                    ExecutionResult::Failure { comment: msg }
-                });
+                return offline_fallback(
+                    agent.id,
+                    has_send_email_tool,
+                    "API request failed; falling back to local simulation",
+                    "Tool available. Task considered complete.",
+                );
             }
         };
 
         if !response.status().is_success() {
-            // When the API rejects the request (for example due to an invalid key)
-            // we once again fall back to the local simulation.  This keeps normal
-            // development and CI runs independent from external services.
-            if let Err(e) =
-                append_log("API returned error status; falling back to local simulation")
-            {
-                eprintln!("Failed to write log: {e}");
-            }
-            return Ok(if has_send_email_tool {
-                let msg = "Tool available. Task considered complete.".to_string();
-                if let Err(e) = append_log(&format!(
-                    "Agent {} finished successfully: {}",
-                    agent.id, msg
-                )) {
-                    eprintln!("Failed to write log: {e}");
-                }
-                ExecutionResult::Success { comment: msg }
-            } else {
-                let msg = "Required tool not available.".to_string();
-                if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
-                    eprintln!("Failed to write log: {e}");
-                }
-                ExecutionResult::Failure { comment: msg }
-            });
+            return offline_fallback(
+                agent.id,
+                has_send_email_tool,
+                "API returned error status; falling back to local simulation",
+                "Tool available. Task considered complete.",
+            );
         }
 
         let response_json: Value = match response.json().await {
             Ok(json) => json,
             Err(_) => {
-                if let Err(e) =
-                    append_log("Failed to parse API response; falling back to local simulation")
-                {
-                    eprintln!("Failed to write log: {e}");
-                }
-                return Ok(if has_send_email_tool {
-                    let msg = "Tool available. Task considered complete.".to_string();
-                    if let Err(e) = append_log(&format!(
-                        "Agent {} finished successfully: {}",
-                        agent.id, msg
-                    )) {
-                        eprintln!("Failed to write log: {e}");
-                    }
-                    ExecutionResult::Success { comment: msg }
-                } else {
-                    let msg = "Required tool not available.".to_string();
-                    if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
-                        eprintln!("Failed to write log: {e}");
-                    }
-                    ExecutionResult::Failure { comment: msg }
-                });
+                return offline_fallback(
+                    agent.id,
+                    has_send_email_tool,
+                    "Failed to parse API response; falling back to local simulation",
+                    "Tool available. Task considered complete.",
+                );
             }
         };
 
-        let candidate = &response_json["candidates"][0];
-        let part = &candidate["content"]["parts"][0];
+        match parse_response(&response_json)? {
+            ModelOutput::FunctionCall { name, args } => {
+                if let Err(e) = append_log(&format!(
+                    "Agent {} calling tool {} with args {}",
+                    agent.id, name, args
+                )) {
+                    eprintln!("Failed to write log: {e}");
+                }
+                let tool_response = tools::execute_tool(&name, &args)?;
+                if let Err(e) = append_log(&format!("Tool {name} responded with {tool_response}")) {
+                    eprintln!("Failed to write log: {e}");
+                }
 
-        if let Some(function_call) = part.get("functionCall") {
-            let tool_name = function_call["name"].as_str().unwrap();
-            let args = &function_call["args"];
-            if let Err(e) = append_log(&format!(
-                "Agent {} calling tool {} with args {}",
-                agent.id, tool_name, args
-            )) {
-                eprintln!("Failed to write log: {e}");
+                history.push(json!({
+                    "role": "model",
+                    "parts": [{"functionCall": {"name": name, "args": args}}]
+                }));
+                history.push(json!({
+                    "role": "tool",
+                    "parts": [{"functionResponse": {"name": name, "response": {"content": tool_response}}}]
+                }));
             }
-            let tool_response = tools::execute_tool(tool_name, args)?;
-            if let Err(e) = append_log(&format!("Tool {tool_name} responded with {tool_response}"))
-            {
-                eprintln!("Failed to write log: {e}");
+            ModelOutput::Text(comment) => {
+                if let Err(e) = append_log(&format!(
+                    "Agent {} finished successfully: {}",
+                    agent.id, comment
+                )) {
+                    eprintln!("Failed to write log: {e}");
+                }
+                return Ok(ExecutionResult::Success { comment });
             }
-
-            history.push(json!({
-                "role": "model",
-                "parts": [{"functionCall": function_call.clone()}]
-            }));
-            history.push(json!({
-                "role": "tool",
-                "parts": [{"functionResponse": {"name": tool_name, "response": {"content": tool_response}}}]
-            }));
-        } else if let Some(text) = part.get("text") {
-            let comment = text.as_str().unwrap().to_string();
-            if let Err(e) = append_log(&format!(
-                "Agent {} finished successfully: {}",
-                agent.id, comment
-            )) {
-                eprintln!("Failed to write log: {e}");
-            }
-            return Ok(ExecutionResult::Success { comment });
-        } else {
-            let msg = "No tool call or text response from the model".to_string();
-            if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
-                eprintln!("Failed to write log: {e}");
-            }
-            return Ok(ExecutionResult::Failure { comment: msg });
         }
     }
 }
@@ -286,7 +319,8 @@ pub struct Agent {
 pub fn load_agents() -> anyhow::Result<Vec<Agent>> {
     let path = config::agents_path();
     if !path.exists() {
-        fs::create_dir_all(path.parent().unwrap())?;
+        let parent = path.parent().context("agents path has no parent")?;
+        fs::create_dir_all(parent)?;
         fs::write(path, "[]")?;
     }
 
