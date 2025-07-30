@@ -321,15 +321,21 @@ pub fn delete_agent(id: usize) -> anyhow::Result<()> {
 /// Updates an existing agent in `.taskter/agents.json`.
 pub fn update_agent(
     id: usize,
-    prompt: String,
-    tools: Vec<FunctionDeclaration>,
-    model: String,
+    prompt: Option<String>,
+    tools: Option<Vec<FunctionDeclaration>>,
+    model: Option<String>,
 ) -> anyhow::Result<()> {
     let mut agents = load_agents()?;
     if let Some(agent) = agents.iter_mut().find(|a| a.id == id) {
-        agent.system_prompt = prompt;
-        agent.tools = tools;
-        agent.model = model;
+        if let Some(p) = prompt {
+            agent.system_prompt = p;
+        }
+        if let Some(t) = tools {
+            agent.tools = t;
+        }
+        if let Some(m) = model {
+            agent.model = m;
+        }
         save_agents(&agents)?;
     }
     Ok(())

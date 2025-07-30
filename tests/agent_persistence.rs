@@ -85,3 +85,23 @@ fn delete_agent_removes_entry() {
         assert_eq!(remaining[0].id, a2.id);
     });
 }
+
+#[test]
+fn update_agent_partial_update() {
+    with_temp_dir(|| {
+        let agent = Agent {
+            id: 1,
+            system_prompt: "p".into(),
+            tools: vec![],
+            model: "m1".into(),
+            schedule: None,
+            repeat: false,
+        };
+        agent::save_agents(&[agent.clone()]).unwrap();
+        // update only model
+        agent::update_agent(1, None, None, Some("m2".into())).unwrap();
+        let updated = agent::load_agents().unwrap();
+        assert_eq!(updated[0].model, "m2");
+        assert_eq!(updated[0].system_prompt, "p");
+    });
+}

@@ -22,6 +22,16 @@ pub fn parse_tool_specs(specs: &[String]) -> anyhow::Result<Vec<FunctionDeclarat
     Ok(function_declarations)
 }
 
+pub fn parse_optional_tool_specs(
+    specs: &Option<Vec<String>>,
+) -> anyhow::Result<Option<Vec<FunctionDeclaration>>> {
+    if let Some(list) = specs {
+        Ok(Some(parse_tool_specs(list)?))
+    } else {
+        Ok(None)
+    }
+}
+
 pub async fn handle(action: &AgentCommands) -> anyhow::Result<()> {
     match action {
         AgentCommands::Add {
@@ -68,7 +78,7 @@ pub async fn handle(action: &AgentCommands) -> anyhow::Result<()> {
             tools,
             model,
         } => {
-            let function_declarations = parse_tool_specs(tools)?;
+            let function_declarations = parse_optional_tool_specs(tools)?;
             agent_model::update_agent(*id, prompt.clone(), function_declarations, model.clone())?;
             println!("Agent {id} updated.");
         }
