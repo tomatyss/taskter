@@ -15,6 +15,7 @@ fn taskter_bin() -> std::path::PathBuf {
         .unwrap_or_else(|_| "taskter".into())
 }
 
+#[must_use]
 pub fn declaration() -> FunctionDeclaration {
     serde_json::from_str(DECL_JSON).expect("invalid taskter_tools.json")
 }

@@ -12,6 +12,7 @@ use std::io::Write;
 use crate::config;
 
 /// Result of running an [`Agent`] on a [`Task`].
+#[must_use]
 #[derive(Debug, PartialEq)]
 pub enum ExecutionResult {
     Success { comment: String },
@@ -31,6 +32,7 @@ fn append_log(message: &str) -> anyhow::Result<()> {
 /// Executes a task with the given agent and records progress in `.taskter/logs.log`.
 ///
 /// Tools referenced by the agent may be invoked during execution.
+#[must_use = "Handle execution result to update task status"]
 pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<ExecutionResult> {
     let client = Client::new();
     let log_message = if let Some(task) = task {

@@ -10,6 +10,7 @@ use std::collections::HashMap;
 const DECL_JSON: &str = include_str!("../../tools/get_description.json");
 
 /// Returns the function declaration for this tool.
+#[must_use]
 pub fn declaration() -> FunctionDeclaration {
     serde_json::from_str(DECL_JSON).expect("invalid get_description.json")
 }

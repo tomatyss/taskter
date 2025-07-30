@@ -39,6 +39,7 @@ pub static BUILTIN_TOOLS: Lazy<HashMap<&'static str, Tool>> = Lazy::new(|| {
 });
 
 /// Returns the names of all built-in tools.
+#[must_use]
 pub fn builtin_names() -> Vec<&'static str> {
     let mut names: Vec<&'static str> = BUILTIN_TOOLS.keys().copied().collect();
     names.sort();
@@ -46,6 +47,7 @@ pub fn builtin_names() -> Vec<&'static str> {
 }
 
 /// Retrieves the declaration for a built-in tool by name.
+#[must_use]
 pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
     BUILTIN_TOOLS.get(name).map(|t| t.declaration.clone())
 }

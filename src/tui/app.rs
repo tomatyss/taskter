@@ -103,6 +103,7 @@ impl App {
         self.selected_task[self.selected_column].select(Some(i));
     }
 
+    #[must_use]
     pub fn tasks_in_current_column(&self) -> Vec<Task> {
         let status = match self.selected_column {
             0 => TaskStatus::ToDo,
@@ -166,6 +167,7 @@ impl App {
         }
     }
 
+    #[must_use]
     pub fn get_selected_task(&self) -> Option<Task> {
         self.selected_task[self.selected_column]
             .selected()

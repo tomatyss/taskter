@@ -7,6 +7,7 @@ use crate::tools::Tool;
 
 const DECL_JSON: &str = include_str!("../../tools/web_search.json");
 
+#[must_use]
 pub fn declaration() -> FunctionDeclaration {
     serde_json::from_str(DECL_JSON).expect("invalid web_search.json")
 }
