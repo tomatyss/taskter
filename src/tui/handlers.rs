@@ -14,6 +14,12 @@ use std::path::Path;
 use std::sync::{mpsc::channel, Arc};
 use std::time::Duration;
 
+/// Runs the interactive terminal user interface.
+///
+/// # Errors
+///
+/// Returns an error if the terminal cannot be initialized or if an underlying
+/// I/O operation fails.
 pub fn run_tui() -> anyhow::Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
@@ -310,7 +316,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         }
                         KeyCode::Enter => {
                             if app.editing_description {
-                                let new_id = app.board.lock().unwrap().tasks.len() + 1;
+                                let new_id = app.board.lock().unwrap().next_task_id();
                                 let task = Task {
                                     id: new_id,
                                     title: app.new_task_title.clone(),

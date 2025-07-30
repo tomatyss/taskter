@@ -271,7 +271,7 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
   the name of a built-in tool. Built-ins live under the `tools/` directory of
   the repository. For example `email` resolves to `tools/send_email.json`.
   Other built-ins include `taskter_task`, `taskter_agent`, `taskter_okrs`,
-  `taskter_tools`, `get_description`, `run_bash`, `run_python`,
+  `taskter_tools`, `get_description`, `run_bash`, `run_python`, `file_ops`,
   `send_email`, and `web_search`.
   The `taskter_*` tools wrap the corresponding CLI subcommands. Example:
   ```json
@@ -359,6 +359,19 @@ The script removes any existing `.taskter` directory, creates a new board with a
 few example tasks, sets a project description, defines OKRs and adds an agent
 using the built-in email tool. Once it finishes you can inspect the board with
 `taskter task list` or launch the TUI via `taskter board`.
+
+### Minimal agent roster
+
+When starting a new autonomous project you can automatically create a baseline
+set of agents:
+
+```bash
+./scripts/setup_agent_roster.sh
+```
+
+The script expects an initialised `.taskter` directory and adds agents for OKR
+management, task planning, recruitment, dispatching, execution, review,
+progress monitoring and archiving. All of them use the `gemini-2.5-pro` model.
 
 
 ## Development

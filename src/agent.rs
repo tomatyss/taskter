@@ -31,6 +31,10 @@ fn append_log(message: &str) -> anyhow::Result<()> {
 /// Executes a task with the given agent and records progress in `.taskter/logs.log`.
 ///
 /// Tools referenced by the agent may be invoked during execution.
+///
+/// # Errors
+///
+/// Returns an error if writing to the log fails or if a tool execution fails.
 pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<ExecutionResult> {
     let client = Client::new();
     let log_message = if let Some(task) = task {
@@ -283,6 +287,10 @@ pub struct Agent {
 /// Loads the list of agents from `.taskter/agents.json`.
 ///
 /// The file is created if it does not exist.
+///
+/// # Errors
+///
+/// Returns an error if the file cannot be read, created or if the JSON is invalid.
 pub fn load_agents() -> anyhow::Result<Vec<Agent>> {
     let path = config::agents_path();
     if !path.exists() {
@@ -296,6 +304,11 @@ pub fn load_agents() -> anyhow::Result<Vec<Agent>> {
 }
 
 /// Writes the provided agents to `.taskter/agents.json`.
+///
+/// # Errors
+///
+/// Returns an error if the agents cannot be serialized or if the file cannot be
+/// written.
 pub fn save_agents(agents: &[Agent]) -> anyhow::Result<()> {
     let path = config::agents_path();
     let content = serde_json::to_string_pretty(agents)?;
@@ -304,11 +317,19 @@ pub fn save_agents(agents: &[Agent]) -> anyhow::Result<()> {
 }
 
 /// Convenience wrapper around [`load_agents`].
+///
+/// # Errors
+///
+/// Propagates any error from [`load_agents`].
 pub fn list_agents() -> anyhow::Result<Vec<Agent>> {
     load_agents()
 }
 
 /// Removes an agent from `.taskter/agents.json` by ID.
+///
+/// # Errors
+///
+/// Returns an error if the agent list cannot be loaded or saved.
 pub fn delete_agent(id: usize) -> anyhow::Result<()> {
     let mut agents = load_agents()?;
     if let Some(pos) = agents.iter().position(|a| a.id == id) {
@@ -319,6 +340,10 @@ pub fn delete_agent(id: usize) -> anyhow::Result<()> {
 }
 
 /// Updates an existing agent in `.taskter/agents.json`.
+///
+/// # Errors
+///
+/// Returns an error if the agent list cannot be loaded or saved.
 pub fn update_agent(
     id: usize,
     prompt: String,

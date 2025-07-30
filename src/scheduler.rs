@@ -6,6 +6,12 @@ use std::time::Duration;
 use store::TaskStatus;
 use tokio_cron_scheduler::{Job, JobScheduler};
 
+/// Starts the background scheduler and runs due agents.
+///
+/// # Errors
+///
+/// Returns an error if the scheduler cannot be created, a job cannot be added,
+/// or if the scheduler fails to start.
 pub async fn run() -> anyhow::Result<()> {
     let agents = agent::load_agents()?;
     let sched = JobScheduler::new().await?;

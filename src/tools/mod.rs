@@ -7,6 +7,7 @@ use crate::agent::FunctionDeclaration;
 
 pub mod email;
 pub mod get_description;
+pub mod project_files;
 pub mod run_bash;
 pub mod run_python;
 pub mod taskter_agent;
@@ -28,6 +29,7 @@ pub static BUILTIN_TOOLS: Lazy<HashMap<&'static str, Tool>> = Lazy::new(|| {
     get_description::register(&mut m);
     run_bash::register(&mut m);
     run_python::register(&mut m);
+    project_files::register(&mut m);
     web_search::register(&mut m);
     taskter_task::register(&mut m);
     taskter_agent::register(&mut m);
@@ -51,6 +53,10 @@ pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
 /// Executes a named built-in tool.
 ///
 /// Individual tools may read or write files in `.taskter/`.
+///
+/// # Errors
+///
+/// Returns an error if the tool name is unknown or if the tool execution fails.
 pub fn execute_tool(name: &str, args: &Value) -> Result<String> {
     if let Some(tool) = BUILTIN_TOOLS.get(name) {
         (tool.execute)(args)

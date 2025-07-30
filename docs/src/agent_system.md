@@ -22,6 +22,8 @@ Available built-in tools:
 - `run_python`
 - `send_email`
 - `web_search`
+- `project_files`
+- `file_ops`
 
 You can display this list at any time with:
 

@@ -30,6 +30,12 @@ async fn search_online(query: &str) -> Result<String> {
     Ok("No results found".to_string())
 }
 
+/// Performs a simple web search using DuckDuckGo.
+///
+/// # Errors
+///
+/// Returns an error if the `query` argument is missing or if the HTTP request
+/// fails.
 pub fn execute(args: &Value) -> Result<String> {
     let query = args["query"]
         .as_str()
