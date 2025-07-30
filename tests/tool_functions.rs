@@ -195,3 +195,67 @@ fn unknown_tool_returns_error() {
         assert!(err.to_string().contains("Unknown tool"));
     });
 }
+
+#[test]
+fn file_ops_requires_action() {
+    with_temp_dir(|| {
+        let err = taskter::tools::execute_tool("file_ops", &json!({})).unwrap_err();
+        assert!(err.to_string().contains("action missing"));
+    });
+}
+
+#[test]
+fn file_ops_unknown_action() {
+    with_temp_dir(|| {
+        let err = taskter::tools::execute_tool("file_ops", &json!({"action": "foo"})).unwrap_err();
+        assert!(err.to_string().contains("unknown action"));
+    });
+}
+
+#[test]
+fn file_ops_create_read_update() {
+    with_temp_dir(|| {
+        // Create a new file
+        let out = taskter::tools::execute_tool(
+            "file_ops",
+            &json!({"action": "create", "path": "a.txt", "content": "hello"}),
+        )
+        .unwrap();
+        assert_eq!(out, "Created a.txt");
+        // Read the file
+        let out =
+            taskter::tools::execute_tool("file_ops", &json!({"action": "read", "path": "a.txt"}))
+                .unwrap();
+        assert_eq!(out, "hello");
+        // Update the file
+        let out = taskter::tools::execute_tool(
+            "file_ops",
+            &json!({"action": "update", "path": "a.txt", "content": "world"}),
+        )
+        .unwrap();
+        assert_eq!(out, "Updated a.txt");
+        let content = fs::read_to_string("a.txt").unwrap();
+        assert_eq!(content, "world");
+    });
+}
+
+#[test]
+fn file_ops_search() {
+    with_temp_dir(|| {
+        // Create files with and without the query
+        fs::write("match.txt", "find me").unwrap();
+        fs::write("other.txt", "nothing").unwrap();
+        let out =
+            taskter::tools::execute_tool("file_ops", &json!({"action": "search", "query": "find"}))
+                .unwrap();
+        assert!(out.contains("match.txt"));
+        assert!(!out.contains("other.txt"));
+        // Search for non-existing string
+        let out = taskter::tools::execute_tool(
+            "file_ops",
+            &json!({"action": "search", "query": "absent"}),
+        )
+        .unwrap();
+        assert_eq!(out, "No matches found");
+    });
+}
