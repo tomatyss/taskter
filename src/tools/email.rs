@@ -20,6 +20,7 @@ struct EmailConfig {
 const DECL_JSON: &str = include_str!("../../tools/send_email.json");
 
 /// Returns the function declaration for this tool.
+#[must_use]
 pub fn declaration() -> FunctionDeclaration {
     serde_json::from_str(DECL_JSON).expect("invalid send_email.json")
 }
