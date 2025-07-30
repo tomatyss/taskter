@@ -42,13 +42,13 @@ pub async fn run() -> anyhow::Result<()> {
 
                             let handles = task_data.into_iter().map(|(id, task)| {
                                 let agent_clone = a.clone();
-                                tokio::spawn(async move { (id, agent::execute_task(&agent_clone, Some(&task)).await) })
+                                tokio::spawn(async move {
+                                    (id, agent::execute_task(&agent_clone, Some(&task)).await)
+                                })
                             });
 
-                            let results = join_all(handles).await;
-
-                            for res in results {
-                                if let Ok((task_id, Ok(exec))) = res {
+                            for (task_id, exec) in join_all(handles).await.into_iter().flatten() {
+                                if let Ok(exec) = exec {
                                     if let Some(task_mut) =
                                         board.tasks.iter_mut().find(|t| t.id == task_id)
                                     {
