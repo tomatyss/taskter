@@ -15,6 +15,10 @@ pub fn declaration() -> FunctionDeclaration {
 }
 
 /// Reads `.taskter/description.md` and returns its contents.
+///
+/// # Errors
+///
+/// Returns an error if the description file cannot be read.
 pub fn execute(_args: &Value) -> Result<String> {
     let content = fs::read_to_string(config::description_path())?;
     Ok(content)

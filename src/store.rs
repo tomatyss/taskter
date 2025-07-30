@@ -52,6 +52,11 @@ pub struct Okr {
 /// Reads the Kanban board from `.taskter/board.json`.
 ///
 /// Returns an empty board if the file does not exist.
+///
+/// # Errors
+///
+/// Returns an error if the board file cannot be read or if it contains invalid
+/// JSON.
 pub fn load_board() -> anyhow::Result<Board> {
     let path = config::board_path();
     if !path.exists() {
@@ -64,6 +69,11 @@ pub fn load_board() -> anyhow::Result<Board> {
 }
 
 /// Writes the current board state to `.taskter/board.json`.
+///
+/// # Errors
+///
+/// Returns an error if the board cannot be serialized or if the file cannot be
+/// written.
 pub fn save_board(board: &Board) -> anyhow::Result<()> {
     let path = config::board_path();
     let content = serde_json::to_string_pretty(board)?;
@@ -74,6 +84,10 @@ pub fn save_board(board: &Board) -> anyhow::Result<()> {
 /// Loads all OKRs from `.taskter/okrs.json`.
 ///
 /// Returns an empty list if the file is missing.
+///
+/// # Errors
+///
+/// Returns an error if the OKR file cannot be read or if its JSON is malformed.
 pub fn load_okrs() -> anyhow::Result<Vec<Okr>> {
     let path = config::okrs_path();
     if !path.exists() {
@@ -86,6 +100,11 @@ pub fn load_okrs() -> anyhow::Result<Vec<Okr>> {
 }
 
 /// Persists OKRs to `.taskter/okrs.json`.
+///
+/// # Errors
+///
+/// Returns an error if the OKRs cannot be serialized or if the file cannot be
+/// written.
 pub fn save_okrs(okrs: &[Okr]) -> anyhow::Result<()> {
     let path = config::okrs_path();
     let content = serde_json::to_string_pretty(okrs)?;

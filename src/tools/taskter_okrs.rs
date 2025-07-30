@@ -19,6 +19,12 @@ pub fn declaration() -> FunctionDeclaration {
     serde_json::from_str(DECL_JSON).expect("invalid taskter_okrs.json")
 }
 
+/// Invokes the `taskter okrs` subcommand.
+///
+/// # Errors
+///
+/// Returns an error if the `args` array is missing, contains non-string
+/// arguments, or if the command fails to run or exits with a non-zero status.
 pub fn execute(args: &Value) -> Result<String> {
     let arg_list = args["args"]
         .as_array()

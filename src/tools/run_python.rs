@@ -14,6 +14,11 @@ pub fn declaration() -> FunctionDeclaration {
 }
 
 /// Executes a Python snippet using the system `python3`.
+///
+/// # Errors
+///
+/// Returns an error if the `code` argument is missing, if `python3` cannot be
+/// executed, or if the script exits with a non-zero status.
 pub fn execute(args: &Value) -> Result<String> {
     let code = args["code"]
         .as_str()

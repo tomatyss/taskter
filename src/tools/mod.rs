@@ -53,6 +53,10 @@ pub fn builtin_declaration(name: &str) -> Option<FunctionDeclaration> {
 /// Executes a named built-in tool.
 ///
 /// Individual tools may read or write files in `.taskter/`.
+///
+/// # Errors
+///
+/// Returns an error if the tool name is unknown or if the tool execution fails.
 pub fn execute_tool(name: &str, args: &Value) -> Result<String> {
     if let Some(tool) = BUILTIN_TOOLS.get(name) {
         (tool.execute)(args)

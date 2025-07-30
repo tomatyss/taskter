@@ -14,6 +14,11 @@ pub fn declaration() -> FunctionDeclaration {
 }
 
 /// Runs a shell command using `sh -c`.
+///
+/// # Errors
+///
+/// Returns an error if the `command` argument is missing, if the command fails
+/// to execute, or if it exits with a non-zero status.
 pub fn execute(args: &Value) -> Result<String> {
     let command = args["command"]
         .as_str()
