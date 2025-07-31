@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="overview.html"><strong aria-hidden="true">1.</strong> Overview</a></li><li class="chapter-item expanded "><a href="installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="cli_usage.html"><strong aria-hidden="true">3.</strong> CLI Usage</a></li><li class="chapter-item expanded "><a href="tui_guide.html"><strong aria-hidden="true">4.</strong> TUI Guide</a></li><li class="chapter-item expanded "><a href="agent_system.html"><strong aria-hidden="true">5.</strong> Agent System</a></li><li class="chapter-item expanded "><a href="scheduling.html"><strong aria-hidden="true">6.</strong> Scheduling Agents</a></li><li class="chapter-item expanded "><a href="configuration.html"><strong aria-hidden="true">7.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="contributing.html"><strong aria-hidden="true">8.</strong> Contributing</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="overview.html"><strong aria-hidden="true">1.</strong> Overview</a></li><li class="chapter-item expanded "><a href="installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="cli_usage.html"><strong aria-hidden="true">3.</strong> CLI Usage</a></li><li class="chapter-item expanded "><a href="tui_guide.html"><strong aria-hidden="true">4.</strong> TUI Guide</a></li><li class="chapter-item expanded "><a href="agent_system.html"><strong aria-hidden="true">5.</strong> Agent System</a></li><li class="chapter-item expanded "><a href="scheduling.html"><strong aria-hidden="true">6.</strong> Scheduling Agents</a></li><li class="chapter-item expanded "><a href="data_files.html"><strong aria-hidden="true">7.</strong> Data Files</a></li><li class="chapter-item expanded "><a href="configuration.html"><strong aria-hidden="true">8.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="contributing.html"><strong aria-hidden="true">9.</strong> Contributing</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -369,6 +369,21 @@ taskter agent schedule set --id 1 --cron "0 * * * * *"
 <pre><code class="language-bash">taskter scheduler run
 </code></pre>
 <p>The scheduler will execute agents at the configured times and update tasks just as if <code>task execute</code> was run manually.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="data-files"><a class="header" href="#data-files">Data Files</a></h1>
+<p>Taskter keeps all project state inside a <code>.taskter</code> directory. This folder is created when you run <code>taskter init</code>.
+The following files are stored there and are automatically updated by Taskter.</p>
+<h2 id="boardjson"><a class="header" href="#boardjson">board.json</a></h2>
+<p>Holds the Kanban board in JSON format. The file contains all tasks with their status, descriptions and assigned agent. It is rewritten whenever you add, edit or complete tasks from the CLI or TUI.</p>
+<h2 id="agentsjson"><a class="header" href="#agentsjson">agents.json</a></h2>
+<p>Stores the list of agents. Each agent entry records the system prompt, available tools, model and optional schedule. The file is created on demand and modified by the various <code>agent</code> subcommands.</p>
+<h2 id="okrsjson"><a class="header" href="#okrsjson">okrs.json</a></h2>
+<p>Contains your objectives and key results. Commands under <code>taskter okrs</code> load and save this file.</p>
+<h2 id="logslog"><a class="header" href="#logslog">logs.log</a></h2>
+<p>Plain text log with timestamps. New lines are appended when you run <code>logs add</code> or when agents execute tasks.</p>
+<h2 id="descriptionmd"><a class="header" href="#descriptionmd">description.md</a></h2>
+<p>Markdown file describing the project. <code>taskter init</code> creates a placeholder that you can edit manually or through the TUI.</p>
+<h2 id="email_configjson"><a class="header" href="#email_configjson">email_config.json</a></h2>
+<p>Optional email credentials used by the <code>send_email</code> tool. Place it in the directory if agents need to send messages. The exact keys are documented in the <a href="configuration.html">Configuration</a> chapter.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
 <p>This chapter describes runtime configuration files and environment variables used by Taskter.</p>
 <h2 id="email-configuration-file"><a class="header" href="#email-configuration-file">Email configuration file</a></h2>
