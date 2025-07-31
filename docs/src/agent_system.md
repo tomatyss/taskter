@@ -68,3 +68,37 @@ taskter agent update --id 1 --prompt "New prompt" --tools "taskter_task" --model
 ```
 
 All three options are required and the previous configuration is overwritten.
+
+## Creating Custom Tools
+
+Agents can use custom tools in addition to the built‑in ones. A tool is defined
+in a JSON file with three required fields:
+
+- `name` – the unique identifier for the tool
+- `description` – a short explanation of what the tool does
+- `parameters` – JSON Schema describing the arguments
+
+An example tool definition:
+
+```json
+{
+  "name": "say_hello",
+  "description": "Return a greeting for the provided name",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "name": { "type": "string", "description": "Name to greet" }
+    },
+    "required": ["name"]
+  }
+}
+```
+
+Save this JSON to a file, for instance `hello_tool.json`, and pass the path to
+`taskter agent add`:
+
+```bash
+taskter agent add --prompt "Be friendly" --tools "./hello_tool.json" --model "gemini-pro"
+```
+
+You can mix file paths and built-in tool names in the `--tools` list.
