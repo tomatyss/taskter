@@ -182,6 +182,8 @@
 <pre><code class="language-bash">taskter init
 </code></pre>
 <p>This will create a <code>.taskter</code> directory to store all your tasks, agents, and project data.</p>
+<p>All operation logs are written to <code>.taskter/logs.log</code>. Inspect this file directly
+or run <code>taskter logs list</code> to view the history.</p>
 <h3 id="2-create-an-agent"><a class="header" href="#2-create-an-agent">2. Create an agent</a></h3>
 <p>Next, create an agent to help you with your tasks. For this example, we'll create a simple agent that can run bash commands:</p>
 <pre><code class="language-bash">taskter agent add --prompt "You are a helpful assistant that can run bash commands." --tools "run_bash" --model "gemini-pro"
