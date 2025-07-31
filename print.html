@@ -349,6 +349,32 @@ You can make <code>taskter</code> available system-wide by copying it to a direc
 <pre><code class="language-bash">taskter agent update --id 1 --prompt "New prompt" --tools "taskter_task" --model "gemini-pro"
 </code></pre>
 <p>All three options are required and the previous configuration is overwritten.</p>
+<h2 id="creating-custom-tools"><a class="header" href="#creating-custom-tools">Creating Custom Tools</a></h2>
+<p>Agents can use custom tools in addition to the built‑in ones. A tool is defined
+in a JSON file with three required fields:</p>
+<ul>
+<li><code>name</code> – the unique identifier for the tool</li>
+<li><code>description</code> – a short explanation of what the tool does</li>
+<li><code>parameters</code> – JSON Schema describing the arguments</li>
+</ul>
+<p>An example tool definition:</p>
+<pre><code class="language-json">{
+  "name": "say_hello",
+  "description": "Return a greeting for the provided name",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "name": { "type": "string", "description": "Name to greet" }
+    },
+    "required": ["name"]
+  }
+}
+</code></pre>
+<p>Save this JSON to a file, for instance <code>hello_tool.json</code>, and pass the path to
+<code>taskter agent add</code>:</p>
+<pre><code class="language-bash">taskter agent add --prompt "Be friendly" --tools "./hello_tool.json" --model "gemini-pro"
+</code></pre>
+<p>You can mix file paths and built-in tool names in the <code>--tools</code> list.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="scheduling-agents"><a class="header" href="#scheduling-agents">Scheduling Agents</a></h1>
 <p>Taskter can run agents automatically based on cron expressions. A scheduler daemon reads the agent configuration and executes the assigned tasks at the defined times.</p>
 <h2 id="setting-a-schedule"><a class="header" href="#setting-a-schedule">Setting a Schedule</a></h2>
