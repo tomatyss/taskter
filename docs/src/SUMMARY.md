@@ -6,5 +6,6 @@
 - [TUI Guide](tui_guide.md)
 - [Agent System](agent_system.md)
 - [Scheduling Agents](scheduling.md)
+- [Data Files](data_files.md)
 - [Configuration](configuration.md)
 - [Contributing](contributing.md)
