@@ -1,3 +1,6 @@
+//! Agent definitions and execution helpers for running tasks with a
+//! language model and its available tools.
+
 use crate::store::Task;
 use crate::tools;
 use anyhow::Result;

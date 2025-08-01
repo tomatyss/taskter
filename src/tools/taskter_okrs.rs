@@ -1,3 +1,5 @@
+//! Wraps the `taskter okrs` command for programmatic use by agents.
+
 use anyhow::{anyhow, Result};
 use serde_json::Value;
 use std::process::Command;

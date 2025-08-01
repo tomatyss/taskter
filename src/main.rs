@@ -1,3 +1,6 @@
+//! Entry point for the `taskter` command-line application.
+
+use chrono::Local;
 use clap::Parser;
 
 use taskter::cli::{Cli, Commands};

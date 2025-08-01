@@ -1,3 +1,5 @@
+//! Exposes the `taskter task` command for automation through agents.
+
 use anyhow::{anyhow, Result};
 use serde_json::Value;
 use std::process::Command;

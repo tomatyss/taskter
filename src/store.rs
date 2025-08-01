@@ -1,3 +1,5 @@
+//! Data structures and persistence helpers for managing tasks and OKRs.
+
 use serde::{Deserialize, Serialize};
 use std::fs;
 

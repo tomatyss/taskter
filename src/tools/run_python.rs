@@ -1,3 +1,5 @@
+//! Runs short Python snippets via the system interpreter.
+
 use anyhow::{anyhow, Result};
 use serde_json::Value;
 use std::process::Command;

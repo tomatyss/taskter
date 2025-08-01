@@ -1,3 +1,5 @@
+//! Calls the `taskter tools` command from within an agent.
+
 use anyhow::{anyhow, Result};
 use serde_json::Value;
 use std::process::Command;

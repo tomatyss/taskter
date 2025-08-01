@@ -1,3 +1,5 @@
+//! Input and event handling for the terminal user interface.
+
 use super::app::{App, View};
 use super::render::ui;
 use crate::agent::{self};

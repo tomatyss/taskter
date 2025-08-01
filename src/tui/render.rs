@@ -1,3 +1,5 @@
+//! Rendering routines for the terminal interface.
+
 use super::app::{App, View};
 use crate::store::TaskStatus;
 use ratatui::{

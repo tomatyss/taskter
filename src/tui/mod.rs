@@ -1,3 +1,5 @@
+//! Terminal user interface for managing tasks interactively.
+
 pub mod app;
 mod handlers;
 mod render;

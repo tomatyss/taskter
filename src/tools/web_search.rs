@@ -1,3 +1,5 @@
+//! Performs a simple web search using DuckDuckGo's API.
+
 use anyhow::{anyhow, Result};
 use serde_json::Value;
 use std::collections::HashMap;
