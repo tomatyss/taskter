@@ -189,6 +189,14 @@ fn run_python_reports_execution_error() {
 }
 
 #[test]
+fn send_email_requires_arguments() {
+    with_temp_dir(|| {
+        let result = taskter::tools::execute_tool("send_email", &json!({}));
+        assert!(result.is_err());
+    });
+}
+
+#[test]
 fn unknown_tool_returns_error() {
     with_temp_dir(|| {
         let err = taskter::tools::execute_tool("no_such_tool", &json!({})).unwrap_err();
