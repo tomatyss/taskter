@@ -89,6 +89,8 @@ The agent will now run the task. If it's successful, the task will be marked as 
 taskter board
 ```
 
+![TUI example](tui_example.png)
+
 
 ## Build and Installation
 
