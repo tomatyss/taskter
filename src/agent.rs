@@ -217,7 +217,24 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
         let part = &candidate["content"]["parts"][0];
 
         if let Some(function_call) = part.get("functionCall") {
-            let tool_name = function_call["name"].as_str().unwrap();
+            let tool_name = match function_call
+                .get("name")
+                .and_then(Value::as_str)
+                .ok_or_else(|| ExecutionResult::Failure {
+                    comment: "Malformed API response: missing field `name`".to_string(),
+                }) {
+                Ok(name) => name,
+                Err(failure) => {
+                    if let ExecutionResult::Failure { comment } = &failure {
+                        if let Err(e) =
+                            append_log(&format!("Agent {} failed: {}", agent.id, comment))
+                        {
+                            eprintln!("Failed to write log: {e}");
+                        }
+                    }
+                    return Ok(failure);
+                }
+            };
             let args = &function_call["args"];
             if let Err(e) = append_log(&format!(
                 "Agent {} calling tool {} with args {}",
@@ -239,8 +256,24 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
                 "role": "tool",
                 "parts": [{"functionResponse": {"name": tool_name, "response": {"content": tool_response}}}]
             }));
-        } else if let Some(text) = part.get("text") {
-            let comment = text.as_str().unwrap().to_string();
+        } else if part.get("text").is_some() {
+            let comment = match part.get("text").and_then(Value::as_str).ok_or_else(|| {
+                ExecutionResult::Failure {
+                    comment: "Malformed API response: missing field `text`".to_string(),
+                }
+            }) {
+                Ok(text) => text.to_string(),
+                Err(failure) => {
+                    if let ExecutionResult::Failure { comment } = &failure {
+                        if let Err(e) =
+                            append_log(&format!("Agent {} failed: {}", agent.id, comment))
+                        {
+                            eprintln!("Failed to write log: {e}");
+                        }
+                    }
+                    return Ok(failure);
+                }
+            };
             if let Err(e) = append_log(&format!(
                 "Agent {} finished successfully: {}",
                 agent.id, comment
