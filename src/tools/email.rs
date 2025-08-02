@@ -26,9 +26,7 @@ pub fn declaration() -> FunctionDeclaration {
 
 /// Sends an email using `.taskter/email_config.json` for credentials.
 pub fn execute(args: &Value) -> Result<String> {
-    let to = args["to"]
-        .as_str()
-        .ok_or_else(|| anyhow!("to missing"))?;
+    let to = args["to"].as_str().ok_or_else(|| anyhow!("to missing"))?;
     let subject = args["subject"]
         .as_str()
         .ok_or_else(|| anyhow!("subject missing"))?;
