@@ -16,6 +16,7 @@ Taskter is a terminal Kanban board CLI tool built with Rust.
 - Project description
 - Operation logs
 - OKRs (Objectives and Key Results)
+- Agent scheduler with cron expressions (see [scheduling.md](docs/src/scheduling.md) for details)
 - Parallel task execution when running the scheduler
 
 ## Quick Start
@@ -31,6 +32,7 @@ taskter init
 ```
 
 This will create a `.taskter` directory to store all your tasks, agents, and project data.
+See the [Data Files](https://tomatyss.github.io/taskter/data_files.html) chapter for a detailed description of these files.
 
 ### 2. Create an agent
 
@@ -87,6 +89,8 @@ The agent will now run the task. If it's successful, the task will be marked as 
 ```bash
 taskter board
 ```
+
+![TUI example](tui_example.png)
 
 
 ## Build and Installation
@@ -176,6 +180,7 @@ taskter init
 ```
 
 This will create a `.taskter` directory with the necessary files.
+See the [Data Files](https://tomatyss.github.io/taskter/data_files.html) chapter for details.
 
 ### Interactive Board
 
@@ -312,7 +317,10 @@ In the interactive board (`taskter board`), tasks assigned to an agent will be m
 
 Agent email tools read credentials from `.taskter/email_config.json`. Place this
 file inside the board directory (next to `board.json` and `agents.json`). All
-agents share the same configuration. The currently recognised keys are:
+agents share the same configuration. See the
+[Data Files](https://tomatyss.github.io/taskter/data_files.html) chapter for an
+overview of every file created during initialization. The currently recognised
+keys are:
 
 ```json
 {

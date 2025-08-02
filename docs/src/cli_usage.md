@@ -16,6 +16,9 @@ taskter init
 
 This will create a `.taskter` directory to store all your tasks, agents, and project data.
 
+All operation logs are written to `.taskter/logs.log`. Inspect this file directly
+or run `taskter logs list` to view the history.
+
 ### 2. Create an agent
 
 Next, create an agent to help you with your tasks. For this example, we'll create a simple agent that can run bash commands:
