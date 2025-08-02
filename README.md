@@ -17,6 +17,7 @@ Taskter is a terminal Kanban board CLI tool built with Rust.
 - Operation logs
 - OKRs (Objectives and Key Results)
 - Agent scheduler with cron expressions (see [scheduling.md](docs/src/scheduling.md) for details)
+- Parallel task execution when running the scheduler
 
 ## Quick Start
 
