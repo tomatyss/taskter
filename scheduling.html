@@ -192,7 +192,9 @@ taskter agent schedule set --id 1 --cron "0 * * * * *"
 <p>Start the scheduler loop with:</p>
 <pre><code class="language-bash">taskter scheduler run
 </code></pre>
-<p>The scheduler will execute agents at the configured times and update tasks just as if <code>task execute</code> was run manually.</p>
+<p>The scheduler will execute agents at the configured times and update tasks just as if <code>task execute</code> was run manually.
+When multiple tasks are assigned to the same agent, the scheduler now runs them
+concurrently so long-running jobs don't block each other.</p>
 
                     </main>
 
