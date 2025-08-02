@@ -1,3 +1,26 @@
+#![allow(
+    clippy::missing_errors_doc,
+    clippy::missing_panics_doc,
+    clippy::must_use_candidate,
+    clippy::too_many_lines,
+    clippy::manual_let_else,
+    clippy::single_match_else,
+    clippy::used_underscore_binding,
+    clippy::ignored_unit_patterns,
+    clippy::redundant_closure_for_method_calls,
+    clippy::implicit_hasher,
+    clippy::map_unwrap_or,
+    clippy::doc_markdown,
+    clippy::stable_sort_primitive,
+    clippy::cast_possible_truncation,
+    clippy::semicolon_if_nothing_returned,
+    clippy::if_not_else,
+    clippy::assigning_clones,
+    clippy::match_wildcard_for_single_variants,
+    clippy::unused_async,
+    clippy::non_std_lazy_statics
+)]
+
 //! Taskter library interface exposing the core modules so they can be
 //! reused from integration tests and (potentially) other binaries.
 

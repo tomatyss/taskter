@@ -1,3 +1,5 @@
+#![allow(clippy::manual_string_new, clippy::used_underscore_binding)]
+
 use serde_json::json;
 use taskter::agent::{self, Agent, ExecutionResult, FunctionDeclaration};
 use taskter::store::{self, Board, KeyResult, Okr, Task, TaskStatus};

@@ -394,7 +394,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                         _ => {}
                     },
                     View::Logs | View::Agents | View::Okrs | View::Commands => match key.code {
-                        KeyCode::Char('q') | KeyCode::Esc | KeyCode::Char('?') => {
+                        KeyCode::Char('q' | '?') | KeyCode::Esc => {
                             app.current_view = View::Board;
                             app.popup_scroll = 0;
                         }
