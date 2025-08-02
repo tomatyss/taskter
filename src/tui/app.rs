@@ -175,10 +175,7 @@ impl App {
                 .filter(|t| t.status == destination_status)
                 .cloned()
                 .collect();
-            if let Some(idx) = tasks_in_destination
-                .iter()
-                .position(|t| t.id == task_id)
-            {
+            if let Some(idx) = tasks_in_destination.iter().position(|t| t.id == task_id) {
                 self.selected_task[new_status_index].select(Some(idx));
             }
 
@@ -188,8 +185,7 @@ impl App {
                 self.selected_task[self.selected_column].select(None);
             } else if let Some(idx) = self.selected_task[self.selected_column].selected() {
                 if idx >= tasks_left.len() {
-                    self.selected_task[self.selected_column]
-                        .select(Some(tasks_left.len() - 1));
+                    self.selected_task[self.selected_column].select(Some(tasks_left.len() - 1));
                 }
             }
         }
