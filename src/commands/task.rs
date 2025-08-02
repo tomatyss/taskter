@@ -19,14 +19,50 @@ pub async fn handle(action: &TaskCommands) -> anyhow::Result<()> {
         }
         TaskCommands::List => {
             let board = store::load_board()?;
+            let mut todo = Vec::new();
+            let mut in_progress = Vec::new();
+            let mut done = Vec::new();
+
             for task in board.tasks {
-                println!(
-                    "[{}] {} - {:?} - {:?}",
-                    task.id,
-                    task.title,
-                    task.status,
-                    task.description.unwrap_or_default()
-                );
+                match task.status {
+                    store::TaskStatus::ToDo => todo.push(task),
+                    store::TaskStatus::InProgress => in_progress.push(task),
+                    store::TaskStatus::Done => done.push(task),
+                }
+            }
+
+            fn print_task(task: &store::Task) {
+                match &task.description {
+                    Some(desc) if !desc.is_empty() => {
+                        println!("  [{}] {} - {}", task.id, task.title, desc);
+                    }
+                    _ => {
+                        println!("  [{}] {}", task.id, task.title);
+                    }
+                }
+            }
+
+            if !todo.is_empty() {
+                println!("ToDo:");
+                for task in &todo {
+                    print_task(task);
+                }
+                println!();
+            }
+
+            if !in_progress.is_empty() {
+                println!("InProgress:");
+                for task in &in_progress {
+                    print_task(task);
+                }
+                println!();
+            }
+
+            if !done.is_empty() {
+                println!("Done:");
+                for task in &done {
+                    print_task(task);
+                }
             }
         }
         TaskCommands::Complete { id } => {
