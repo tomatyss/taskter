@@ -1,3 +1,10 @@
+#![allow(
+    clippy::missing_panics_doc,
+    clippy::too_many_lines,
+    clippy::manual_let_else,
+    clippy::single_match_else
+)]
+
 use crate::store::Task;
 use crate::tools;
 use anyhow::Result;
@@ -82,16 +89,16 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
                 eprintln!("Failed to write log: {e}");
             }
             return Ok(ExecutionResult::Success { comment: msg });
-        } else {
-            if let Err(e) = append_log("Executing without API key - required tool missing") {
-                eprintln!("Failed to write log: {e}");
-            }
-            let msg = "Required tool not available.".to_string();
-            if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
-                eprintln!("Failed to write log: {e}");
-            }
-            return Ok(ExecutionResult::Failure { comment: msg });
         }
+
+        if let Err(e) = append_log("Executing without API key - required tool missing") {
+            eprintln!("Failed to write log: {e}");
+        }
+        let msg = "Required tool not available.".to_string();
+        if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
+            eprintln!("Failed to write log: {e}");
+        }
+        return Ok(ExecutionResult::Failure { comment: msg });
     }
 
     let api_key = api_key.unwrap();

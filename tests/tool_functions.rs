@@ -1,3 +1,5 @@
+#![allow(clippy::used_underscore_binding)]
+
 use assert_cmd::Command;
 use serde_json::json;
 use std::fs;

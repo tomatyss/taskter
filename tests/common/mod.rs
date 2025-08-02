@@ -1,3 +1,5 @@
+#![allow(clippy::missing_panics_doc)]
+
 pub fn with_temp_dir<F: FnOnce() -> T, T>(test: F) -> T {
     let tmp = tempfile::tempdir().expect("failed to create temp dir");
     let original_dir = std::env::current_dir().expect("cannot read current dir");
