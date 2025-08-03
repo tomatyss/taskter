@@ -1,3 +1,5 @@
+//! Terminal user interface components and entry point.
+
 pub mod app;
 mod handlers;
 mod render;
