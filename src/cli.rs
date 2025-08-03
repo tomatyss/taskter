@@ -115,20 +115,20 @@ pub enum AgentCommands {
         #[arg(long)]
         id: usize,
     },
-    /// Updates an agent's prompt and tools
+    /// Updates an agent's configuration
     Update {
         /// The id of the agent to update
         #[arg(long)]
         id: usize,
         /// The new system prompt for the agent
         #[arg(short, long)]
-        prompt: String,
+        prompt: Option<String>,
         /// The new tools the agent can use
         #[arg(short, long, num_args = 1..)]
-        tools: Vec<String>,
+        tools: Option<Vec<String>>,
         /// The new model for the agent
         #[arg(short, long)]
-        model: String,
+        model: Option<String>,
     },
     /// Schedule operations for an agent
     Schedule {

@@ -61,13 +61,15 @@ In the interactive board (`taskter board`), tasks assigned to an agent will be m
 
 ## Updating an Agent
 
-Use the `agent update` command to modify an existing agent's configuration:
+Use the `agent update` command to modify an existing agent's configuration. You
+can provide any combination of `--prompt`, `--tools` and `--model` to update
+only those fields:
 
 ```bash
-taskter agent update --id 1 --prompt "New prompt" --tools "taskter_task" --model "gemini-pro"
+taskter agent update --id 1 --model "gemini-pro"
 ```
 
-All three options are required and the previous configuration is overwritten.
+The previous configuration is preserved for any options that are not supplied.
 
 ## Creating Custom Tools
 
