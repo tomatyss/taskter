@@ -18,6 +18,13 @@ pub fn load_status() -> Result<HashMap<usize, AgentState>> {
         fs::create_dir_all(path.parent().unwrap())?;
         fs::write(path, "{}")?;
     }
+    // Avoid attempting to deserialize arbitrarily large files which could OOM the
+    // process. If the status file exceeds 1MB, reset it to an empty map.
+    const MAX_BYTES: u64 = 1_048_576; // 1MB
+    if fs::metadata(path)?.len() > MAX_BYTES {
+        fs::write(path, "{}")?;
+        return Ok(HashMap::new());
+    }
     let content = fs::read_to_string(path)?;
     let map: HashMap<usize, AgentState> = serde_json::from_str(&content).unwrap_or_default();
     Ok(map)
