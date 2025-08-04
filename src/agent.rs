@@ -12,7 +12,7 @@ use std::io::Write;
 use crate::config;
 
 /// Result of running an [`Agent`] on a [`Task`].
-#[must_use]
+#[must_use = "inspect the result to handle success or failure"]
 #[derive(Debug, PartialEq)]
 pub enum ExecutionResult {
     Success { comment: String },
@@ -294,7 +294,7 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
 }
 
 /// Describes an available tool for the language model.
-#[must_use]
+#[must_use = "register the declaration so the tool can be used"]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FunctionDeclaration {
     pub name: String,
