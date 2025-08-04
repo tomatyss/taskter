@@ -19,7 +19,7 @@ pub fn load_status() -> Result<HashMap<usize, AgentState>> {
         fs::write(path, "{}")?;
     }
     let content = fs::read_to_string(path)?;
-    let map: HashMap<usize, AgentState> = serde_json::from_str(&content)?;
+    let map: HashMap<usize, AgentState> = serde_json::from_str(&content).unwrap_or_default();
     Ok(map)
 }
 
