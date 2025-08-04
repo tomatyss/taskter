@@ -41,6 +41,7 @@ pub static BUILTIN_TOOLS: Lazy<HashMap<&'static str, Tool>> = Lazy::new(|| {
 });
 
 /// Returns the names of all built-in tools.
+#[must_use = "check the list to know which tools are available"]
 pub fn builtin_names() -> Vec<&'static str> {
     let mut names: Vec<&'static str> = BUILTIN_TOOLS.keys().copied().collect();
     names.sort();

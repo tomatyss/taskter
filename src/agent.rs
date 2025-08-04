@@ -21,6 +21,7 @@ use std::io::Write;
 use crate::config;
 
 /// Result of running an [`Agent`] on a [`Task`].
+#[must_use = "inspect the result to handle success or failure"]
 #[derive(Debug, PartialEq)]
 pub enum ExecutionResult {
     Success { comment: String },
@@ -44,6 +45,7 @@ fn append_log(message: &str) -> anyhow::Result<()> {
 /// # Errors
 ///
 /// Returns an error if writing to the log fails or if a tool execution fails.
+#[must_use = "use the result to determine task outcome"]
 pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<ExecutionResult> {
     let client = Client::new();
     let log_message = if let Some(task) = task {
@@ -301,6 +303,7 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
 }
 
 /// Describes an available tool for the language model.
+#[must_use = "register the declaration so the tool can be used"]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FunctionDeclaration {
     pub name: String,
