@@ -70,7 +70,11 @@ pub async fn handle(action: &AgentCommands) -> anyhow::Result<()> {
             tools,
             model,
         } => {
-            let function_declarations = parse_tool_specs(tools)?;
+            let function_declarations = if let Some(specs) = tools {
+                Some(parse_tool_specs(specs)?)
+            } else {
+                None
+            };
             agent_model::update_agent(*id, prompt.clone(), function_declarations, model.clone())?;
             println!("Agent {id} updated.");
         }

@@ -259,7 +259,7 @@ fn update_agent_changes_configuration() {
             .assert()
             .success();
 
-        // update the agent
+        // update the agent's tools and model only
         Command::cargo_bin("taskter")
             .unwrap()
             .args([
@@ -267,13 +267,26 @@ fn update_agent_changes_configuration() {
                 "update",
                 "--id",
                 "1",
-                "--prompt",
-                "new helper",
                 "--tools",
                 "taskter_task",
                 "--model",
-                "gemini-2.5-flash",
+                "gemini-2.5-pro",
             ])
+            .assert()
+            .success()
+            .stdout(predicate::str::contains("Agent 1 updated."));
+
+        let agents: Vec<Value> =
+            serde_json::from_str(&fs::read_to_string(taskter::config::AGENTS_FILE).unwrap())
+                .unwrap();
+        assert_eq!(agents[0]["system_prompt"], "helper");
+        assert_eq!(agents[0]["tools"][0]["name"], "taskter_task");
+        assert_eq!(agents[0]["model"], "gemini-2.5-pro");
+
+        // update the agent's prompt only
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args(["agent", "update", "--id", "1", "--prompt", "new helper"])
             .assert()
             .success()
             .stdout(predicate::str::contains("Agent 1 updated."));
@@ -283,7 +296,7 @@ fn update_agent_changes_configuration() {
                 .unwrap();
         assert_eq!(agents[0]["system_prompt"], "new helper");
         assert_eq!(agents[0]["tools"][0]["name"], "taskter_task");
-        assert_eq!(agents[0]["model"], "gemini-2.5-flash");
+        assert_eq!(agents[0]["model"], "gemini-2.5-pro");
     });
 }
 
