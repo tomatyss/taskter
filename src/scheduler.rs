@@ -1,5 +1,6 @@
 //! Cron-based scheduler that runs agents on a timetable.
 
+use crate::status::{set_status, AgentState};
 use crate::{agent, store};
 use agent::ExecutionResult;
 use chrono_tz::America::New_York;
@@ -34,8 +35,11 @@ pub async fn run() -> anyhow::Result<()> {
                             .collect();
 
                         if tasks.is_empty() {
+                            let _ = set_status(a.id, AgentState::Running);
                             let _ = agent::execute_task(&a, None).await;
+                            let _ = set_status(a.id, AgentState::Idle);
                         } else {
+                            let _ = set_status(a.id, AgentState::Running);
                             let task_data: Vec<(usize, store::Task)> = tasks
                                 .iter()
                                 .filter_map(|id| {
@@ -74,6 +78,7 @@ pub async fn run() -> anyhow::Result<()> {
                                     }
                                 }
                             }
+                            let _ = set_status(a.id, AgentState::Idle);
                         }
                         let _ = store::save_board(&board);
                     }

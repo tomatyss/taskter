@@ -10,6 +10,7 @@ pub const LOG_FILE: &str = ".taskter/logs.log";
 pub const AGENTS_FILE: &str = ".taskter/agents.json";
 pub const DESCRIPTION_FILE: &str = ".taskter/description.md";
 pub const EMAIL_CONFIG_FILE: &str = ".taskter/email_config.json";
+pub const AGENT_STATUS_FILE: &str = ".taskter/agent_status.json";
 
 #[must_use = "use the path to access Taskter data"]
 pub fn dir() -> &'static Path {
@@ -44,4 +45,9 @@ pub fn description_path() -> &'static Path {
 #[must_use = "use the path to access Taskter data"]
 pub fn email_config_path() -> &'static Path {
     Path::new(EMAIL_CONFIG_FILE)
+}
+
+#[must_use = "use the path to access Taskter data"]
+pub fn agent_status_path() -> &'static Path {
+    Path::new(AGENT_STATUS_FILE)
 }
