@@ -145,8 +145,12 @@ impl App {
                 .iter_mut()
                 .find(|t| t.id == task_id)
             {
-                let current_status_index = task.status.clone() as usize;
-                let next_status_index = (current_status_index as i8 + direction + 3) % 3;
+                let current_status_index: i8 = match task.status {
+                    TaskStatus::ToDo => 0,
+                    TaskStatus::InProgress => 1,
+                    TaskStatus::Done => 2,
+                };
+                let next_status_index = (current_status_index + direction + 3) % 3;
                 task.status = match next_status_index {
                     0 => TaskStatus::ToDo,
                     1 => TaskStatus::InProgress,

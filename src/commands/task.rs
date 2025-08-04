@@ -1,6 +1,17 @@
 use crate::cli::TaskCommands;
 use crate::{agent, store};
 
+fn print_task(task: &store::Task) {
+    match &task.description {
+        Some(desc) if !desc.is_empty() => {
+            println!("  [{}] {} - {}", task.id, task.title, desc);
+        }
+        _ => {
+            println!("  [{}] {}", task.id, task.title);
+        }
+    }
+}
+
 pub async fn handle(action: &TaskCommands) -> anyhow::Result<()> {
     match action {
         TaskCommands::Add { title, description } => {
@@ -28,17 +39,6 @@ pub async fn handle(action: &TaskCommands) -> anyhow::Result<()> {
                     store::TaskStatus::ToDo => todo.push(task),
                     store::TaskStatus::InProgress => in_progress.push(task),
                     store::TaskStatus::Done => done.push(task),
-                }
-            }
-
-            fn print_task(task: &store::Task) {
-                match &task.description {
-                    Some(desc) if !desc.is_empty() => {
-                        println!("  [{}] {} - {}", task.id, task.title, desc);
-                    }
-                    _ => {
-                        println!("  [{}] {}", task.id, task.title);
-                    }
                 }
             }
 
