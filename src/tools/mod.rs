@@ -1,3 +1,5 @@
+//! Registry and execution of built-in tools for agents.
+
 use anyhow::Result;
 use once_cell::sync::Lazy;
 use serde_json::Value;

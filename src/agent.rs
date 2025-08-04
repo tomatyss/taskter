@@ -5,6 +5,8 @@
     clippy::single_match_else
 )]
 
+//! Executes tasks using an agent and records progress in the log.
+
 use crate::store::Task;
 use crate::tools;
 use anyhow::Result;

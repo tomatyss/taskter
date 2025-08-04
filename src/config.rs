@@ -1,4 +1,5 @@
-/// Constants for paths inside the `.taskter` directory.
+//! Constants and helpers for locating Taskter's `.taskter` files.
+
 use std::path::Path;
 
 pub const DIR: &str = ".taskter";
