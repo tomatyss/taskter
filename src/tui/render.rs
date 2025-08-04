@@ -23,6 +23,10 @@ pub(crate) fn ui(f: &mut Frame, app: &mut App) {
 }
 
 fn render_board(f: &mut Frame, app: &mut App) {
+    let v_chunks = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints([Constraint::Min(0), Constraint::Length(1)].as_ref())
+        .split(f.area());
     let chunks = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(
@@ -33,7 +37,7 @@ fn render_board(f: &mut Frame, app: &mut App) {
             ]
             .as_ref(),
         )
-        .split(f.area());
+        .split(v_chunks[0]);
 
     for (i, status) in [TaskStatus::ToDo, TaskStatus::InProgress, TaskStatus::Done]
         .iter()
@@ -47,8 +51,12 @@ fn render_board(f: &mut Frame, app: &mut App) {
             .iter()
             .filter(|t| t.status == *status)
             .map(|t| {
-                let title = if t.agent_id.is_some() {
-                    format!("* {}", t.title)
+                let title = if let Some(id) = t.agent_id {
+                    if app.running_agents.contains(&id) {
+                        format!("▶ {}", t.title)
+                    } else {
+                        format!("* {}", t.title)
+                    }
                 } else {
                     t.title.clone()
                 };
@@ -69,6 +77,21 @@ fn render_board(f: &mut Frame, app: &mut App) {
         }
         f.render_stateful_widget(list, chunks[i], &mut app.selected_task[i]);
     }
+
+    let running_text = if app.running_agents.is_empty() {
+        "Running agents: none".to_string()
+    } else {
+        format!(
+            "Running agents: {}",
+            app.running_agents
+                .iter()
+                .map(|id| id.to_string())
+                .collect::<Vec<_>>()
+                .join(", ")
+        )
+    };
+    let status = Paragraph::new(running_text);
+    f.render_widget(status, v_chunks[1]);
 }
 
 fn render_task_description(f: &mut Frame, app: &mut App) {
@@ -222,7 +245,14 @@ fn render_agents_list(f: &mut Frame, app: &mut App) {
     let items: Vec<ListItem> = app
         .agents
         .iter()
-        .map(|a| ListItem::new(format!("{}: {}", a.id, a.system_prompt)))
+        .map(|a| {
+            let status = if app.running_agents.contains(&a.id) {
+                " (running)"
+            } else {
+                ""
+            };
+            ListItem::new(format!("{}: {}{}", a.id, a.system_prompt, status))
+        })
         .collect();
     let list = List::new(items).block(Block::default().title("Agents").borders(Borders::ALL));
     let area = centered_rect(60, 25, f.area());
