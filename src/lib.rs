@@ -29,6 +29,7 @@ pub mod cli;
 pub mod commands;
 pub mod config;
 pub mod scheduler;
+pub mod status;
 pub mod store;
 pub mod tools;
 

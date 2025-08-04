@@ -5,6 +5,7 @@
     clippy::single_match_else
 )]
 
+use crate::status::StatusGuard;
 use crate::store::Task;
 use crate::tools;
 use anyhow::Result;
@@ -43,6 +44,7 @@ fn append_log(message: &str) -> anyhow::Result<()> {
 ///
 /// Returns an error if writing to the log fails or if a tool execution fails.
 pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<ExecutionResult> {
+    let _status_guard = StatusGuard::new(agent.id);
     let client = Client::new();
     let log_message = if let Some(task) = task {
         format!(

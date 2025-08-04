@@ -9,6 +9,7 @@ pub const LOG_FILE: &str = ".taskter/logs.log";
 pub const AGENTS_FILE: &str = ".taskter/agents.json";
 pub const DESCRIPTION_FILE: &str = ".taskter/description.md";
 pub const EMAIL_CONFIG_FILE: &str = ".taskter/email_config.json";
+pub const AGENT_STATUS_FILE: &str = ".taskter/agent_status.json";
 
 pub fn dir() -> &'static Path {
     Path::new(DIR)
@@ -36,4 +37,8 @@ pub fn description_path() -> &'static Path {
 
 pub fn email_config_path() -> &'static Path {
     Path::new(EMAIL_CONFIG_FILE)
+}
+
+pub fn agent_status_path() -> &'static Path {
+    Path::new(AGENT_STATUS_FILE)
 }

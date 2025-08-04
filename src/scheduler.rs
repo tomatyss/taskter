@@ -1,7 +1,8 @@
-use crate::{agent, store};
+use crate::{agent, status, store};
 use agent::ExecutionResult;
 use chrono_tz::America::New_York;
 use futures::future::join_all;
+use status::AgentState;
 use std::time::Duration;
 use store::TaskStatus;
 use tokio_cron_scheduler::{Job, JobScheduler};
@@ -32,7 +33,9 @@ pub async fn run() -> anyhow::Result<()> {
                             .collect();
 
                         if tasks.is_empty() {
+                            let _ = status::set_agent_state(a.id, AgentState::Running);
                             let _ = agent::execute_task(&a, None).await;
+                            let _ = status::set_agent_state(a.id, AgentState::Idle);
                         } else {
                             let task_data: Vec<(usize, store::Task)> = tasks
                                 .iter()
@@ -49,7 +52,14 @@ pub async fn run() -> anyhow::Result<()> {
                             let handles = task_data.into_iter().map(|(id, task)| {
                                 let agent_clone = a.clone();
                                 tokio::spawn(async move {
-                                    (id, agent::execute_task(&agent_clone, Some(&task)).await)
+                                    let _ = status::set_agent_state(
+                                        agent_clone.id,
+                                        AgentState::Running,
+                                    );
+                                    let res = agent::execute_task(&agent_clone, Some(&task)).await;
+                                    let _ =
+                                        status::set_agent_state(agent_clone.id, AgentState::Idle);
+                                    (id, res)
                                 })
                             });
 

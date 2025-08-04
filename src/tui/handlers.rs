@@ -1,6 +1,7 @@
 use super::app::{App, View};
 use super::render::ui;
 use crate::agent::{self};
+use crate::status::{self, AgentState};
 use crate::store::{self, Task, TaskStatus};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
@@ -225,11 +226,19 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                         let task_clone = task.clone();
                                         let board_clone = Arc::clone(&app.board);
                                         tokio::spawn(async move {
+                                            let _ = status::set_agent_state(
+                                                agent_clone.id,
+                                                AgentState::Running,
+                                            );
                                             let result = agent::execute_task(
                                                 &agent_clone,
                                                 Some(&task_clone),
                                             )
                                             .await;
+                                            let _ = status::set_agent_state(
+                                                agent_clone.id,
+                                                AgentState::Idle,
+                                            );
                                             let mut board = board_clone.lock().unwrap();
                                             if let Some(task) = board
                                                 .tasks
