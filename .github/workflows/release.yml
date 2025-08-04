@@ -29,11 +29,14 @@ jobs:
           override: true
       - name: Build
         run: cargo build --release
+      - name: Rename binary
+        run: mv ${{ matrix.binary_path }} target/release/${{ matrix.artifact_name }}
+        shell: bash
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.artifact_name }}
-          path: ${{ matrix.binary_path }}
+          path: target/release/${{ matrix.artifact_name }}
           if-no-files-found: error
 
   release:
@@ -50,4 +53,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          files: artifacts/**
+          files: |
+            artifacts/taskter-linux/taskter-linux
+            artifacts/taskter-windows.exe/taskter-windows.exe
+            artifacts/taskter-macos/taskter-macos
