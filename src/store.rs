@@ -1,3 +1,5 @@
+//! Data models for tasks, boards, and OKRs with helpers for persistence.
+
 use serde::{Deserialize, Serialize};
 use std::fs;
 

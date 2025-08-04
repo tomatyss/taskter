@@ -1,3 +1,5 @@
+//! Application state and logic for the terminal UI.
+
 use crate::agent::Agent;
 use crate::store::{self, Board, Okr, Task, TaskStatus};
 use ratatui::widgets::ListState;
@@ -154,7 +156,7 @@ impl App {
                         1 => TaskStatus::InProgress,
                         _ => TaskStatus::Done,
                     };
-                    new_status_index = next as usize;
+                    new_status_index = usize::from(next.unsigned_abs());
                 } else {
                     return;
                 }

@@ -1,3 +1,5 @@
+//! Cron-based scheduler that runs agents on a timetable.
+
 use crate::{agent, status, store};
 use agent::ExecutionResult;
 use chrono_tz::America::New_York;

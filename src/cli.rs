@@ -1,3 +1,5 @@
+//! Command-line interface definitions for Taskter.
+
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
