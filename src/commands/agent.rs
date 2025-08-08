@@ -47,6 +47,7 @@ pub async fn handle(action: &AgentCommands) -> anyhow::Result<()> {
         }
         AgentCommands::List => {
             let agents = agent_model::list_agents()?;
+            let running = agent_model::load_running_agents().unwrap_or_default();
             for a in agents {
                 let tool_names = a
                     .tools
@@ -54,9 +55,29 @@ pub async fn handle(action: &AgentCommands) -> anyhow::Result<()> {
                     .map(|t| t.name.clone())
                     .collect::<Vec<_>>()
                     .join(", ");
+                let status = if running.contains(&a.id) {
+                    " (running)"
+                } else {
+                    ""
+                };
                 println!(
-                    "{}: {} (model: {}, tools: {})",
-                    a.id, a.system_prompt, a.model, tool_names
+                    "{}: {} (model: {}, tools: {}){}",
+                    a.id, a.system_prompt, a.model, tool_names, status
+                );
+            }
+        }
+        AgentCommands::Running => {
+            let running = agent_model::load_running_agents()?;
+            if running.is_empty() {
+                println!("No agents running.");
+            } else {
+                println!(
+                    "Running agents: {}",
+                    running
+                        .iter()
+                        .map(|id| id.to_string())
+                        .collect::<Vec<_>>()
+                        .join(", ")
                 );
             }
         }

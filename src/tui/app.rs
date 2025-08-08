@@ -22,6 +22,7 @@ pub enum View {
 pub struct App {
     pub board: Arc<Mutex<Board>>,
     pub agents: Vec<Agent>,
+    pub running_agents: Vec<usize>,
     pub selected_column: usize,
     pub selected_task: [ListState; 3],
     pub current_view: View,
@@ -40,6 +41,7 @@ impl App {
         let mut app = App {
             board: Arc::new(Mutex::new(board)),
             agents,
+            running_agents: crate::agent::load_running_agents().unwrap_or_default(),
             selected_column: 0,
             selected_task: [
                 ListState::default(),

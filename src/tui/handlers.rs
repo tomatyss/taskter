@@ -59,6 +59,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
         ".taskter/okrs.json",
         ".taskter/logs.log",
         ".taskter/agents.json",
+        ".taskter/running_agents.json",
     ] {
         watcher
             .watch(Path::new(path), RecursiveMode::NonRecursive)
@@ -84,6 +85,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     } else if p.ends_with("agents.json") {
                         if let Ok(agents) = crate::agent::load_agents() {
                             app.agents = agents;
+                        }
+                    } else if p.ends_with("running_agents.json") {
+                        if let Ok(running) = crate::agent::load_running_agents() {
+                            app.running_agents = running;
                         }
                     }
                 }
