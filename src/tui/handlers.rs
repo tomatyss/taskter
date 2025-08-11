@@ -252,13 +252,15 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                                             agent::ExecutionResult::Success {
                                                                 comment,
                                                             } => {
-                                                                task.status = store::TaskStatus::Done;
+                                                                task.status =
+                                                                    store::TaskStatus::Done;
                                                                 task.comment = Some(comment);
                                                             }
                                                             agent::ExecutionResult::Failure {
                                                                 comment,
                                                             } => {
-                                                                task.status = store::TaskStatus::ToDo;
+                                                                task.status =
+                                                                    store::TaskStatus::ToDo;
                                                                 task.comment = Some(comment);
                                                                 task.agent_id = None;
                                                             }
@@ -266,7 +268,8 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                                         Err(_) => {
                                                             task.status = store::TaskStatus::ToDo;
                                                             task.comment = Some(
-                                                                "Failed to execute task.".to_string(),
+                                                                "Failed to execute task."
+                                                                    .to_string(),
                                                             );
                                                             task.agent_id = None;
                                                         }
