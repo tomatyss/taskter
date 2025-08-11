@@ -59,9 +59,10 @@ async fn call_remote_api(
         .json(&request_body)
         .send()
         .await
-        .map_err(|e| {
-            let _ = append_log("API request failed; falling back to local simulation");
-            e
+        .inspect_err(|e| {
+            let _ = append_log(&format!(
+                "API request failed; falling back to local simulation: {e}"
+            ));
         })?;
 
     if !response.status().is_success() {
@@ -69,16 +70,21 @@ async fn call_remote_api(
         anyhow::bail!("status {}", response.status());
     }
 
-    response.json().await.map_err(|e| {
-        let _ = append_log("Failed to parse API response; falling back to local simulation");
-        e.into()
-    })
+    let json = response.json().await.inspect_err(|e| {
+        let _ = append_log(&format!(
+            "Failed to parse API response; falling back to local simulation: {e}"
+        ));
+    })?;
+    Ok(json)
 }
 
 fn simulate_without_api(agent: &Agent, has_send_email_tool: bool) -> ExecutionResult {
     if has_send_email_tool {
         let msg = "Tool available. Task considered complete.".to_string();
-        let _ = append_log(&format!("Agent {} finished successfully: {}", agent.id, msg));
+        let _ = append_log(&format!(
+            "Agent {} finished successfully: {}",
+            agent.id, msg
+        ));
         ExecutionResult::Success { comment: msg }
     } else {
         let msg = "Required tool not available.".to_string();
@@ -89,7 +95,7 @@ fn simulate_without_api(agent: &Agent, has_send_email_tool: bool) -> ExecutionRe
 
 fn handle_model_response(
     agent: &Agent,
-    response_json: Value,
+    response_json: &Value,
     history: &mut Vec<Value>,
 ) -> anyhow::Result<Option<ExecutionResult>> {
     let candidate = &response_json["candidates"][0];
@@ -121,7 +127,10 @@ fn handle_model_response(
 
     if let Some(text) = part.get("text").and_then(Value::as_str) {
         let comment = text.to_string();
-        let _ = append_log(&format!("Agent {} finished successfully: {}", agent.id, comment));
+        let _ = append_log(&format!(
+            "Agent {} finished successfully: {}",
+            agent.id, comment
+        ));
         return Ok(Some(ExecutionResult::Success { comment }));
     }
 
@@ -141,13 +150,18 @@ fn handle_model_response(
 pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<ExecutionResult> {
     let client = Client::new();
     let log_message = if let Some(task) = task {
-        format!("Agent {} executing task {}: {}", agent.id, task.id, task.title)
+        format!(
+            "Agent {} executing task {}: {}",
+            agent.id, task.id, task.title
+        )
     } else {
         format!("Agent {} executing without a task", agent.id)
     };
     let _ = append_log(&log_message);
 
-    let api_key = std::env::var("GEMINI_API_KEY").ok().filter(|k| !k.trim().is_empty());
+    let api_key = std::env::var("GEMINI_API_KEY")
+        .ok()
+        .filter(|k| !k.trim().is_empty());
     let has_send_email_tool = agent.tools.iter().any(|t| t.name == "send_email");
 
     if api_key.is_none() {
@@ -175,7 +189,7 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
             Err(_) => return Ok(simulate_without_api(agent, has_send_email_tool)),
         };
 
-        if let Some(result) = handle_model_response(agent, response_json, &mut history)? {
+        if let Some(result) = handle_model_response(agent, &response_json, &mut history)? {
             return Ok(result);
         }
     }
@@ -293,8 +307,8 @@ pub fn update_agent(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
     use reqwest::Client;
+    use serde_json::json;
 
     #[tokio::test(flavor = "current_thread")]
     async fn call_remote_api_returns_err_on_network_failure() {
@@ -363,8 +377,7 @@ mod tests {
             }]
         });
 
-        let res = handle_model_response(&agent, response_json, &mut history)
-            .expect("tool call");
+        let res = handle_model_response(&agent, &response_json, &mut history).expect("tool call");
         assert!(res.is_none());
         assert_eq!(history.len(), 2);
 
@@ -374,8 +387,8 @@ mod tests {
             }]
         });
 
-        let res = handle_model_response(&agent, response_json, &mut history)
-            .expect("text response");
+        let res =
+            handle_model_response(&agent, &response_json, &mut history).expect("text response");
         assert!(matches!(
             res,
             Some(ExecutionResult::Success { comment }) if comment == "done"
