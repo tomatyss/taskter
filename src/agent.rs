@@ -47,6 +47,7 @@ fn append_log(message: &str) -> anyhow::Result<()> {
 /// Returns an error if writing to the log fails or if a tool execution fails.
 #[must_use = "use the result to determine task outcome"]
 pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<ExecutionResult> {
+    let _guard = RunningAgentGuard::new(agent.id);
     let client = Client::new();
     let log_message = if let Some(task) = task {
         format!(
@@ -359,6 +360,53 @@ pub fn save_agents(agents: &[Agent]) -> anyhow::Result<()> {
     let content = serde_json::to_string_pretty(agents)?;
     fs::write(path, content)?;
     Ok(())
+}
+
+pub fn load_running_agents() -> anyhow::Result<Vec<usize>> {
+    let path = config::running_agents_path();
+    if !path.exists() {
+        fs::create_dir_all(path.parent().unwrap())?;
+        fs::write(path, "[]")?;
+    }
+    let content = fs::read_to_string(path)?;
+    let ids: Vec<usize> = serde_json::from_str(&content)?;
+    Ok(ids)
+}
+
+pub fn save_running_agents(ids: &[usize]) -> anyhow::Result<()> {
+    let path = config::running_agents_path();
+    let content = serde_json::to_string_pretty(ids)?;
+    fs::write(path, content)?;
+    Ok(())
+}
+
+pub fn set_agent_running(id: usize, running: bool) -> anyhow::Result<()> {
+    let mut ids = load_running_agents()?;
+    if running {
+        if !ids.contains(&id) {
+            ids.push(id);
+        }
+    } else {
+        ids.retain(|&x| x != id);
+    }
+    save_running_agents(&ids)
+}
+
+pub struct RunningAgentGuard {
+    id: usize,
+}
+
+impl RunningAgentGuard {
+    pub fn new(id: usize) -> Self {
+        let _ = set_agent_running(id, true);
+        Self { id }
+    }
+}
+
+impl Drop for RunningAgentGuard {
+    fn drop(&mut self) {
+        let _ = set_agent_running(self.id, false);
+    }
 }
 
 /// Convenience wrapper around [`load_agents`].

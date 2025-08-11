@@ -47,7 +47,7 @@ fn okr_roundtrip_persists_data() {
         };
 
         // When
-        store::save_okrs(&[okr.clone()]).expect("failed to save okrs");
+        store::save_okrs(std::slice::from_ref(&okr)).expect("failed to save okrs");
         let loaded = store::load_okrs().expect("failed to load okrs");
 
         // Then

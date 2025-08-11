@@ -59,6 +59,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
         ".taskter/okrs.json",
         ".taskter/logs.log",
         ".taskter/agents.json",
+        ".taskter/running_agents.json",
     ] {
         watcher
             .watch(Path::new(path), RecursiveMode::NonRecursive)
@@ -84,6 +85,10 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                     } else if p.ends_with("agents.json") {
                         if let Ok(agents) = crate::agent::load_agents() {
                             app.agents = agents;
+                        }
+                    } else if p.ends_with("running_agents.json") {
+                        if let Ok(running) = crate::agent::load_running_agents() {
+                            app.running_agents = running;
                         }
                     }
                 }
@@ -224,44 +229,54 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                                         let agent_clone = agent.clone();
                                         let task_clone = task.clone();
                                         let board_clone = Arc::clone(&app.board);
-                                        tokio::spawn(async move {
-                                            let result = agent::execute_task(
-                                                &agent_clone,
-                                                Some(&task_clone),
-                                            )
-                                            .await;
-                                            let mut board = board_clone.lock().unwrap();
-                                            if let Some(task) = board
-                                                .tasks
-                                                .iter_mut()
-                                                .find(|t| t.id == task_clone.id)
-                                            {
-                                                match result {
-                                                    Ok(result) => match result {
-                                                        agent::ExecutionResult::Success {
-                                                            comment,
-                                                        } => {
-                                                            task.status = store::TaskStatus::Done;
-                                                            task.comment = Some(comment);
-                                                        }
-                                                        agent::ExecutionResult::Failure {
-                                                            comment,
-                                                        } => {
+                                        std::thread::spawn(move || {
+                                            // Run the async agent execution on a dedicated runtime
+                                            let rt = tokio::runtime::Builder::new_current_thread()
+                                                .enable_all()
+                                                .build()
+                                                .expect("failed to build runtime");
+                                            rt.block_on(async move {
+                                                let result = agent::execute_task(
+                                                    &agent_clone,
+                                                    Some(&task_clone),
+                                                )
+                                                .await;
+                                                let mut board = board_clone.lock().unwrap();
+                                                if let Some(task) = board
+                                                    .tasks
+                                                    .iter_mut()
+                                                    .find(|t| t.id == task_clone.id)
+                                                {
+                                                    match result {
+                                                        Ok(result) => match result {
+                                                            agent::ExecutionResult::Success {
+                                                                comment,
+                                                            } => {
+                                                                task.status =
+                                                                    store::TaskStatus::Done;
+                                                                task.comment = Some(comment);
+                                                            }
+                                                            agent::ExecutionResult::Failure {
+                                                                comment,
+                                                            } => {
+                                                                task.status =
+                                                                    store::TaskStatus::ToDo;
+                                                                task.comment = Some(comment);
+                                                                task.agent_id = None;
+                                                            }
+                                                        },
+                                                        Err(_) => {
                                                             task.status = store::TaskStatus::ToDo;
-                                                            task.comment = Some(comment);
+                                                            task.comment = Some(
+                                                                "Failed to execute task."
+                                                                    .to_string(),
+                                                            );
                                                             task.agent_id = None;
                                                         }
-                                                    },
-                                                    Err(_) => {
-                                                        task.status = store::TaskStatus::ToDo;
-                                                        task.comment = Some(
-                                                            "Failed to execute task.".to_string(),
-                                                        );
-                                                        task.agent_id = None;
                                                     }
                                                 }
-                                            }
-                                            store::save_board(&board).unwrap();
+                                                store::save_board(&board).unwrap();
+                                            });
                                         });
                                     }
                                 }

@@ -111,6 +111,8 @@ pub enum AgentCommands {
     },
     /// Lists all agents
     List,
+    /// Lists running agents
+    Running,
     /// Removes an agent by id
     Remove {
         /// The id of the agent to delete
