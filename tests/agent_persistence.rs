@@ -26,7 +26,7 @@ fn save_agents_persists_to_disk() {
             schedule: None,
             repeat: false,
         };
-        agent::save_agents(&[agent.clone()]).expect("save failed");
+        agent::save_agents(std::slice::from_ref(&agent)).expect("save failed");
         let stored: Vec<Agent> =
             serde_json::from_str(&std::fs::read_to_string(".taskter/agents.json").unwrap())
                 .unwrap();
@@ -51,7 +51,7 @@ fn list_agents_returns_saved_agents() {
             schedule: None,
             repeat: false,
         };
-        agent::save_agents(&[agent.clone()]).unwrap();
+        agent::save_agents(std::slice::from_ref(&agent)).unwrap();
         let listed = agent::list_agents().unwrap();
         assert_eq!(listed.len(), 1);
         assert_eq!(listed[0].id, agent.id);
