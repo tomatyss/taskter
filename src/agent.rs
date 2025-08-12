@@ -38,6 +38,107 @@ fn append_log(message: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
+async fn call_remote_api(
+    client: &Client,
+    agent: &Agent,
+    history: &[Value],
+    api_key: &str,
+) -> anyhow::Result<Value> {
+    let request_body = json!({
+        "contents": history,
+        "tools": [{"functionDeclarations": agent.tools}]
+    });
+
+    let response = client
+        .post(format!(
+            "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent",
+            agent.model
+        ))
+        .header("x-goog-api-key", api_key)
+        .header("Content-Type", "application/json")
+        .json(&request_body)
+        .send()
+        .await
+        .inspect_err(|e| {
+            let _ = append_log(&format!(
+                "API request failed; falling back to local simulation: {e}"
+            ));
+        })?;
+
+    if !response.status().is_success() {
+        let _ = append_log("API returned error status; falling back to local simulation");
+        anyhow::bail!("status {}", response.status());
+    }
+
+    let json = response.json().await.inspect_err(|e| {
+        let _ = append_log(&format!(
+            "Failed to parse API response; falling back to local simulation: {e}"
+        ));
+    })?;
+    Ok(json)
+}
+
+fn simulate_without_api(agent: &Agent, has_send_email_tool: bool) -> ExecutionResult {
+    if has_send_email_tool {
+        let msg = "Tool available. Task considered complete.".to_string();
+        let _ = append_log(&format!(
+            "Agent {} finished successfully: {}",
+            agent.id, msg
+        ));
+        ExecutionResult::Success { comment: msg }
+    } else {
+        let msg = "Required tool not available.".to_string();
+        let _ = append_log(&format!("Agent {} failed: {}", agent.id, msg));
+        ExecutionResult::Failure { comment: msg }
+    }
+}
+
+fn handle_model_response(
+    agent: &Agent,
+    response_json: &Value,
+    history: &mut Vec<Value>,
+) -> anyhow::Result<Option<ExecutionResult>> {
+    let candidate = &response_json["candidates"][0];
+    let part = &candidate["content"]["parts"][0];
+
+    if let Some(function_call) = part.get("functionCall") {
+        let tool_name = function_call
+            .get("name")
+            .and_then(Value::as_str)
+            .ok_or_else(|| anyhow::anyhow!("Malformed API response: missing field `name`"))?;
+        let args = &function_call["args"];
+        let _ = append_log(&format!(
+            "Agent {} calling tool {} with args {}",
+            agent.id, tool_name, args
+        ));
+        let tool_response = tools::execute_tool(tool_name, args)?;
+        let _ = append_log(&format!("Tool {tool_name} responded with {tool_response}"));
+
+        history.push(json!({
+            "role": "model",
+            "parts": [{"functionCall": function_call.clone()}]
+        }));
+        history.push(json!({
+            "role": "tool",
+            "parts": [{"functionResponse": {"name": tool_name, "response": {"content": tool_response}}}]
+        }));
+        return Ok(None);
+    }
+
+    if let Some(text) = part.get("text").and_then(Value::as_str) {
+        let comment = text.to_string();
+        let _ = append_log(&format!(
+            "Agent {} finished successfully: {}",
+            agent.id, comment
+        ));
+        return Ok(Some(ExecutionResult::Success { comment }));
+    }
+
+    let msg = "No tool call or text response from the model".to_string();
+    let _ = append_log(&format!("Agent {} failed: {}", agent.id, msg));
+    Ok(Some(ExecutionResult::Failure { comment: msg }))
+}
+
 /// Executes a task with the given agent and records progress in `.taskter/logs.log`.
 ///
 /// Tools referenced by the agent may be invoked during execution.
@@ -57,68 +158,25 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
     } else {
         format!("Agent {} executing without a task", agent.id)
     };
-    if let Err(e) = append_log(&log_message) {
-        eprintln!("Failed to write log: {e}");
-    }
-    // Obtain the API key if it is available.  In a testing or offline environment the
-    // variable is typically missing.  Rather than crashing the whole process with
-    // `expect`, we fall back to a mocked implementation that evaluates the task purely
-    // based on the agent configuration.  This makes the core library test-friendly and
-    // avoids leaking API keys into CI pipelines.
+    let _ = append_log(&log_message);
 
-    let api_key = match std::env::var("GEMINI_API_KEY") {
-        Ok(key) if !key.trim().is_empty() => Some(key),
-        _ => None,
-    };
-
-    // Determine whether the agent has the `send_email` tool available.  We need this
-    // information both for the test-mode shortcut below and as a fallback in case a
-    // live API call is not possible (for instance when running offline or behind a
-    // firewall).
+    let api_key = std::env::var("GEMINI_API_KEY")
+        .ok()
+        .filter(|k| !k.trim().is_empty());
     let has_send_email_tool = agent.tools.iter().any(|t| t.name == "send_email");
 
-    // If no API key is present we are most likely running in a test environment or
-    // the user purposely disabled remote calls.  In that case we simulate the
-    // behaviour expected by the integration tests: succeed when a recognised tool is
-    // available, otherwise fail.
     if api_key.is_none() {
-        if has_send_email_tool {
-            if let Err(e) = append_log("Executing without API key - success via built-in tool") {
-                eprintln!("Failed to write log: {e}");
-            }
-            let msg = "No API key found. Task considered complete.".to_string();
-            if let Err(e) = append_log(&format!(
-                "Agent {} finished successfully: {}",
-                agent.id, msg
-            )) {
-                eprintln!("Failed to write log: {e}");
-            }
-            return Ok(ExecutionResult::Success { comment: msg });
-        }
-
-        if let Err(e) = append_log("Executing without API key - required tool missing") {
-            eprintln!("Failed to write log: {e}");
-        }
-        let msg = "Required tool not available.".to_string();
-        if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
-            eprintln!("Failed to write log: {e}");
-        }
-        return Ok(ExecutionResult::Failure { comment: msg });
+        let _ = append_log("Executing without API key");
+        return Ok(simulate_without_api(agent, has_send_email_tool));
     }
-
     let api_key = api_key.unwrap();
 
-    let user_prompt = if let Some(task) = task {
-        if let Some(description) = &task.description {
-            format!(
-                "Task Title: {}\nTask Description: {}",
-                task.title, description
-            )
-        } else {
-            task.title.clone()
-        }
-    } else {
-        String::new()
+    let user_prompt = match task {
+        Some(task) => match &task.description {
+            Some(desc) => format!("Task Title: {}\nTask Description: {}", task.title, desc),
+            None => task.title.clone(),
+        },
+        None => String::new(),
     };
 
     let mut history = vec![json!({
@@ -127,178 +185,13 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
     })];
 
     loop {
-        let request_body = json!({
-            "contents": history,
-            "tools": [{"functionDeclarations": agent.tools}]
-        });
-
-        // Try to contact the remote API.  In offline scenarios this can fail (e.g.
-        // DNS resolution error).  Instead of propagating the error we gracefully
-        // fall back to the local simulation so that library users can still make
-        // progress without network access.
-        let response = match client
-            .post(format!(
-                "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent",
-                agent.model
-            ))
-            .header("x-goog-api-key", &api_key)
-            .header("Content-Type", "application/json")
-            .json(&request_body)
-            .send()
-            .await
-        {
-            Ok(resp) => resp,
-            Err(_) => {
-                if let Err(e) = append_log("API request failed; falling back to local simulation") {
-                    eprintln!("Failed to write log: {e}");
-                }
-                return Ok(if has_send_email_tool {
-                    let msg = "Tool available. Task considered complete.".to_string();
-                    if let Err(e) = append_log(&format!(
-                        "Agent {} finished successfully: {}",
-                        agent.id, msg
-                    )) {
-                        eprintln!("Failed to write log: {e}");
-                    }
-                    ExecutionResult::Success { comment: msg }
-                } else {
-                    let msg = "Required tool not available.".to_string();
-                    if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
-                        eprintln!("Failed to write log: {e}");
-                    }
-                    ExecutionResult::Failure { comment: msg }
-                });
-            }
-        };
-
-        if !response.status().is_success() {
-            // When the API rejects the request (for example due to an invalid key)
-            // we once again fall back to the local simulation.  This keeps normal
-            // development and CI runs independent from external services.
-            if let Err(e) =
-                append_log("API returned error status; falling back to local simulation")
-            {
-                eprintln!("Failed to write log: {e}");
-            }
-            return Ok(if has_send_email_tool {
-                let msg = "Tool available. Task considered complete.".to_string();
-                if let Err(e) = append_log(&format!(
-                    "Agent {} finished successfully: {}",
-                    agent.id, msg
-                )) {
-                    eprintln!("Failed to write log: {e}");
-                }
-                ExecutionResult::Success { comment: msg }
-            } else {
-                let msg = "Required tool not available.".to_string();
-                if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
-                    eprintln!("Failed to write log: {e}");
-                }
-                ExecutionResult::Failure { comment: msg }
-            });
-        }
-
-        let response_json: Value = match response.json().await {
+        let response_json = match call_remote_api(&client, agent, &history, &api_key).await {
             Ok(json) => json,
-            Err(_) => {
-                if let Err(e) =
-                    append_log("Failed to parse API response; falling back to local simulation")
-                {
-                    eprintln!("Failed to write log: {e}");
-                }
-                return Ok(if has_send_email_tool {
-                    let msg = "Tool available. Task considered complete.".to_string();
-                    if let Err(e) = append_log(&format!(
-                        "Agent {} finished successfully: {}",
-                        agent.id, msg
-                    )) {
-                        eprintln!("Failed to write log: {e}");
-                    }
-                    ExecutionResult::Success { comment: msg }
-                } else {
-                    let msg = "Required tool not available.".to_string();
-                    if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
-                        eprintln!("Failed to write log: {e}");
-                    }
-                    ExecutionResult::Failure { comment: msg }
-                });
-            }
+            Err(_) => return Ok(simulate_without_api(agent, has_send_email_tool)),
         };
 
-        let candidate = &response_json["candidates"][0];
-        let part = &candidate["content"]["parts"][0];
-
-        if let Some(function_call) = part.get("functionCall") {
-            let tool_name = match function_call
-                .get("name")
-                .and_then(Value::as_str)
-                .ok_or_else(|| ExecutionResult::Failure {
-                    comment: "Malformed API response: missing field `name`".to_string(),
-                }) {
-                Ok(name) => name,
-                Err(failure) => {
-                    if let ExecutionResult::Failure { comment } = &failure {
-                        if let Err(e) =
-                            append_log(&format!("Agent {} failed: {}", agent.id, comment))
-                        {
-                            eprintln!("Failed to write log: {e}");
-                        }
-                    }
-                    return Ok(failure);
-                }
-            };
-            let args = &function_call["args"];
-            if let Err(e) = append_log(&format!(
-                "Agent {} calling tool {} with args {}",
-                agent.id, tool_name, args
-            )) {
-                eprintln!("Failed to write log: {e}");
-            }
-            let tool_response = tools::execute_tool(tool_name, args)?;
-            if let Err(e) = append_log(&format!("Tool {tool_name} responded with {tool_response}"))
-            {
-                eprintln!("Failed to write log: {e}");
-            }
-
-            history.push(json!({
-                "role": "model",
-                "parts": [{"functionCall": function_call.clone()}]
-            }));
-            history.push(json!({
-                "role": "tool",
-                "parts": [{"functionResponse": {"name": tool_name, "response": {"content": tool_response}}}]
-            }));
-        } else if part.get("text").is_some() {
-            let comment = match part.get("text").and_then(Value::as_str).ok_or_else(|| {
-                ExecutionResult::Failure {
-                    comment: "Malformed API response: missing field `text`".to_string(),
-                }
-            }) {
-                Ok(text) => text.to_string(),
-                Err(failure) => {
-                    if let ExecutionResult::Failure { comment } = &failure {
-                        if let Err(e) =
-                            append_log(&format!("Agent {} failed: {}", agent.id, comment))
-                        {
-                            eprintln!("Failed to write log: {e}");
-                        }
-                    }
-                    return Ok(failure);
-                }
-            };
-            if let Err(e) = append_log(&format!(
-                "Agent {} finished successfully: {}",
-                agent.id, comment
-            )) {
-                eprintln!("Failed to write log: {e}");
-            }
-            return Ok(ExecutionResult::Success { comment });
-        } else {
-            let msg = "No tool call or text response from the model".to_string();
-            if let Err(e) = append_log(&format!("Agent {} failed: {}", agent.id, msg)) {
-                eprintln!("Failed to write log: {e}");
-            }
-            return Ok(ExecutionResult::Failure { comment: msg });
+        if let Some(result) = handle_model_response(agent, &response_json, &mut history)? {
+            return Ok(result);
         }
     }
 }
@@ -457,4 +350,96 @@ pub fn update_agent(
         save_agents(&agents)?;
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use reqwest::Client;
+    use serde_json::json;
+
+    #[tokio::test(flavor = "current_thread")]
+    async fn call_remote_api_returns_err_on_network_failure() {
+        std::env::set_var("GEMINI_API_KEY", "dummy");
+        std::env::set_var("https_proxy", "http://127.0.0.1:9");
+
+        let client = Client::new();
+        let agent = Agent {
+            id: 1,
+            system_prompt: String::new(),
+            tools: vec![],
+            model: "gemini-2.5-flash".into(),
+            schedule: None,
+            repeat: false,
+        };
+        let history = vec![json!({"role": "user", "parts": [{"text": "hi"}]})];
+        let result = call_remote_api(&client, &agent, &history, "dummy").await;
+        assert!(result.is_err());
+
+        std::env::remove_var("https_proxy");
+        std::env::remove_var("GEMINI_API_KEY");
+    }
+
+    #[test]
+    fn simulate_without_api_behaves() {
+        let agent = Agent {
+            id: 1,
+            system_prompt: String::new(),
+            tools: vec![],
+            model: String::new(),
+            schedule: None,
+            repeat: false,
+        };
+        assert!(matches!(
+            simulate_without_api(&agent, true),
+            ExecutionResult::Success { .. }
+        ));
+        assert!(matches!(
+            simulate_without_api(&agent, false),
+            ExecutionResult::Failure { .. }
+        ));
+    }
+
+    #[test]
+    fn handle_model_response_parses_tool_and_text() {
+        let agent = Agent {
+            id: 1,
+            system_prompt: String::new(),
+            tools: vec![crate::tools::run_python::declaration()],
+            model: String::new(),
+            schedule: None,
+            repeat: false,
+        };
+        let mut history = Vec::new();
+
+        let response_json = json!({
+            "candidates": [{
+                "content": {
+                    "parts": [{
+                        "functionCall": {
+                            "name": "run_python",
+                            "args": {"code": "print(40 + 2)"}
+                        }
+                    }]
+                }
+            }]
+        });
+
+        let res = handle_model_response(&agent, &response_json, &mut history).expect("tool call");
+        assert!(res.is_none());
+        assert_eq!(history.len(), 2);
+
+        let response_json = json!({
+            "candidates": [{
+                "content": {"parts": [{"text": "done"}]}
+            }]
+        });
+
+        let res =
+            handle_model_response(&agent, &response_json, &mut history).expect("text response");
+        assert!(matches!(
+            res,
+            Some(ExecutionResult::Success { comment }) if comment == "done"
+        ));
+    }
 }
