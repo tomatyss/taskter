@@ -19,7 +19,7 @@ async fn scheduler_executes_agent_tasks() {
         schedule: Some("*/1 * * * * *".into()),
         repeat: false,
     };
-    agent::save_agents(&[agent.clone()]).unwrap();
+    agent::save_agents(std::slice::from_ref(&agent)).unwrap();
 
     let tasks = vec![
         Task {
