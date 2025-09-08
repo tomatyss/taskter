@@ -313,6 +313,41 @@ When a task is executed, the agent will attempt to perform the task. If successf
 
 In the interactive board (`taskter board`), tasks assigned to an agent will be marked with a `*`. You can view the assigned agent ID and any comments by selecting the task and pressing `Enter`.
 
+#### Model Providers (Gemini + OpenAI)
+
+Taskter uses a model‑agnostic provider layer so new LLM backends can be added without changing the agent loop.
+
+- Gemini (default): selected when `agent.model` starts with `gemini`.
+  - Env var: `GEMINI_API_KEY`
+  - API: Gemini `generateContent`
+- OpenAI: selected when `agent.model` starts with `gpt-`.
+  - Env var: `OPENAI_API_KEY`
+  - APIs:
+    - Chat Completions for models like `gpt-4.1` (tool_calls + tool_call_id)
+    - Responses for `gpt-5` (function_call + function_call_output)
+
+Examples:
+
+```bash
+# Gemini
+export GEMINI_API_KEY=your_key
+taskter agent add --prompt "Be helpful" --tools run_bash --model gemini-2.5-pro
+
+# OpenAI Chat (gpt-4.1)
+export OPENAI_API_KEY=your_key
+taskter agent add --prompt "Be helpful" --tools run_bash --model gpt-4.1
+
+# OpenAI Responses (gpt-5)
+export OPENAI_API_KEY=your_key
+taskter agent add --prompt "Be helpful" --tools run_bash --model gpt-5
+```
+
+Notes:
+- Agents using OpenAI tool‑calling support multi‑turn loops. For `gpt-4.1` we use Chat Completions tool_calls; for `gpt-5` we handle `function_call` and return `function_call_output` per the Responses API.
+- Debugging: Taskter writes raw provider requests and responses to `.taskter/api_responses.log`.
+
+See the book’s “Model Providers” chapter for details (`docs/src/providers.md`).
+
 ### Email configuration
 
 Agent email tools read credentials from `.taskter/email_config.json`. Place this

@@ -31,6 +31,7 @@ pub mod config;
 pub mod scheduler;
 pub mod store;
 pub mod tools;
+pub mod providers;
 
 pub use cli::{Cli, Commands, ShowCommands};
 

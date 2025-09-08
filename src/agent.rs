@@ -13,7 +13,7 @@ use anyhow::Result;
 use chrono::Local;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::fs;
 use std::fs::OpenOptions;
 use std::io::Write;
@@ -38,46 +38,6 @@ fn append_log(message: &str) -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn call_remote_api(
-    client: &Client,
-    agent: &Agent,
-    history: &[Value],
-    api_key: &str,
-) -> anyhow::Result<Value> {
-    let request_body = json!({
-        "contents": history,
-        "tools": [{"functionDeclarations": agent.tools}]
-    });
-
-    let response = client
-        .post(format!(
-            "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent",
-            agent.model
-        ))
-        .header("x-goog-api-key", api_key)
-        .header("Content-Type", "application/json")
-        .json(&request_body)
-        .send()
-        .await
-        .inspect_err(|e| {
-            let _ = append_log(&format!(
-                "API request failed; falling back to local simulation: {e}"
-            ));
-        })?;
-
-    if !response.status().is_success() {
-        let _ = append_log("API returned error status; falling back to local simulation");
-        anyhow::bail!("status {}", response.status());
-    }
-
-    let json = response.json().await.inspect_err(|e| {
-        let _ = append_log(&format!(
-            "Failed to parse API response; falling back to local simulation: {e}"
-        ));
-    })?;
-    Ok(json)
-}
-
 fn simulate_without_api(agent: &Agent, has_send_email_tool: bool) -> ExecutionResult {
     if has_send_email_tool {
         let msg = "Tool available. Task considered complete.".to_string();
@@ -93,51 +53,7 @@ fn simulate_without_api(agent: &Agent, has_send_email_tool: bool) -> ExecutionRe
     }
 }
 
-fn handle_model_response(
-    agent: &Agent,
-    response_json: &Value,
-    history: &mut Vec<Value>,
-) -> anyhow::Result<Option<ExecutionResult>> {
-    let candidate = &response_json["candidates"][0];
-    let part = &candidate["content"]["parts"][0];
-
-    if let Some(function_call) = part.get("functionCall") {
-        let tool_name = function_call
-            .get("name")
-            .and_then(Value::as_str)
-            .ok_or_else(|| anyhow::anyhow!("Malformed API response: missing field `name`"))?;
-        let args = &function_call["args"];
-        let _ = append_log(&format!(
-            "Agent {} calling tool {} with args {}",
-            agent.id, tool_name, args
-        ));
-        let tool_response = tools::execute_tool(tool_name, args)?;
-        let _ = append_log(&format!("Tool {tool_name} responded with {tool_response}"));
-
-        history.push(json!({
-            "role": "model",
-            "parts": [{"functionCall": function_call.clone()}]
-        }));
-        history.push(json!({
-            "role": "tool",
-            "parts": [{"functionResponse": {"name": tool_name, "response": {"content": tool_response}}}]
-        }));
-        return Ok(None);
-    }
-
-    if let Some(text) = part.get("text").and_then(Value::as_str) {
-        let comment = text.to_string();
-        let _ = append_log(&format!(
-            "Agent {} finished successfully: {}",
-            agent.id, comment
-        ));
-        return Ok(Some(ExecutionResult::Success { comment }));
-    }
-
-    let msg = "No tool call or text response from the model".to_string();
-    let _ = append_log(&format!("Agent {} failed: {}", agent.id, msg));
-    Ok(Some(ExecutionResult::Failure { comment: msg }))
-}
+use crate::providers::{select_provider, ModelAction};
 
 /// Executes a task with the given agent and records progress in `.taskter/logs.log`.
 ///
@@ -149,7 +65,7 @@ fn handle_model_response(
 #[must_use = "use the result to determine task outcome"]
 pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<ExecutionResult> {
     let _guard = RunningAgentGuard::new(agent.id);
-    let client = Client::new();
+    let client = Client::builder().no_proxy().build()?;
     let log_message = if let Some(task) = task {
         format!(
             "Agent {} executing task {}: {}",
@@ -160,7 +76,8 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
     };
     let _ = append_log(&log_message);
 
-    let api_key = std::env::var("GEMINI_API_KEY")
+    let provider = select_provider(agent);
+    let api_key = std::env::var(provider.api_key_env())
         .ok()
         .filter(|k| !k.trim().is_empty());
     let has_send_email_tool = agent.tools.iter().any(|t| t.name == "send_email");
@@ -179,19 +96,41 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
         None => String::new(),
     };
 
-    let mut history = vec![json!({
-        "role": "user",
-        "parts": [{"text": format!("System: {}\nUser: {}", agent.system_prompt, user_prompt)}]
-    })];
+    let mut history = provider.build_history(agent, &user_prompt);
 
     loop {
-        let response_json = match call_remote_api(&client, agent, &history, &api_key).await {
-            Ok(json) => json,
+        let action = match provider
+            .infer(&client, agent, &api_key, &history)
+            .await
+            .inspect_err(|e| {
+                let _ = append_log(&format!(
+                    "API request failed; falling back to local simulation: {e}"
+                ));
+            }) {
+            Ok(a) => a,
             Err(_) => return Ok(simulate_without_api(agent, has_send_email_tool)),
         };
 
-        if let Some(result) = handle_model_response(agent, &response_json, &mut history)? {
-            return Ok(result);
+        match action {
+            ModelAction::ToolCall { name, args, call_id } => {
+                let _ = append_log(&format!(
+                    "Agent {} calling tool {} with args {}",
+                    agent.id, name, args
+                ));
+                let tool_response = tools::execute_tool(&name, &args)?;
+                let _ = append_log(&format!(
+                    "Tool {} responded with {}",
+                    name, tool_response
+                ));
+                provider.append_tool_result(agent, &mut history, &name, &args, &tool_response, call_id.as_deref());
+            }
+            ModelAction::Text { content } => {
+                let _ = append_log(&format!(
+                    "Agent {} finished successfully: {}",
+                    agent.id, content
+                ));
+                return Ok(ExecutionResult::Success { comment: content });
+            }
         }
     }
 }
@@ -357,13 +296,13 @@ mod tests {
     use super::*;
     use reqwest::Client;
     use serde_json::json;
+    use crate::providers::{gemini::GeminiProvider, ModelProvider};
 
     #[tokio::test(flavor = "current_thread")]
     async fn call_remote_api_returns_err_on_network_failure() {
         std::env::set_var("GEMINI_API_KEY", "dummy");
-        std::env::set_var("https_proxy", "http://127.0.0.1:9");
-
-        let client = Client::new();
+        // Build a client that does not consult system proxies to avoid sandbox issues.
+        let client = Client::builder().no_proxy().build().expect("client");
         let agent = Agent {
             id: 1,
             system_prompt: String::new(),
@@ -372,11 +311,11 @@ mod tests {
             schedule: None,
             repeat: false,
         };
-        let history = vec![json!({"role": "user", "parts": [{"text": "hi"}]})];
-        let result = call_remote_api(&client, &agent, &history, "dummy").await;
+        let provider = GeminiProvider;
+        let history = provider.build_history(&agent, "hi");
+        let result = provider.infer(&client, &agent, "dummy", &history).await;
         assert!(result.is_err());
 
-        std::env::remove_var("https_proxy");
         std::env::remove_var("GEMINI_API_KEY");
     }
 
@@ -410,6 +349,7 @@ mod tests {
             schedule: None,
             repeat: false,
         };
+        let provider = GeminiProvider;
         let mut history = Vec::new();
 
         let response_json = json!({
@@ -425,9 +365,15 @@ mod tests {
             }]
         });
 
-        let res = handle_model_response(&agent, &response_json, &mut history).expect("tool call");
-        assert!(res.is_none());
-        assert_eq!(history.len(), 2);
+        let action = provider.parse_response(&response_json).expect("tool call");
+        match action {
+            ModelAction::ToolCall { name, args, call_id: _ } => {
+                let agent_ref = &agent;
+                provider.append_tool_result(agent_ref, &mut history, &name, &args, "ok", None);
+                assert_eq!(history.len(), 2);
+            }
+            _ => panic!("expected tool call"),
+        }
 
         let response_json = json!({
             "candidates": [{
@@ -435,11 +381,7 @@ mod tests {
             }]
         });
 
-        let res =
-            handle_model_response(&agent, &response_json, &mut history).expect("text response");
-        assert!(matches!(
-            res,
-            Some(ExecutionResult::Success { comment }) if comment == "done"
-        ));
+        let action = provider.parse_response(&response_json).expect("text response");
+        assert!(matches!(action, ModelAction::Text { content } if content == "done"));
     }
 }

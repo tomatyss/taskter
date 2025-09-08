@@ -10,6 +10,7 @@ pub struct Cli {
 }
 
 #[derive(Subcommand)]
+#[command(rename_all = "kebab-case")]
 pub enum Commands {
     /// Initializes a new Taskter board
     Init,
@@ -29,11 +30,13 @@ pub enum Commands {
         what: ShowCommands,
     },
     /// Manage OKRs
+    #[command(visible_alias = "okr")]
     Okrs {
         #[command(subcommand)]
         action: OkrCommands,
     },
     /// Manage logs
+    #[command(visible_alias = "log")]
     Logs {
         #[command(subcommand)]
         action: LogCommands,
@@ -49,8 +52,10 @@ pub enum Commands {
         action: SchedulerCommands,
     },
     /// Opens the interactive board
+    #[command(visible_alias = "ui")]
     Board,
     /// Sets the project description
+    #[command(visible_alias = "set-desc")]
     Description {
         /// The project description
         description: String,
@@ -58,12 +63,14 @@ pub enum Commands {
 }
 
 #[derive(Subcommand)]
+#[command(rename_all = "kebab-case")]
 pub enum ShowCommands {
     /// Shows the project description
     Description,
 }
 
 #[derive(Subcommand)]
+#[command(rename_all = "kebab-case")]
 pub enum OkrCommands {
     /// Adds a new OKR
     Add {
@@ -79,6 +86,7 @@ pub enum OkrCommands {
 }
 
 #[derive(Subcommand)]
+#[command(rename_all = "kebab-case")]
 pub enum LogCommands {
     /// Adds a log entry
     Add {
@@ -90,12 +98,14 @@ pub enum LogCommands {
 }
 
 #[derive(Subcommand)]
+#[command(rename_all = "kebab-case")]
 pub enum ToolCommands {
     /// Lists built-in tools
     List,
 }
 
 #[derive(Subcommand)]
+#[command(rename_all = "kebab-case")]
 pub enum AgentCommands {
     /// Adds a new agent
     Add {
@@ -142,6 +152,7 @@ pub enum AgentCommands {
 }
 
 #[derive(Subcommand)]
+#[command(rename_all = "kebab-case")]
 pub enum ScheduleCommands {
     /// Set a cron expression for an agent
     Set {
@@ -162,12 +173,14 @@ pub enum ScheduleCommands {
 }
 
 #[derive(Subcommand)]
+#[command(rename_all = "kebab-case")]
 pub enum SchedulerCommands {
     /// Run the scheduler loop
     Run,
 }
 
 #[derive(Subcommand)]
+#[command(rename_all = "kebab-case")]
 pub enum TaskCommands {
     /// Adds a new task
     Add {
