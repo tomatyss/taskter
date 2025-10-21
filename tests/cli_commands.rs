@@ -217,7 +217,8 @@ fn list_and_delete_agents() {
             .stdout
             .clone();
         let output = String::from_utf8(out).unwrap();
-        assert!(output.contains("1: helper (model: gemini-2.5-flash, tools: send_email)"));
+        assert!(output
+            .contains("1: helper (provider: gemini, model: gemini-2.5-flash, tools: send_email)"));
 
         // delete agent
         Command::cargo_bin("taskter")
@@ -282,6 +283,20 @@ fn update_agent_changes_configuration() {
         assert_eq!(agents[0]["system_prompt"], "helper");
         assert_eq!(agents[0]["tools"][0]["name"], "taskter_task");
         assert_eq!(agents[0]["model"], "gemini-2.5-pro");
+        assert!(agents[0]["provider"].is_null());
+
+        // update the agent's provider
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args(["agent", "update", "--id", "1", "--provider", "openai"])
+            .assert()
+            .success()
+            .stdout(predicate::str::contains("Agent 1 updated."));
+
+        let agents: Vec<Value> =
+            serde_json::from_str(&fs::read_to_string(taskter::config::AGENTS_FILE).unwrap())
+                .unwrap();
+        assert_eq!(agents[0]["provider"], "openai");
 
         // update the agent's prompt only
         Command::cargo_bin("taskter")
@@ -297,6 +312,20 @@ fn update_agent_changes_configuration() {
         assert_eq!(agents[0]["system_prompt"], "new helper");
         assert_eq!(agents[0]["tools"][0]["name"], "taskter_task");
         assert_eq!(agents[0]["model"], "gemini-2.5-pro");
+        assert_eq!(agents[0]["provider"], "openai");
+
+        // remove the provider
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args(["agent", "update", "--id", "1", "--provider", "none"])
+            .assert()
+            .success()
+            .stdout(predicate::str::contains("Agent 1 updated."));
+
+        let agents: Vec<Value> =
+            serde_json::from_str(&fs::read_to_string(taskter::config::AGENTS_FILE).unwrap())
+                .unwrap();
+        assert!(agents[0]["provider"].is_null());
     });
 }
 

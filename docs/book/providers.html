@@ -188,16 +188,49 @@ text completion or a tool call.</p>
 <li>Code: <code>src/providers/gemini.rs</code></li>
 </ul>
 </li>
+<li>OpenAI: selected when <code>agent.model</code> starts with <code>gpt-4</code>, <code>gpt-5</code>, <code>gpt-4o</code>, <code>gpt-4.1</code>, <code>o1</code>, <code>o3</code>, <code>o4</code>, or <code>omni</code>.
+<ul>
+<li>Env var: <code>OPENAI_API_KEY</code></li>
+<li>Code: <code>src/providers/openai.rs</code></li>
+<li>APIs:
+<ul>
+<li>Chat Completions: used for models like <code>gpt-4o</code> and <code>gpt-4o-mini</code>. Tools are passed as <code>{"type":"function","function":{...}}</code> and responses carry <code>choices[0].message.tool_calls[]</code>.</li>
+<li>Responses API: used for <code>gpt-4.1</code>, <code>gpt-5</code>, <code>o-series</code>, and Omni models. Input is an item list; tool calls arrive as <code>{"type":"function_call", name, arguments, call_id}</code> in <code>output[]</code> and you must append both the <code>function_call</code> and a <code>function_call_output</code> item with the same <code>call_id</code>.</li>
+</ul>
+</li>
+<li>Optional overrides:
+<ul>
+<li><code>OPENAI_BASE_URL</code> to point at a proxy (<code>https://api.openai.com</code> by default)</li>
+<li><code>OPENAI_CHAT_ENDPOINT</code> / <code>OPENAI_RESPONSES_ENDPOINT</code> for full URL control</li>
+<li><code>OPENAI_REQUEST_STYLE=chat|responses</code> to force the request format</li>
+<li><code>OPENAI_RESPONSE_FORMAT</code> containing either a JSON blob (e.g. <code>{"type":"json_object"}</code>) or shorthand (<code>json_object</code>)</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Ollama: selected when <code>agent.model</code> starts with <code>ollama:</code>, <code>ollama/</code>, or <code>ollama-</code>.
+<ul>
+<li>Env var: <code>OLLAMA_BASE_URL</code> (defaults to <code>http://localhost:11434</code>)</li>
+<li>Code: <code>src/providers/ollama.rs</code></li>
+<li>Uses the local <code>/api/chat</code> endpoint and mirrors the Chat Completions tool schema.</li>
+</ul>
+</li>
 </ul>
 <h2 id="configure-a-provider"><a class="header" href="#configure-a-provider">Configure a Provider</a></h2>
 <ul>
-<li>Choose a model string when creating/updating an agent (e.g. <code>gemini-2.5-pro</code>).</li>
+<li>Choose a model string when creating/updating an agent (e.g. <code>gemini-2.5-pro</code>, <code>gpt-4.1</code>, <code>o1-mini</code>, or <code>ollama:llama3</code>).</li>
+<li>Set the provider explicitly when running CLI commands by passing <code>--provider gemini|openai|ollama</code>. Use <code>--provider none</code> to clear a previously stored value. When no provider is stored Taskter falls back to model-name heuristics.</li>
 <li>Export the provider’s API key environment variable before running agents.
 <ul>
-<li>Gemini example:
+<li>Gemini:
 <pre><code class="language-bash">export GEMINI_API_KEY=your_key_here
 </code></pre>
 </li>
+<li>OpenAI:
+<pre><code class="language-bash">export OPENAI_API_KEY=your_key_here
+</code></pre>
+</li>
+<li>Ollama does not require an API key. Optionally set <code>OLLAMA_BASE_URL</code> if your daemon listens somewhere other than <code>http://localhost:11434</code>.</li>
 </ul>
 </li>
 </ul>
@@ -206,7 +239,7 @@ built-in tools.</p>
 <h2 id="add-a-new-provider"><a class="header" href="#add-a-new-provider">Add a New Provider</a></h2>
 <p>Implement the <code>ModelProvider</code> trait and register it in <code>select_provider</code>.</p>
 <ol>
-<li>Create a file under <code>src/providers/</code>, e.g. <code>openai.rs</code>:</li>
+<li>Create a file under <code>src/providers/</code>, e.g. <code>my_provider.rs</code>:</li>
 </ol>
 <pre><pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
 </span><span class="boring">fn main() {
@@ -306,7 +339,7 @@ impl ModelProvider for OpenAIProvider {
 </ol>
 <pre><code class="language-bash">export OPENAI_API_KEY=your_key
 # Example agent
-taskter agent add --prompt "Be helpful" --tools run_bash --model gpt-4.1
+taskter agent add --prompt "Be helpful" --tools run_bash --model my-model --provider openai
 </code></pre>
 <h3 id="notes"><a class="header" href="#notes">Notes</a></h3>
 <ul>
@@ -315,8 +348,26 @@ if requested, and appends the result via the provider to maintain the correct
 message format.</li>
 <li>Providers must ensure tools are represented in the target API’s expected
 schema and that responses are robustly parsed into <code>ModelAction</code>.</li>
-<li>See <code>src/providers/gemini.rs</code> as a complete reference implementation.</li>
+<li>See <code>src/providers/gemini.rs</code> and <code>src/providers/openai.rs</code> as complete reference implementations.</li>
 </ul>
+<h3 id="openai-responses-tool-calling-flow"><a class="header" href="#openai-responses-tool-calling-flow">OpenAI Responses: Tool Calling Flow</a></h3>
+<p>The Responses API differs from Chat Completions. A typical multi‑turn flow:</p>
+<ol>
+<li>Send input as a list (start with user):
+<pre><code class="language-json">[
+  {"role":"user", "content":[{"type":"input_text","text":"Use run_bash to echo hello"}]}
+]
+</code></pre>
+</li>
+<li>Model returns an <code>output</code> array which can include <code>{"type":"function_call", "name":"run_bash", "arguments":"{\"command\":\"echo hi\"}", "call_id":"call_123"}</code>.</li>
+<li>Execute the tool, then append to your input list:
+<pre><code class="language-json">{"type":"function_call","call_id":"call_123","name":"run_bash","arguments":"{\"command\":\"echo hi\"}"},
+{"type":"function_call_output","call_id":"call_123","output":"hello"}
+</code></pre>
+</li>
+<li>Call the Responses API again with the expanded <code>input</code> and the same <code>tools</code>. The model will produce a final <code>message</code> with <code>output_text</code>.</li>
+</ol>
+<p>Taskter automates these steps inside the provider, including the call_id wiring and multi‑turn loop.</p>
 
                     </main>
 

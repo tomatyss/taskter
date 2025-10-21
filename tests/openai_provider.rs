@@ -1,7 +1,35 @@
+use once_cell::sync::Lazy;
 use serde_json::json;
+use std::sync::Mutex;
+use std::{env, ffi::OsString};
 
 use taskter::agent::{Agent, FunctionDeclaration};
 use taskter::providers::{openai::OpenAIProvider, select_provider, ModelAction, ModelProvider};
+
+static ENV_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+
+struct EnvGuard {
+    key: &'static str,
+    previous: Option<OsString>,
+}
+
+impl EnvGuard {
+    fn set(key: &'static str, value: &str) -> Self {
+        let previous = env::var_os(key);
+        env::set_var(key, value);
+        Self { key, previous }
+    }
+}
+
+impl Drop for EnvGuard {
+    fn drop(&mut self) {
+        if let Some(prev) = self.previous.take() {
+            env::set_var(self.key, prev);
+        } else {
+            env::remove_var(self.key);
+        }
+    }
+}
 
 fn base_agent(model: &str) -> Agent {
     Agent {
@@ -18,6 +46,7 @@ fn base_agent(model: &str) -> Agent {
             }),
         }],
         model: model.to_string(),
+        provider: None,
         schedule: None,
         repeat: false,
     }
@@ -25,7 +54,14 @@ fn base_agent(model: &str) -> Agent {
 
 #[test]
 fn select_provider_picks_openai_for_gpt_models() {
-    let agent = base_agent("gpt-4.1");
+    let agent = base_agent("gpt-4o");
+    let p = select_provider(&agent);
+    assert_eq!(p.name(), "openai");
+}
+
+#[test]
+fn select_provider_picks_openai_for_o_models() {
+    let agent = base_agent("o1-mini");
     let p = select_provider(&agent);
     assert_eq!(p.name(), "openai");
 }
@@ -43,7 +79,11 @@ fn openai_chat_parses_tool_call_and_text() {
     });
     let action = provider.parse_response(&v).expect("tool call parsed");
     match action {
-        ModelAction::ToolCall { name, args, call_id } => {
+        ModelAction::ToolCall {
+            name,
+            args,
+            call_id,
+        } => {
             assert_eq!(name, "run_bash");
             assert_eq!(args["command"], "echo hi");
             assert_eq!(call_id.as_deref(), Some("call_123"));
@@ -76,7 +116,11 @@ fn openai_responses_parses_function_call_and_message() {
     });
     let action = provider.parse_response(&v).expect("function_call parsed");
     match action {
-        ModelAction::ToolCall { name, args, call_id } => {
+        ModelAction::ToolCall {
+            name,
+            args,
+            call_id,
+        } => {
             assert_eq!(name, "run_bash");
             assert_eq!(args["command"], "echo hello");
             assert_eq!(call_id.as_deref(), Some("call_1"));
@@ -104,7 +148,7 @@ fn append_tool_result_shapes_are_correct() {
     let provider = OpenAIProvider;
 
     // Chat Completions history mutation
-    let agent_chat = base_agent("gpt-4.1");
+    let agent_chat = base_agent("gpt-4o");
     let mut hist_chat = Vec::new();
     provider.append_tool_result(
         &agent_chat,
@@ -117,7 +161,10 @@ fn append_tool_result_shapes_are_correct() {
     assert_eq!(hist_chat.len(), 2);
     assert_eq!(hist_chat[0]["role"], "assistant");
     assert_eq!(hist_chat[0]["tool_calls"][0]["id"], "call_abc");
-    assert_eq!(hist_chat[0]["tool_calls"][0]["function"]["name"], "run_bash");
+    assert_eq!(
+        hist_chat[0]["tool_calls"][0]["function"]["name"],
+        "run_bash"
+    );
     assert_eq!(hist_chat[1]["role"], "tool");
     assert_eq!(hist_chat[1]["tool_call_id"], "call_abc");
 
@@ -141,3 +188,45 @@ fn append_tool_result_shapes_are_correct() {
     assert_eq!(hist_resp[1]["output"], "hello from tool");
 }
 
+#[test]
+fn openai_responses_history_for_o_models() {
+    let provider = OpenAIProvider;
+    let agent = base_agent("o3-mini");
+    let history = provider.build_history(&agent, "Hi");
+    assert_eq!(history.len(), 1);
+    assert_eq!(history[0]["role"], "user");
+}
+
+#[test]
+fn openai_request_style_override_allows_chat() {
+    let _guard = ENV_LOCK.lock().unwrap();
+    let _style_guard = EnvGuard::set("OPENAI_REQUEST_STYLE", "chat");
+    let provider = OpenAIProvider;
+    let agent = base_agent("gpt-5");
+    let endpoint = provider.endpoint(&agent);
+    assert!(endpoint.ends_with("/v1/chat/completions"));
+    let history = provider.build_history(&agent, "Hello");
+    assert_eq!(history.len(), 2);
+}
+
+#[test]
+fn openai_response_format_override_applies() {
+    let _guard = ENV_LOCK.lock().unwrap();
+    let _fmt_guard = EnvGuard::set("OPENAI_RESPONSE_FORMAT", "json_object");
+    let provider = OpenAIProvider;
+    let agent = base_agent("gpt-4o");
+    let history = provider.build_history(&agent, "List tools");
+    let tools = provider.tools_payload(&agent);
+    let body = provider.request_body(&agent, &history, &tools);
+    assert_eq!(body["response_format"]["type"], "json_object");
+}
+
+#[test]
+fn openai_custom_base_url_is_used() {
+    let _guard = ENV_LOCK.lock().unwrap();
+    let _base_guard = EnvGuard::set("OPENAI_BASE_URL", "https://example.com/custom");
+    let provider = OpenAIProvider;
+    let agent = base_agent("o1-preview");
+    let endpoint = provider.endpoint(&agent);
+    assert_eq!(endpoint, "https://example.com/custom/v1/responses");
+}

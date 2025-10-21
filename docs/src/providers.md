@@ -10,16 +10,26 @@ text completion or a tool call.
 - Gemini (default): selected when `agent.model` starts with `gemini`.
   - Env var: `GEMINI_API_KEY`
   - Code: `src/providers/gemini.rs`
-- OpenAI: selected when `agent.model` starts with `gpt-`.
+- OpenAI: selected when `agent.model` starts with `gpt-4`, `gpt-5`, `gpt-4o`, `gpt-4.1`, `o1`, `o3`, `o4`, or `omni`.
   - Env var: `OPENAI_API_KEY`
   - Code: `src/providers/openai.rs`
   - APIs:
-    - Chat Completions: used for models like `gpt-4.1`. Tools are passed as `{"type":"function","function":{...}}`. Responses carry `choices[0].message.tool_calls[]` and we return a `tool` message with `tool_call_id`.
-    - Responses API: used for `gpt-5`. Input is a list of items; tool calls arrive as `{"type":"function_call", name, arguments, call_id}` in `output[]`. We must append both the `function_call` and a `function_call_output` item with the same `call_id`.
+    - Chat Completions: used for models like `gpt-4o` and `gpt-4o-mini`. Tools are passed as `{"type":"function","function":{...}}` and responses carry `choices[0].message.tool_calls[]`.
+    - Responses API: used for `gpt-4.1`, `gpt-5`, `o-series`, and Omni models. Input is an item list; tool calls arrive as `{"type":"function_call", name, arguments, call_id}` in `output[]` and you must append both the `function_call` and a `function_call_output` item with the same `call_id`.
+  - Optional overrides:
+    - `OPENAI_BASE_URL` to point at a proxy (`https://api.openai.com` by default)
+    - `OPENAI_CHAT_ENDPOINT` / `OPENAI_RESPONSES_ENDPOINT` for full URL control
+    - `OPENAI_REQUEST_STYLE=chat|responses` to force the request format
+    - `OPENAI_RESPONSE_FORMAT` containing either a JSON blob (e.g. `{"type":"json_object"}`) or shorthand (`json_object`)
+- Ollama: selected when `agent.model` starts with `ollama:`, `ollama/`, or `ollama-`.
+  - Env var: `OLLAMA_BASE_URL` (defaults to `http://localhost:11434`)
+  - Code: `src/providers/ollama.rs`
+  - Uses the local `/api/chat` endpoint and mirrors the Chat Completions tool schema.
 
 ## Configure a Provider
 
-- Choose a model string when creating/updating an agent (e.g. `gemini-2.5-pro`, `gpt-4.1`, or `gpt-5`).
+- Choose a model string when creating/updating an agent (e.g. `gemini-2.5-pro`, `gpt-4.1`, `o1-mini`, or `ollama:llama3`).
+- Set the provider explicitly when running CLI commands by passing `--provider gemini|openai|ollama`. Use `--provider none` to clear a previously stored value. When no provider is stored Taskter falls back to model-name heuristics.
 - Export the provider’s API key environment variable before running agents.
   - Gemini:
     ```bash
@@ -29,6 +39,7 @@ text completion or a tool call.
     ```bash
     export OPENAI_API_KEY=your_key_here
     ```
+  - Ollama does not require an API key. Optionally set `OLLAMA_BASE_URL` if your daemon listens somewhere other than `http://localhost:11434`.
 
 If no valid API key is present, Taskter runs in offline mode and only executes
 built-in tools.
@@ -136,7 +147,7 @@ pub fn select_provider(agent: &Agent) -> Box<dyn ModelProvider + Send + Sync> {
 ```bash
 export OPENAI_API_KEY=your_key
 # Example agent
-taskter agent add --prompt "Be helpful" --tools run_bash --model my-model
+taskter agent add --prompt "Be helpful" --tools run_bash --model my-model --provider openai
 ```
 
 ### Notes

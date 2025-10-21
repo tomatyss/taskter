@@ -77,16 +77,22 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
     let _ = append_log(&log_message);
 
     let provider = select_provider(agent);
-    let api_key = std::env::var(provider.api_key_env())
-        .ok()
-        .filter(|k| !k.trim().is_empty());
     let has_send_email_tool = agent.tools.iter().any(|t| t.name == "send_email");
 
-    if api_key.is_none() {
+    let requires_api_key = provider.requires_api_key();
+    let api_key = if requires_api_key {
+        std::env::var(provider.api_key_env())
+            .ok()
+            .filter(|k| !k.trim().is_empty())
+    } else {
+        Some(String::new())
+    };
+
+    if requires_api_key && api_key.is_none() {
         let _ = append_log("Executing without API key");
         return Ok(simulate_without_api(agent, has_send_email_tool));
     }
-    let api_key = api_key.unwrap();
+    let api_key = api_key.unwrap_or_default();
 
     let user_prompt = match task {
         Some(task) => match &task.description {
@@ -112,17 +118,25 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
         };
 
         match action {
-            ModelAction::ToolCall { name, args, call_id } => {
+            ModelAction::ToolCall {
+                name,
+                args,
+                call_id,
+            } => {
                 let _ = append_log(&format!(
                     "Agent {} calling tool {} with args {}",
                     agent.id, name, args
                 ));
                 let tool_response = tools::execute_tool(&name, &args)?;
-                let _ = append_log(&format!(
-                    "Tool {} responded with {}",
-                    name, tool_response
-                ));
-                provider.append_tool_result(agent, &mut history, &name, &args, &tool_response, call_id.as_deref());
+                let _ = append_log(&format!("Tool {} responded with {}", name, tool_response));
+                provider.append_tool_result(
+                    agent,
+                    &mut history,
+                    &name,
+                    &args,
+                    &tool_response,
+                    call_id.as_deref(),
+                );
             }
             ModelAction::Text { content } => {
                 let _ = append_log(&format!(
@@ -156,6 +170,8 @@ pub struct Agent {
     pub system_prompt: String,
     pub tools: Vec<FunctionDeclaration>,
     pub model: String,
+    #[serde(default)]
+    pub provider: Option<String>,
     #[serde(default)]
     pub schedule: Option<String>,
     #[serde(default)]
@@ -274,6 +290,7 @@ pub fn update_agent(
     prompt: Option<String>,
     tools: Option<Vec<FunctionDeclaration>>,
     model: Option<String>,
+    provider: Option<Option<String>>,
 ) -> anyhow::Result<()> {
     let mut agents = load_agents()?;
     if let Some(agent) = agents.iter_mut().find(|a| a.id == id) {
@@ -286,6 +303,9 @@ pub fn update_agent(
         if let Some(m) = model {
             agent.model = m;
         }
+        if let Some(pv) = provider {
+            agent.provider = pv;
+        }
         save_agents(&agents)?;
     }
     Ok(())
@@ -294,9 +314,9 @@ pub fn update_agent(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::providers::{gemini::GeminiProvider, ModelProvider};
     use reqwest::Client;
     use serde_json::json;
-    use crate::providers::{gemini::GeminiProvider, ModelProvider};
 
     #[tokio::test(flavor = "current_thread")]
     async fn call_remote_api_returns_err_on_network_failure() {
@@ -308,6 +328,7 @@ mod tests {
             system_prompt: String::new(),
             tools: vec![],
             model: "gemini-2.5-flash".into(),
+            provider: Some("gemini".into()),
             schedule: None,
             repeat: false,
         };
@@ -326,6 +347,7 @@ mod tests {
             system_prompt: String::new(),
             tools: vec![],
             model: String::new(),
+            provider: None,
             schedule: None,
             repeat: false,
         };
@@ -346,6 +368,7 @@ mod tests {
             system_prompt: String::new(),
             tools: vec![crate::tools::run_python::declaration()],
             model: String::new(),
+            provider: None,
             schedule: None,
             repeat: false,
         };
@@ -367,7 +390,11 @@ mod tests {
 
         let action = provider.parse_response(&response_json).expect("tool call");
         match action {
-            ModelAction::ToolCall { name, args, call_id: _ } => {
+            ModelAction::ToolCall {
+                name,
+                args,
+                call_id: _,
+            } => {
                 let agent_ref = &agent;
                 provider.append_tool_result(agent_ref, &mut history, &name, &args, "ok", None);
                 assert_eq!(history.len(), 2);
@@ -381,7 +408,9 @@ mod tests {
             }]
         });
 
-        let action = provider.parse_response(&response_json).expect("text response");
+        let action = provider
+            .parse_response(&response_json)
+            .expect("text response");
         assert!(matches!(action, ModelAction::Text { content } if content == "done"));
     }
 }

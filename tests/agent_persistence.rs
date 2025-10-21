@@ -23,6 +23,7 @@ fn save_agents_persists_to_disk() {
             system_prompt: "p".into(),
             tools: vec![],
             model: "m".into(),
+            provider: None,
             schedule: None,
             repeat: false,
         };
@@ -48,6 +49,7 @@ fn list_agents_returns_saved_agents() {
                 parameters: serde_json::json!({}),
             }],
             model: "m".into(),
+            provider: None,
             schedule: None,
             repeat: false,
         };
@@ -67,6 +69,7 @@ fn delete_agent_removes_entry() {
             system_prompt: "p1".into(),
             tools: vec![],
             model: "m".into(),
+            provider: None,
             schedule: None,
             repeat: false,
         };
@@ -75,6 +78,7 @@ fn delete_agent_removes_entry() {
             system_prompt: "p2".into(),
             tools: vec![],
             model: "m".into(),
+            provider: None,
             schedule: None,
             repeat: false,
         };

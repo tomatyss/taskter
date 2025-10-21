@@ -118,6 +118,9 @@ pub enum AgentCommands {
         /// The model to use for the agent
         #[arg(short, long)]
         model: String,
+        /// The provider to use for the agent (e.g. openai, gemini, ollama)
+        #[arg(long)]
+        provider: Option<String>,
     },
     /// Lists all agents
     List,
@@ -143,6 +146,9 @@ pub enum AgentCommands {
         /// The new model for the agent
         #[arg(short, long)]
         model: Option<String>,
+        /// The new provider for the agent
+        #[arg(long)]
+        provider: Option<String>,
     },
     /// Schedule operations for an agent
     Schedule {

@@ -28,10 +28,10 @@ pub mod agent;
 pub mod cli;
 pub mod commands;
 pub mod config;
+pub mod providers;
 pub mod scheduler;
 pub mod store;
 pub mod tools;
-pub mod providers;
 
 pub use cli::{Cli, Commands, ShowCommands};
 

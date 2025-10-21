@@ -8,13 +8,22 @@ use crate::agent::Agent;
 
 #[derive(Debug)]
 pub enum ModelAction {
-    ToolCall { name: String, args: Value, call_id: Option<String> },
-    Text { content: String },
+    ToolCall {
+        name: String,
+        args: Value,
+        call_id: Option<String>,
+    },
+    Text {
+        content: String,
+    },
 }
 
 pub trait ModelProvider {
     fn name(&self) -> &'static str;
     fn api_key_env(&self) -> &'static str;
+    fn requires_api_key(&self) -> bool {
+        true
+    }
     fn build_history(&self, agent: &Agent, user_prompt: &str) -> Vec<Value>;
     fn append_tool_result(
         &self,
@@ -37,7 +46,10 @@ pub trait ModelProvider {
         agent: &'a Agent,
         api_key: &'a str,
         history: &'a [Value],
-    ) -> futures::future::BoxFuture<'a, Result<ModelAction>> where Self: Sync {
+    ) -> futures::future::BoxFuture<'a, Result<ModelAction>>
+    where
+        Self: Sync,
+    {
         use futures::FutureExt;
         async move {
             let tools = self.tools_payload(agent);
@@ -50,10 +62,19 @@ pub trait ModelProvider {
             let _ = (|| -> std::io::Result<()> {
                 let path = crate::config::responses_log_path();
                 if !path.exists() {
-                    if let Some(parent) = path.parent() { std::fs::create_dir_all(parent)?; }
+                    if let Some(parent) = path.parent() {
+                        std::fs::create_dir_all(parent)?;
+                    }
                 }
                 let mut f = OpenOptions::new().create(true).append(true).open(path)?;
-                writeln!(f, "REQUEST provider={} model={} agent={} json={}", self.name(), agent.model, agent.id, serde_json::to_string(&body).unwrap_or_default())?;
+                writeln!(
+                    f,
+                    "REQUEST provider={} model={} agent={} json={}",
+                    self.name(),
+                    agent.model,
+                    agent.id,
+                    serde_json::to_string(&body).unwrap_or_default()
+                )?;
                 Ok(())
             })();
 
@@ -68,10 +89,19 @@ pub trait ModelProvider {
             let _ = (|| -> std::io::Result<()> {
                 let path = crate::config::responses_log_path();
                 if !path.exists() {
-                    if let Some(parent) = path.parent() { std::fs::create_dir_all(parent)?; }
+                    if let Some(parent) = path.parent() {
+                        std::fs::create_dir_all(parent)?;
+                    }
                 }
                 let mut f = OpenOptions::new().create(true).append(true).open(path)?;
-                writeln!(f, "provider={} model={} agent={} json={}", self.name(), agent.model, agent.id, json)?;
+                writeln!(
+                    f,
+                    "provider={} model={} agent={} json={}",
+                    self.name(),
+                    agent.model,
+                    agent.id,
+                    json
+                )?;
                 Ok(())
             })();
             self.parse_response(&json)
@@ -81,17 +111,71 @@ pub trait ModelProvider {
 }
 
 pub mod gemini;
+pub mod ollama;
 pub mod openai;
 
-pub fn select_provider(agent: &Agent) -> Box<dyn ModelProvider + Send + Sync> {
-    // Simple heuristic by model name; default to Gemini for backward compatibility.
-    let model = agent.model.to_lowercase();
-    if model.starts_with("gemini") {
-        Box::new(gemini::GeminiProvider)
-    } else if model.starts_with("gpt-") {
-        Box::new(openai::OpenAIProvider)
+fn is_openai_model(model_lc: &str) -> bool {
+    model_lc.starts_with("gpt-4")
+        || model_lc.starts_with("gpt4")
+        || model_lc.starts_with("gpt-5")
+        || model_lc.starts_with("gpt5")
+        || model_lc.starts_with("o1")
+        || model_lc.starts_with("o3")
+        || model_lc.starts_with("o4")
+        || model_lc.starts_with("omni")
+        || model_lc.starts_with("o-")
+        || model_lc.starts_with("responses-")
+}
+
+fn is_ollama_model(model_lc: &str) -> bool {
+    model_lc.starts_with("ollama:")
+        || model_lc.starts_with("ollama/")
+        || model_lc.starts_with("ollama-")
+}
+
+fn provider_from_field(agent: &Agent) -> Option<String> {
+    agent
+        .provider
+        .as_deref()
+        .and_then(|raw| normalize_provider_id(raw).ok())
+}
+
+fn fallback_provider(agent: &Agent) -> String {
+    let model_lc = agent.model.to_lowercase();
+    if is_ollama_model(&model_lc) {
+        "ollama".to_string()
+    } else if is_openai_model(&model_lc) {
+        "openai".to_string()
+    } else if model_lc.starts_with("gemini") {
+        "gemini".to_string()
     } else {
-        // Default for now
-        Box::new(gemini::GeminiProvider)
+        "gemini".to_string()
+    }
+}
+
+pub fn resolve_provider_name(agent: &Agent) -> String {
+    provider_from_field(agent).unwrap_or_else(|| fallback_provider(agent))
+}
+
+pub fn normalize_provider_id(raw: &str) -> Result<String> {
+    let trimmed = raw.trim();
+    if trimmed.is_empty() {
+        anyhow::bail!("Provider cannot be empty");
+    }
+    let lower = trimmed.to_lowercase();
+    match lower.as_str() {
+        "gemini" => Ok("gemini".to_string()),
+        "openai" => Ok("openai".to_string()),
+        "ollama" => Ok("ollama".to_string()),
+        _ => anyhow::bail!("Unsupported provider `{}`", raw),
+    }
+}
+
+pub fn select_provider(agent: &Agent) -> Box<dyn ModelProvider + Send + Sync> {
+    match resolve_provider_name(agent).as_str() {
+        "gemini" => Box::new(gemini::GeminiProvider),
+        "ollama" => Box::new(ollama::OllamaProvider),
+        "openai" => Box::new(openai::OpenAIProvider),
+        _ => Box::new(gemini::GeminiProvider),
     }
 }

@@ -39,7 +39,7 @@ See the [Data Files](https://tomatyss.github.io/taskter/data_files.html) chapter
 Next, create an agent to help you with your tasks. For this example, we'll create a simple agent that can run bash commands:
 
 ```bash
-taskter agent add --prompt "You are a helpful assistant that can run bash commands." --tools "run_bash" --model "gemini-2.5-pro"
+taskter agent add --prompt "You are a helpful assistant that can run bash commands." --tools "run_bash" --model "gemini-2.5-pro" --provider gemini
 ```
 
 You can list all available agents using:
@@ -270,7 +270,7 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
 
 - **Add a new agent:**
   ```bash
-  taskter agent add --prompt "You are a helpful assistant." --tools "email" "calendar" --model "gemini-pro"
+  taskter agent add --prompt "You are a helpful assistant." --tools "email" "calendar" --model "gemini-pro" --provider gemini
   ```
   The `--tools` option accepts either paths to JSON files describing a tool or
   the name of a built-in tool. Built-ins live under the `tools/` directory of
@@ -313,37 +313,51 @@ When a task is executed, the agent will attempt to perform the task. If successf
 
 In the interactive board (`taskter board`), tasks assigned to an agent will be marked with a `*`. You can view the assigned agent ID and any comments by selecting the task and pressing `Enter`.
 
-#### Model Providers (Gemini + OpenAI)
+#### Model Providers (Gemini + OpenAI + Ollama)
 
 Taskter uses a model‑agnostic provider layer so new LLM backends can be added without changing the agent loop.
 
 - Gemini (default): selected when `agent.model` starts with `gemini`.
   - Env var: `GEMINI_API_KEY`
   - API: Gemini `generateContent`
-- OpenAI: selected when `agent.model` starts with `gpt-`.
+- OpenAI: selected when `agent.model` starts with `gpt-4`, `gpt-5`, `gpt-4o`, `gpt-4.1`, `o1`, `o3`, `o4`, or `omni`.
   - Env var: `OPENAI_API_KEY`
   - APIs:
-    - Chat Completions for models like `gpt-4.1` (tool_calls + tool_call_id)
-    - Responses for `gpt-5` (function_call + function_call_output)
+    - Chat Completions for models such as `gpt-4o` and `gpt-4o-mini`
+    - Responses API for `gpt-4.1`, `gpt-5`, `o-series`, and Omni models (function_call/function_call_output)
+  - Optional overrides:
+    - `OPENAI_BASE_URL` to point at a self-hosted proxy (defaults to `https://api.openai.com`)
+    - `OPENAI_CHAT_ENDPOINT` / `OPENAI_RESPONSES_ENDPOINT` for full URL overrides
+    - `OPENAI_REQUEST_STYLE=chat|responses` to force a specific API surface
+    - `OPENAI_RESPONSE_FORMAT` with either a JSON snippet (`{"type":"json_object"}`) or shorthand (`json_object`)
+- Ollama: selected when `agent.model` starts with `ollama:`, `ollama/`, or `ollama-`.
+  - Env var: `OLLAMA_BASE_URL` (defaults to `http://localhost:11434`)
+  - Uses the local `/api/chat` endpoint with tool-calling compatibility
 
 Examples:
 
 ```bash
 # Gemini
 export GEMINI_API_KEY=your_key
-taskter agent add --prompt "Be helpful" --tools run_bash --model gemini-2.5-pro
+taskter agent add --prompt "Be helpful" --tools run_bash --model gemini-2.5-pro --provider gemini
 
 # OpenAI Chat (gpt-4.1)
 export OPENAI_API_KEY=your_key
-taskter agent add --prompt "Be helpful" --tools run_bash --model gpt-4.1
+taskter agent add --prompt "Be helpful" --tools run_bash --model gpt-4.1 --provider openai
 
 # OpenAI Responses (gpt-5)
 export OPENAI_API_KEY=your_key
-taskter agent add --prompt "Be helpful" --tools run_bash --model gpt-5
+taskter agent add --prompt "Be helpful" --tools run_bash --model gpt-5 --provider openai
+
+# Ollama (local llama3)
+export OLLAMA_BASE_URL=http://localhost:11434   # optional
+taskter agent add --prompt "Be helpful" --tools run_bash --model ollama:llama3 --provider ollama
 ```
 
 Notes:
-- Agents using OpenAI tool‑calling support multi‑turn loops. For `gpt-4.1` we use Chat Completions tool_calls; for `gpt-5` we handle `function_call` and return `function_call_output` per the Responses API.
+- Agents using OpenAI tool‑calling support multi‑turn loops. Taskter selects Chat Completions or Responses automatically, and you can override the choice with `OPENAI_REQUEST_STYLE` if required.
+- Specify an agent's backend explicitly with `--provider` (use `--provider none` to return to auto-detection).
+- Ollama agents run completely offline; no API key is required.
 - Debugging: Taskter writes raw provider requests and responses to `.taskter/api_responses.log`.
 
 See the book’s “Model Providers” chapter for details (`docs/src/providers.md`).
