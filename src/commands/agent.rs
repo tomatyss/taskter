@@ -39,8 +39,14 @@ pub async fn handle(action: &AgentCommands) -> anyhow::Result<()> {
             } else {
                 None
             };
+            let next_id = agents
+                .iter()
+                .map(|a| a.id)
+                .max()
+                .unwrap_or(0)
+                .saturating_add(1);
             let new_agent = agent_model::Agent {
-                id: agents.len() + 1,
+                id: next_id,
                 system_prompt: prompt.clone(),
                 tools: function_declarations,
                 model: model.clone(),

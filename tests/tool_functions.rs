@@ -199,6 +199,18 @@ fn send_email_requires_arguments() {
 }
 
 #[test]
+fn send_email_reports_missing_configuration() {
+    with_temp_dir(|| {
+        let err = taskter::tools::execute_tool(
+            "send_email",
+            &json!({"to": "user@example.com", "subject": "hi", "body": "hello"}),
+        )
+        .unwrap_err();
+        assert!(err.to_string().contains("Email configuration not found"));
+    });
+}
+
+#[test]
 fn unknown_tool_returns_error() {
     with_temp_dir(|| {
         let err = taskter::tools::execute_tool("no_such_tool", &json!({})).unwrap_err();

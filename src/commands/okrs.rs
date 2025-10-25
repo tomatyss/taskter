@@ -1,5 +1,3 @@
-use std::fs;
-
 use crate::cli::OkrCommands;
 use crate::store;
 
@@ -25,8 +23,8 @@ pub fn handle(action: &OkrCommands) -> anyhow::Result<()> {
             println!("OKR added successfully.");
         }
         OkrCommands::List => {
-            let okrs = fs::read_to_string(crate::config::okrs_path())?;
-            println!("{okrs}");
+            let okrs = store::load_okrs()?;
+            println!("{}", serde_json::to_string_pretty(&okrs)?);
         }
     }
     Ok(())

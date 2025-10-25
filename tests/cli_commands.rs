@@ -236,6 +236,78 @@ fn list_and_delete_agents() {
 }
 
 #[test]
+fn agent_ids_increase_after_deletion() {
+    with_temp_dir(|| {
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .arg("init")
+            .assert()
+            .success();
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args([
+                "agent",
+                "add",
+                "--prompt",
+                "first",
+                "--tools",
+                "email",
+                "--model",
+                "gemini-2.5-flash",
+            ])
+            .assert()
+            .success();
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args([
+                "agent",
+                "add",
+                "--prompt",
+                "second",
+                "--tools",
+                "email",
+                "--model",
+                "gemini-2.5-flash",
+            ])
+            .assert()
+            .success();
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args(["agent", "remove", "--id", "1"])
+            .assert()
+            .success();
+
+        Command::cargo_bin("taskter")
+            .unwrap()
+            .args([
+                "agent",
+                "add",
+                "--prompt",
+                "third",
+                "--tools",
+                "email",
+                "--model",
+                "gemini-2.5-flash",
+            ])
+            .assert()
+            .success();
+
+        let agents: Vec<Value> =
+            serde_json::from_str(&fs::read_to_string(taskter::config::AGENTS_FILE).unwrap())
+                .unwrap();
+        let mut ids: Vec<u64> = agents
+            .iter()
+            .map(|a| a["id"].as_u64().expect("id is number"))
+            .collect();
+        ids.sort_unstable();
+        assert_eq!(ids, vec![2, 3]);
+    });
+}
+
+#[test]
 fn update_agent_changes_configuration() {
     with_temp_dir(|| {
         Command::cargo_bin("taskter")

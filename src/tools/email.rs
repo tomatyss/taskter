@@ -37,12 +37,9 @@ pub fn execute(args: &Value) -> Result<String> {
     let body = args["body"]
         .as_str()
         .ok_or_else(|| anyhow!("body missing"))?;
-    match send_email(to, subject, body) {
-        Ok(_) => Ok(format!(
-            "Email sent to {to} with subject '{subject}' and body '{body}'"
-        )),
-        Err(e) => Ok(format!("Failed to send email: {e}")),
-    }
+    send_email(to, subject, body)
+        .map(|_| format!("Email sent to {to} with subject '{subject}' and body '{body}'"))
+        .map_err(|e| anyhow!("Failed to send email: {e}"))
 }
 
 /// Low level helper that sends an email using the configured SMTP server.
