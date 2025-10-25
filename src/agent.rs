@@ -128,9 +128,7 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
                     "Agent {agent_id} calling tool {name} with args {args}"
                 ));
                 let tool_response = tools::execute_tool(&name, &args)?;
-                let _ = append_log(&format!(
-                    "Tool {name} responded with {tool_response}"
-                ));
+                let _ = append_log(&format!("Tool {name} responded with {tool_response}"));
                 provider.append_tool_result(
                     agent,
                     &mut history,
