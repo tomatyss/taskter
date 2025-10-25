@@ -1,0 +1,231 @@
+use serde_json::json;
+use std::sync::{LazyLock, Mutex};
+use std::{env, ffi::OsString};
+
+use taskter::agent::{Agent, FunctionDeclaration};
+use taskter::providers::{openai::OpenAIProvider, select_provider, ModelAction, ModelProvider};
+
+static ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
+
+struct EnvGuard {
+    key: &'static str,
+    previous: Option<OsString>,
+}
+
+impl EnvGuard {
+    fn set(key: &'static str, value: &str) -> Self {
+        let previous = env::var_os(key);
+        env::set_var(key, value);
+        Self { key, previous }
+    }
+}
+
+impl Drop for EnvGuard {
+    fn drop(&mut self) {
+        if let Some(prev) = self.previous.take() {
+            env::set_var(self.key, prev);
+        } else {
+            env::remove_var(self.key);
+        }
+    }
+}
+
+fn base_agent(model: &str) -> Agent {
+    Agent {
+        id: 42,
+        system_prompt: "You are helpful.".to_string(),
+        tools: vec![FunctionDeclaration {
+            name: "run_bash".to_string(),
+            description: Some("Execute a bash command and return its output".to_string()),
+            parameters: json!({
+                "type": "object",
+                "properties": {"command": {"type": "string"}},
+                "required": ["command"],
+                "additionalProperties": false
+            }),
+        }],
+        model: model.to_string(),
+        provider: None,
+        schedule: None,
+        repeat: false,
+    }
+}
+
+#[test]
+fn select_provider_picks_openai_for_gpt_models() {
+    let agent = base_agent("gpt-4o");
+    let p = select_provider(&agent);
+    assert_eq!(p.name(), "openai");
+}
+
+#[test]
+fn select_provider_picks_openai_for_o_models() {
+    let agent = base_agent("o1-mini");
+    let p = select_provider(&agent);
+    assert_eq!(p.name(), "openai");
+}
+
+#[test]
+fn openai_chat_parses_tool_call_and_text() {
+    let provider = OpenAIProvider;
+    // Chat Completions: tool call path
+    let v = json!({
+        "choices": [
+            {"message": {"tool_calls": [
+                {"id": "call_123", "type": "function", "function": {"name": "run_bash", "arguments": "{\"command\":\"echo hi\"}"}}
+            ]}}
+        ]
+    });
+    let action = provider.parse_response(&v).expect("tool call parsed");
+    match action {
+        ModelAction::ToolCall {
+            name,
+            args,
+            call_id,
+        } => {
+            assert_eq!(name, "run_bash");
+            assert_eq!(args["command"], "echo hi");
+            assert_eq!(call_id.as_deref(), Some("call_123"));
+        }
+        ModelAction::Text { .. } => panic!("expected tool call"),
+    }
+
+    // Chat Completions: text path
+    let v = json!({
+        "choices": [
+            {"message": {"content": "done"}}
+        ]
+    });
+    let action = provider.parse_response(&v).expect("text parsed");
+    match action {
+        ModelAction::Text { content } => assert_eq!(content, "done"),
+        ModelAction::ToolCall { .. } => panic!("expected text"),
+    }
+}
+
+#[test]
+fn openai_responses_parses_function_call_and_message() {
+    let provider = OpenAIProvider;
+    // Responses: function_call item
+    let v = json!({
+        "output": [
+            {"type": "reasoning", "summary": []},
+            {"type": "function_call", "id": "fc_1", "call_id": "call_1", "name": "run_bash", "arguments": "{\"command\":\"echo hello\"}"}
+        ]
+    });
+    let action = provider.parse_response(&v).expect("function_call parsed");
+    match action {
+        ModelAction::ToolCall {
+            name,
+            args,
+            call_id,
+        } => {
+            assert_eq!(name, "run_bash");
+            assert_eq!(args["command"], "echo hello");
+            assert_eq!(call_id.as_deref(), Some("call_1"));
+        }
+        ModelAction::Text { .. } => panic!("expected tool call"),
+    }
+
+    // Responses: message with output_text
+    let v = json!({
+        "output": [
+            {"type": "message", "role": "assistant", "content": [
+                {"type": "output_text", "text": "ok"}
+            ]}
+        ]
+    });
+    let action = provider.parse_response(&v).expect("text parsed");
+    match action {
+        ModelAction::Text { content } => assert_eq!(content, "ok"),
+        ModelAction::ToolCall { .. } => panic!("expected text"),
+    }
+}
+
+#[test]
+fn append_tool_result_shapes_are_correct() {
+    let provider = OpenAIProvider;
+
+    // Chat Completions history mutation
+    let agent_chat = base_agent("gpt-4o");
+    let mut hist_chat = Vec::new();
+    provider.append_tool_result(
+        &agent_chat,
+        &mut hist_chat,
+        "run_bash",
+        &json!({"command":"ls"}),
+        "ok",
+        Some("call_abc"),
+    );
+    assert_eq!(hist_chat.len(), 2);
+    assert_eq!(hist_chat[0]["role"], "assistant");
+    assert_eq!(hist_chat[0]["tool_calls"][0]["id"], "call_abc");
+    assert_eq!(
+        hist_chat[0]["tool_calls"][0]["function"]["name"],
+        "run_bash"
+    );
+    assert_eq!(hist_chat[1]["role"], "tool");
+    assert_eq!(hist_chat[1]["tool_call_id"], "call_abc");
+
+    // Responses history mutation
+    let agent_resp = base_agent("gpt-5");
+    let mut hist_resp = Vec::new();
+    provider.append_tool_result(
+        &agent_resp,
+        &mut hist_resp,
+        "run_bash",
+        &json!({"command":"echo hi"}),
+        "hello from tool",
+        Some("call_xyz"),
+    );
+    assert_eq!(hist_resp.len(), 2);
+    assert_eq!(hist_resp[0]["type"], "function_call");
+    assert_eq!(hist_resp[0]["call_id"], "call_xyz");
+    assert_eq!(hist_resp[0]["name"], "run_bash");
+    assert_eq!(hist_resp[1]["type"], "function_call_output");
+    assert_eq!(hist_resp[1]["call_id"], "call_xyz");
+    assert_eq!(hist_resp[1]["output"], "hello from tool");
+}
+
+#[test]
+fn openai_responses_history_for_o_models() {
+    let provider = OpenAIProvider;
+    let agent = base_agent("o3-mini");
+    let history = provider.build_history(&agent, "Hi");
+    assert_eq!(history.len(), 1);
+    assert_eq!(history[0]["role"], "user");
+}
+
+#[test]
+fn openai_request_style_override_allows_chat() {
+    let _guard = ENV_LOCK.lock().unwrap();
+    let _style_guard = EnvGuard::set("OPENAI_REQUEST_STYLE", "chat");
+    let provider = OpenAIProvider;
+    let agent = base_agent("gpt-5");
+    let endpoint = provider.endpoint(&agent);
+    assert!(endpoint.ends_with("/v1/chat/completions"));
+    let history = provider.build_history(&agent, "Hello");
+    assert_eq!(history.len(), 2);
+}
+
+#[test]
+fn openai_response_format_override_applies() {
+    let _guard = ENV_LOCK.lock().unwrap();
+    let _fmt_guard = EnvGuard::set("OPENAI_RESPONSE_FORMAT", "json_object");
+    let provider = OpenAIProvider;
+    let agent = base_agent("gpt-4o");
+    let history = provider.build_history(&agent, "List tools");
+    let tools = provider.tools_payload(&agent);
+    let body = provider.request_body(&agent, &history, &tools);
+    assert_eq!(body["response_format"]["type"], "json_object");
+}
+
+#[test]
+fn openai_custom_base_url_is_used() {
+    let _guard = ENV_LOCK.lock().unwrap();
+    let _base_guard = EnvGuard::set("OPENAI_BASE_URL", "https://example.com/custom");
+    let provider = OpenAIProvider;
+    let agent = base_agent("o1-preview");
+    let endpoint = provider.endpoint(&agent);
+    assert_eq!(endpoint, "https://example.com/custom/v1/responses");
+}

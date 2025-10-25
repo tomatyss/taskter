@@ -23,14 +23,14 @@ If the file is missing the tool outputs `Email configuration not found`. When Ta
 
 ## Environment variables
 
-Taskter looks for a couple of optional environment variables:
+Agents use a provider abstraction. Each provider defines its own API key env var:
 
-- `GEMINI_API_KEY` — API key for the Gemini model. When set, agents can call the remote API. If absent or empty Taskter stays in offline mode and only uses built-in tools.
+- `GEMINI_API_KEY` — API key for the Gemini provider.
+- `OPENAI_API_KEY` — API key when using an OpenAI provider (if added).
 - `SEARCH_API_ENDPOINT` — custom endpoint for the `web_search` tool. Defaults to `https://api.duckduckgo.com`.
 
-Set it directly in your shell or via Docker Compose:
+Export the relevant variable directly in your shell or via Docker Compose. For Gemini:
 
 ```bash
 export GEMINI_API_KEY=your_key_here
 ```
-

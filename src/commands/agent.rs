@@ -5,7 +5,7 @@ use std::path::Path;
 
 use crate::agent::FunctionDeclaration;
 use crate::cli::{AgentCommands, ScheduleCommands};
-use crate::{agent as agent_model, tools};
+use crate::{agent as agent_model, providers, tools};
 
 pub fn parse_tool_specs(specs: &[String]) -> anyhow::Result<Vec<FunctionDeclaration>> {
     let mut function_declarations = Vec::new();
@@ -30,14 +30,21 @@ pub async fn handle(action: &AgentCommands) -> anyhow::Result<()> {
             prompt,
             tools,
             model,
+            provider,
         } => {
             let mut agents = agent_model::load_agents()?;
             let function_declarations = parse_tool_specs(tools)?;
+            let provider = if let Some(p) = provider {
+                Some(providers::normalize_provider_id(p.trim())?)
+            } else {
+                None
+            };
             let new_agent = agent_model::Agent {
                 id: agents.len() + 1,
                 system_prompt: prompt.clone(),
                 tools: function_declarations,
                 model: model.clone(),
+                provider,
                 schedule: None,
                 repeat: false,
             };
@@ -60,9 +67,10 @@ pub async fn handle(action: &AgentCommands) -> anyhow::Result<()> {
                 } else {
                     ""
                 };
+                let provider_name = providers::resolve_provider_name(&a);
                 println!(
-                    "{}: {} (model: {}, tools: {}){}",
-                    a.id, a.system_prompt, a.model, tool_names, status
+                    "{}: {} (provider: {}, model: {}, tools: {}){}",
+                    a.id, a.system_prompt, provider_name, a.model, tool_names, status
                 );
             }
         }
@@ -90,13 +98,30 @@ pub async fn handle(action: &AgentCommands) -> anyhow::Result<()> {
             prompt,
             tools,
             model,
+            provider,
         } => {
             let function_declarations = if let Some(specs) = tools {
                 Some(parse_tool_specs(specs)?)
             } else {
                 None
             };
-            agent_model::update_agent(*id, prompt.clone(), function_declarations, model.clone())?;
+            let provider_update = if let Some(p) = provider {
+                let trimmed = p.trim();
+                if trimmed.eq_ignore_ascii_case("none") {
+                    Some(None)
+                } else {
+                    Some(Some(providers::normalize_provider_id(trimmed)?))
+                }
+            } else {
+                None
+            };
+            agent_model::update_agent(
+                *id,
+                prompt.clone(),
+                function_declarations,
+                model.clone(),
+                provider_update,
+            )?;
             println!("Agent {id} updated.");
         }
         AgentCommands::Schedule { action } => match action {
