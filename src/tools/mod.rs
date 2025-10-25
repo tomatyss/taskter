@@ -64,6 +64,6 @@ pub fn execute_tool(name: &str, args: &Value) -> Result<String> {
     if let Some(tool) = BUILTIN_TOOLS.get(name) {
         (tool.execute)(args)
     } else {
-        Err(anyhow::anyhow!("Unknown tool: {}", name))
+        Err(anyhow::anyhow!("Unknown tool: {name}"))
     }
 }
