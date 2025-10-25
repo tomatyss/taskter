@@ -88,7 +88,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="overview.html"><strong aria-hidden="true">1.</strong> Overview</a></li><li class="chapter-item expanded "><a href="installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="cli_usage.html"><strong aria-hidden="true">3.</strong> CLI Usage</a></li><li class="chapter-item expanded "><a href="tui_guide.html"><strong aria-hidden="true">4.</strong> TUI Guide</a></li><li class="chapter-item expanded "><a href="agent_system.html"><strong aria-hidden="true">5.</strong> Agent System</a></li><li class="chapter-item expanded "><a href="scheduling.html"><strong aria-hidden="true">6.</strong> Scheduling Agents</a></li><li class="chapter-item expanded "><a href="data_files.html"><strong aria-hidden="true">7.</strong> Data Files</a></li><li class="chapter-item expanded "><a href="configuration.html" class="active"><strong aria-hidden="true">8.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="contributing.html"><strong aria-hidden="true">9.</strong> Contributing</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="overview.html"><strong aria-hidden="true">1.</strong> Overview</a></li><li class="chapter-item expanded "><a href="installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="cli_usage.html"><strong aria-hidden="true">3.</strong> CLI Usage</a></li><li class="chapter-item expanded "><a href="tui_guide.html"><strong aria-hidden="true">4.</strong> TUI Guide</a></li><li class="chapter-item expanded "><a href="agent_system.html"><strong aria-hidden="true">5.</strong> Agent System</a></li><li class="chapter-item expanded "><a href="scheduling.html"><strong aria-hidden="true">6.</strong> Scheduling Agents</a></li><li class="chapter-item expanded "><a href="providers.html"><strong aria-hidden="true">7.</strong> Model Providers</a></li><li class="chapter-item expanded "><a href="data_files.html"><strong aria-hidden="true">8.</strong> Data Files</a></li><li class="chapter-item expanded "><a href="configuration.html" class="active"><strong aria-hidden="true">9.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="contributing.html"><strong aria-hidden="true">10.</strong> Contributing</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -189,12 +189,13 @@
 <p>Currently only the SMTP fields are used by the <code>send_email</code> tool. The IMAP keys are accepted for future extensions. No default values are provided, so fill in the details that match your mail provider.</p>
 <p>If the file is missing the tool outputs <code>Email configuration not found</code>. When Taskter runs without a <code>GEMINI_API_KEY</code>, email tools are skipped entirely so the file is not required for tests.</p>
 <h2 id="environment-variables"><a class="header" href="#environment-variables">Environment variables</a></h2>
-<p>Taskter looks for a couple of optional environment variables:</p>
+<p>Agents use a provider abstraction. Each provider defines its own API key env var:</p>
 <ul>
-<li><code>GEMINI_API_KEY</code> — API key for the Gemini model. When set, agents can call the remote API. If absent or empty Taskter stays in offline mode and only uses built-in tools.</li>
+<li><code>GEMINI_API_KEY</code> — API key for the Gemini provider.</li>
+<li><code>OPENAI_API_KEY</code> — API key when using an OpenAI provider (if added).</li>
 <li><code>SEARCH_API_ENDPOINT</code> — custom endpoint for the <code>web_search</code> tool. Defaults to <code>https://api.duckduckgo.com</code>.</li>
 </ul>
-<p>Set it directly in your shell or via Docker Compose:</p>
+<p>Export the relevant variable directly in your shell or via Docker Compose. For Gemini:</p>
 <pre><code class="language-bash">export GEMINI_API_KEY=your_key_here
 </code></pre>
 
