@@ -61,7 +61,8 @@ use crate::providers::{select_provider, ModelAction};
 ///
 /// # Errors
 ///
-/// Returns an error if writing to the log fails or if a tool execution fails.
+/// Returns an error if writing to the log fails. Tool execution failures are
+/// captured as [`ExecutionResult::Failure`] so callers can inspect the outcome.
 #[must_use = "use the result to determine task outcome"]
 pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<ExecutionResult> {
     let _guard = RunningAgentGuard::new(agent.id);
@@ -127,7 +128,14 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
                 let _ = append_log(&format!(
                     "Agent {agent_id} calling tool {name} with args {args}"
                 ));
-                let tool_response = tools::execute_tool(&name, &args)?;
+                let tool_response = match tools::execute_tool(&name, &args) {
+                    Ok(response) => response,
+                    Err(err) => {
+                        let message = format!("Tool {name} failed: {err}");
+                        let _ = append_log(&format!("Agent {agent_id} failed: {message}"));
+                        return Ok(ExecutionResult::Failure { comment: message });
+                    }
+                };
                 let _ = append_log(&format!("Tool {name} responded with {tool_response}"));
                 provider.append_tool_result(
                     agent,
