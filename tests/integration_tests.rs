@@ -92,6 +92,7 @@ async fn agent_executes_email_task_successfully() {
             parameters: json!({}),
         }],
         model: "gemini-2.5-flash".into(),
+        provider: Some("gemini".into()),
         schedule: None,
         repeat: false,
     };
@@ -122,6 +123,7 @@ async fn agent_execution_fails_without_tool() {
         system_prompt: "General agent".into(),
         tools: vec![],
         model: "gemini-2.5-flash".into(),
+        provider: Some("gemini".into()),
         schedule: None,
         repeat: false,
     };
@@ -154,6 +156,7 @@ async fn agent_execution_fails_on_network_error_without_tool() {
         system_prompt: "General agent".into(),
         tools: vec![],
         model: "gemini-2.5-flash".into(),
+        provider: Some("gemini".into()),
         schedule: None,
         repeat: false,
     };

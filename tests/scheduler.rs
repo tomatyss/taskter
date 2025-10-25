@@ -16,6 +16,7 @@ async fn scheduler_executes_agent_tasks() {
         system_prompt: "helper".into(),
         tools: vec![send_email],
         model: "gemini-2.5-flash".into(),
+        provider: Some("gemini".into()),
         schedule: Some("*/1 * * * * *".into()),
         repeat: false,
     };

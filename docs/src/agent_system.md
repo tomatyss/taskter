@@ -1,13 +1,13 @@
 # Agent System
 
-Taskter supports LLM-based agents that can be assigned to tasks. These agents can execute tasks using a mocked Gemini API for tool-calling.
+Taskter supports LLM-based agents that can be assigned to tasks. Agents are model‑agnostic via a provider layer. Gemini is the default provider today, and additional providers can be added without changing the agent loop. See [Model Providers](providers.md).
 
 ## Creating an Agent
 
 You can create an agent using the `agent add` subcommand. You need to provide a prompt, a list of tools, and a model.
 
 ```bash
-taskter agent add --prompt "You are a helpful assistant." --tools "email" "calendar" --model "gemini-pro"
+taskter agent add --prompt "You are a helpful assistant." --tools "email" "calendar" --model "gemini-2.5-pro"
 ```
 
 The `--tools` option accepts either paths to JSON files describing a tool or the name of a built-in tool. Built-in tools are located in the `tools/` directory of the repository.
