@@ -54,7 +54,7 @@ fn add_list_done_workflow() {
 
 #[test]
 fn board_command_starts_and_quits() {
-    use expectrl::{Eof, Session};
+    use expectrl::{Eof, Expect, Session};
     use std::process::Command as PCommand;
     use std::thread;
     use std::time::Duration;
