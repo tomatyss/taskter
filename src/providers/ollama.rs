@@ -26,7 +26,7 @@ impl OllamaProvider {
     fn endpoint_url() -> String {
         let base = Self::base_url();
         let trimmed = base.trim_end_matches('/');
-        format!("{}/api/chat", trimmed)
+        format!("{trimmed}/api/chat")
     }
 }
 
@@ -121,7 +121,7 @@ impl ModelProvider for OllamaProvider {
     fn parse_response(&self, response_json: &Value) -> Result<ModelAction> {
         if let Some(message) = response_json.get("message") {
             if let Some(tool_calls) = message.get("tool_calls").and_then(|t| t.as_array()) {
-                if let Some(tc) = tool_calls.get(0) {
+                if let Some(tc) = tool_calls.first() {
                     let call_id = tc.get("id").and_then(|v| v.as_str()).map(|s| s.to_string());
                     let name = tc
                         .get("function")

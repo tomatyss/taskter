@@ -91,7 +91,7 @@ fn ollama_parse_response_tool_call_and_text() {
             assert_eq!(args["command"], "echo hi");
             assert_eq!(call_id.as_deref(), Some("call_007"));
         }
-        _ => panic!("expected tool call"),
+        ModelAction::Text { .. } => panic!("expected tool call"),
     }
 
     let text_resp = json!({
@@ -103,7 +103,7 @@ fn ollama_parse_response_tool_call_and_text() {
     let action = provider.parse_response(&text_resp).expect("text parsed");
     match action {
         ModelAction::Text { content } => assert_eq!(content, "done"),
-        _ => panic!("expected text"),
+        ModelAction::ToolCall { .. } => panic!("expected text"),
     }
 }
 

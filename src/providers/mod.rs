@@ -82,7 +82,7 @@ pub trait ModelProvider {
             if !response.status().is_success() {
                 let status = response.status();
                 let text = response.text().await.unwrap_or_default();
-                anyhow::bail!("status {}: {}", status, text);
+                anyhow::bail!("status {status}: {text}");
             }
             let json = response.json::<Value>().await?;
             // Best-effort debug logging of raw responses
@@ -146,8 +146,6 @@ fn fallback_provider(agent: &Agent) -> String {
         "ollama".to_string()
     } else if is_openai_model(&model_lc) {
         "openai".to_string()
-    } else if model_lc.starts_with("gemini") {
-        "gemini".to_string()
     } else {
         "gemini".to_string()
     }
@@ -167,13 +165,12 @@ pub fn normalize_provider_id(raw: &str) -> Result<String> {
         "gemini" => Ok("gemini".to_string()),
         "openai" => Ok("openai".to_string()),
         "ollama" => Ok("ollama".to_string()),
-        _ => anyhow::bail!("Unsupported provider `{}`", raw),
+        _ => anyhow::bail!("Unsupported provider `{raw}`"),
     }
 }
 
 pub fn select_provider(agent: &Agent) -> Box<dyn ModelProvider + Send + Sync> {
     match resolve_provider_name(agent).as_str() {
-        "gemini" => Box::new(gemini::GeminiProvider),
         "ollama" => Box::new(ollama::OllamaProvider),
         "openai" => Box::new(openai::OpenAIProvider),
         _ => Box::new(gemini::GeminiProvider),

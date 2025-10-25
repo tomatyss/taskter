@@ -1,12 +1,11 @@
-use once_cell::sync::Lazy;
 use serde_json::json;
-use std::sync::Mutex;
+use std::sync::{LazyLock, Mutex};
 use std::{env, ffi::OsString};
 
 use taskter::agent::{Agent, FunctionDeclaration};
 use taskter::providers::{openai::OpenAIProvider, select_provider, ModelAction, ModelProvider};
 
-static ENV_LOCK: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+static ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
 struct EnvGuard {
     key: &'static str,
@@ -88,7 +87,7 @@ fn openai_chat_parses_tool_call_and_text() {
             assert_eq!(args["command"], "echo hi");
             assert_eq!(call_id.as_deref(), Some("call_123"));
         }
-        _ => panic!("expected tool call"),
+        ModelAction::Text { .. } => panic!("expected tool call"),
     }
 
     // Chat Completions: text path
@@ -100,7 +99,7 @@ fn openai_chat_parses_tool_call_and_text() {
     let action = provider.parse_response(&v).expect("text parsed");
     match action {
         ModelAction::Text { content } => assert_eq!(content, "done"),
-        _ => panic!("expected text"),
+        ModelAction::ToolCall { .. } => panic!("expected text"),
     }
 }
 
@@ -125,7 +124,7 @@ fn openai_responses_parses_function_call_and_message() {
             assert_eq!(args["command"], "echo hello");
             assert_eq!(call_id.as_deref(), Some("call_1"));
         }
-        _ => panic!("expected tool call"),
+        ModelAction::Text { .. } => panic!("expected tool call"),
     }
 
     // Responses: message with output_text
@@ -139,7 +138,7 @@ fn openai_responses_parses_function_call_and_message() {
     let action = provider.parse_response(&v).expect("text parsed");
     match action {
         ModelAction::Text { content } => assert_eq!(content, "ok"),
-        _ => panic!("expected text"),
+        ModelAction::ToolCall { .. } => panic!("expected text"),
     }
 }
 

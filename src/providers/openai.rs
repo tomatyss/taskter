@@ -60,7 +60,7 @@ impl ModelProvider for OpenAIProvider {
     }
 
     fn build_history(&self, agent: &Agent, user_prompt: &str) -> Vec<Value> {
-        match self.request_style(agent) {
+        match Self::request_style(agent) {
             RequestStyle::Responses => vec![json!({
                 "role": "user",
                 "content": [ {"type": "input_text", "text": user_prompt } ]
@@ -82,7 +82,7 @@ impl ModelProvider for OpenAIProvider {
         call_id: Option<&str>,
     ) {
         let id = call_id.unwrap_or("tool_call_1");
-        match self.request_style(agent) {
+        match Self::request_style(agent) {
             RequestStyle::Responses => {
                 // For Responses API, emulate appending model output items to input
                 // (function_call) followed by our function_call_output.
@@ -132,7 +132,7 @@ impl ModelProvider for OpenAIProvider {
 
     fn tools_payload(&self, agent: &Agent) -> Value {
         // Map FunctionDeclaration to the OpenAI tools schema
-        match self.request_style(agent) {
+        match Self::request_style(agent) {
             RequestStyle::Responses => json!(agent
                 .tools
                 .iter()
@@ -165,14 +165,14 @@ impl ModelProvider for OpenAIProvider {
     }
 
     fn endpoint(&self, agent: &Agent) -> String {
-        match self.request_style(agent) {
+        match Self::request_style(agent) {
             RequestStyle::Responses => Self::responses_endpoint(),
             RequestStyle::ChatCompletions => Self::chat_endpoint(),
         }
     }
 
     fn request_body(&self, agent: &Agent, history: &[Value], tools: &Value) -> Value {
-        match self.request_style(agent) {
+        match Self::request_style(agent) {
             RequestStyle::Responses => {
                 let mut body = json!({
                     "model": agent.model,
@@ -286,11 +286,11 @@ impl ModelProvider for OpenAIProvider {
         if let Some(choice) = v
             .get("choices")
             .and_then(|c| c.as_array())
-            .and_then(|arr| arr.get(0))
+            .and_then(|arr| arr.first())
         {
             let message = &choice["message"];
             if let Some(tc_arr) = message.get("tool_calls").and_then(|x| x.as_array()) {
-                if let Some(tc) = tc_arr.get(0) {
+                if let Some(tc) = tc_arr.first() {
                     let call_id = tc.get("id").and_then(|x| x.as_str()).map(|s| s.to_string());
                     let name = tc
                         .get("function")
@@ -328,7 +328,7 @@ impl ModelProvider for OpenAIProvider {
 
     fn headers(&self, api_key: &str) -> Vec<(String, String)> {
         vec![
-            ("Authorization".to_string(), format!("Bearer {}", api_key)),
+            ("Authorization".to_string(), format!("Bearer {api_key}")),
             ("Content-Type".to_string(), "application/json".to_string()),
             // Model is provided in the body; keep headers minimal.
         ]
@@ -336,7 +336,7 @@ impl ModelProvider for OpenAIProvider {
 }
 
 impl OpenAIProvider {
-    fn request_style(&self, agent: &Agent) -> RequestStyle {
+    fn request_style(agent: &Agent) -> RequestStyle {
         if let Some(override_style) = Self::request_style_override() {
             return override_style;
         }
@@ -380,7 +380,7 @@ impl OpenAIProvider {
             .filter(|s| !s.trim().is_empty())
             .unwrap_or_else(|| "https://api.openai.com".to_string());
         let trimmed = base.trim_end_matches('/');
-        format!("{}/v1/responses", trimmed)
+        format!("{trimmed}/v1/responses")
     }
 
     fn chat_endpoint() -> String {
@@ -394,7 +394,7 @@ impl OpenAIProvider {
             .filter(|s| !s.trim().is_empty())
             .unwrap_or_else(|| "https://api.openai.com".to_string());
         let trimmed = base.trim_end_matches('/');
-        format!("{}/v1/chat/completions", trimmed)
+        format!("{trimmed}/v1/chat/completions")
     }
 
     fn response_format_override() -> Option<Value> {
