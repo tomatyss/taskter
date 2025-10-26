@@ -311,29 +311,44 @@ or run <code>taskter logs list</code> to view the history.</p>
 </div>
 <p>When a task is selected, you can press <code>Enter</code> to view its details, including the full description, any comments, and the assigned agent ID.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="agent-system"><a class="header" href="#agent-system">Agent System</a></h1>
-<p>Taskter supports LLM-based agents that can be assigned to tasks. Agents are model‑agnostic via a provider layer. Gemini is the default provider today, and additional providers can be added without changing the agent loop. See <a href="providers.html">Model Providers</a>.</p>
+<p>Taskter supports LLM-based agents that can be assigned to tasks. Agents are model-agnostic via a provider layer. Gemini is the default provider today, and additional providers can be added without changing the agent loop. See <a href="providers.html">Model Providers</a>.</p>
+<p>This chapter explains how the runtime coordinates models and tools, how to inspect runs, and how to extend the system.</p>
+<h2 id="execution-flow"><a class="header" href="#execution-flow">Execution Flow</a></h2>
+<ol>
+<li><strong>Bootstrap history</strong> – Taskter combines the agent’s system prompt with the selected task (title plus description, when available) and asks the resolved provider for the next action.</li>
+<li><strong>Provider response</strong> – Providers return either:
+<ul>
+<li><code>Text</code>: a final message, which is recorded in the task comment log and marks execution as successful.</li>
+<li><code>ToolCall</code>: name, arguments, and optional <code>call_id</code>. Tool calls are executed synchronously on the host.</li>
+</ul>
+</li>
+<li><strong>Tool execution</strong> – Built-in tools are dispatched through <code>tools::execute_tool</code>. Any failure is surfaced as an agent failure with the tool error message.</li>
+<li><strong>Loop</strong> – Providers receive the tool result (including <code>call_id</code> wiring for multi-turn APIs) and the process repeats until a final text response arrives.</li>
+<li><strong>Logging</strong> – High-level events are appended to <code>.taskter/logs.log</code>. Raw provider requests and responses are mirrored to <code>.taskter/api_responses.log</code> for debugging.</li>
+</ol>
+<p>If the provider requires an API key and none is present in the environment, Taskter enters <strong>offline simulation mode</strong>. Agents that include the <code>send_email</code> tool are treated as successful with a stubbed comment; other agents fail and explain that the required tool is unavailable. This keeps tests deterministic while signalling that a real API key is needed for end-to-end execution.</p>
 <h2 id="creating-an-agent"><a class="header" href="#creating-an-agent">Creating an Agent</a></h2>
 <p>You can create an agent using the <code>agent add</code> subcommand. You need to provide a prompt, a list of tools, and a model.</p>
-<pre><code class="language-bash">taskter agent add --prompt "You are a helpful assistant." --tools "email" "calendar" --model "gemini-2.5-pro"
+<pre><code class="language-bash">taskter agent add --prompt "You are a helpful assistant." --tools "project_files" "run_bash" --model "gemini-2.5-pro"
 </code></pre>
-<p>The <code>--tools</code> option accepts either paths to JSON files describing a tool or the name of a built-in tool. Built-in tools are located in the <code>tools/</code> directory of the repository.</p>
-<p>Available built-in tools:</p>
-<ul>
-<li><code>taskter_task</code></li>
-<li><code>taskter_agent</code></li>
-<li><code>taskter_okrs</code></li>
-<li><code>taskter_tools</code></li>
-<li><code>get_description</code></li>
-<li><code>run_bash</code></li>
-<li><code>run_python</code></li>
-<li><code>send_email</code></li>
-<li><code>web_search</code></li>
-<li><code>project_files</code></li>
-<li><code>file_ops</code></li>
-</ul>
-<p>You can display this list at any time with:</p>
+<p>The <code>--tools</code> option accepts either paths to JSON files describing a tool or the name of a built-in tool. Built-in tools live under <code>tools/</code> in the repository, and their declarations are bundled into the binary.</p>
+<p>You can display the registry at any time with:</p>
 <pre><code class="language-bash">taskter tools list
 </code></pre>
+<h3 id="built-in-tool-reference"><a class="header" href="#built-in-tool-reference">Built-in Tool Reference</a></h3>
+<div class="table-wrapper"><table><thead><tr><th>Tool name</th><th>Purpose</th><th>Required arguments</th><th>Notes</th></tr></thead><tbody>
+<tr><td><code>run_bash</code></td><td>Execute a shell command inside the project directory</td><td><code>command</code> (string)</td><td>Returns trimmed stdout; non-zero status bubbles up as a failure</td></tr>
+<tr><td><code>run_python</code></td><td>Execute inline Python and return stdout</td><td><code>code</code> (string)</td><td>Uses the system Python interpreter</td></tr>
+<tr><td><code>project_files</code></td><td>Read, create, update, or search text files</td><td><code>action</code>; create/read/update: <code>path</code>; update: <code>content</code>; search: <code>query</code></td><td>Uses the supplied path verbatim (no sandbox); alias <code>file_ops</code></td></tr>
+<tr><td><code>get_description</code></td><td>Retrieve the project description text from <code>.taskter/description.md</code></td><td><em>none</em></td><td>Handy for planning/reporting agents</td></tr>
+<tr><td><code>send_email</code> / <code>email</code></td><td>Send email via SMTP</td><td><code>to</code>, <code>subject</code>, <code>body</code></td><td>Requires <code>.taskter/email_config.json</code>; <code>email</code> is an alias</td></tr>
+<tr><td><code>taskter_task</code></td><td>Proxy to <code>taskter task …</code> CLI</td><td><code>args</code> (array of strings)</td><td>Invoke task subcommands (add, list, assign, execute, etc.)</td></tr>
+<tr><td><code>taskter_agent</code></td><td>Proxy to <code>taskter agent …</code> CLI</td><td><code>args</code> (array of strings)</td><td>Manage agents programmatically</td></tr>
+<tr><td><code>taskter_okrs</code></td><td>Proxy to <code>taskter okrs …</code> CLI</td><td><code>args</code> (array of strings)</td><td>Add or list OKRs</td></tr>
+<tr><td><code>taskter_tools</code></td><td>Proxy to <code>taskter tools list</code></td><td><code>args</code> (array of strings)</td><td>Usually <code>["list"]</code>; useful for self-inspection</td></tr>
+<tr><td><code>web_search</code></td><td>Fetch a DuckDuckGo summary</td><td><code>query</code> (string)</td><td>Respects <code>SEARCH_API_ENDPOINT</code>; requires outbound network access</td></tr>
+</tbody></table>
+</div>
 <h2 id="assigning-an-agent-to-a-task"><a class="header" href="#assigning-an-agent-to-a-task">Assigning an Agent to a Task</a></h2>
 <p>Once you have created an agent, you can assign it to a task using the <code>assign</code> subcommand:</p>
 <pre><code class="language-bash">taskter task assign --task-id 1 --agent-id 1
@@ -353,8 +368,14 @@ or run <code>taskter logs list</code> to view the history.</p>
 <pre><code class="language-bash">taskter agent update --id 1 --prompt "New prompt" --tools "taskter_task" --model "gemini-pro"
 </code></pre>
 <p>All three options are required and the previous configuration is overwritten.</p>
+<h2 id="debugging-agent-runs"><a class="header" href="#debugging-agent-runs">Debugging Agent Runs</a></h2>
+<ul>
+<li><strong>High-level activity</strong> – Inspect <code>.taskter/logs.log</code> for a chronological record of agent starts, tool invocations, and outcomes.</li>
+<li><strong>Provider payloads</strong> – <code>.taskter/api_responses.log</code> stores JSON requests and responses for each step; this is invaluable when bringing up a new provider or debugging schema issues.</li>
+<li><strong>Exit codes</strong> – CLI commands return non-zero when execution fails, and the failure message is the same one captured in the task comment.</li>
+</ul>
 <h2 id="creating-custom-tools"><a class="header" href="#creating-custom-tools">Creating Custom Tools</a></h2>
-<p>Agents can use custom tools in addition to the built‑in ones. A tool is defined
+<p>Agents can use custom tools in addition to the built-in ones. A tool is defined
 in a JSON file with three required fields:</p>
 <ul>
 <li><code>name</code> – the unique identifier for the tool</li>
@@ -406,6 +427,9 @@ concurrently so long-running jobs don't block each other.</p>
 agent loop to a specific LLM API. Providers convert between Taskter’s message
 history and the provider’s wire format, and translate responses into either a
 text completion or a tool call.</p>
+<p>All provider requests and responses are mirrored to <code>.taskter/api_responses.log</code>
+so that you can inspect the exact JSON being exchanged when debugging a new
+integration.</p>
 <h2 id="built-in-providers"><a class="header" href="#built-in-providers">Built-in Providers</a></h2>
 <ul>
 <li>Gemini (default): selected when <code>agent.model</code> starts with <code>gemini</code>.
@@ -445,7 +469,7 @@ text completion or a tool call.</p>
 <h2 id="configure-a-provider"><a class="header" href="#configure-a-provider">Configure a Provider</a></h2>
 <ul>
 <li>Choose a model string when creating/updating an agent (e.g. <code>gemini-2.5-pro</code>, <code>gpt-4.1</code>, <code>o1-mini</code>, or <code>ollama:llama3</code>).</li>
-<li>Set the provider explicitly when running CLI commands by passing <code>--provider gemini|openai|ollama</code>. Use <code>--provider none</code> to clear a previously stored value. When no provider is stored Taskter falls back to model-name heuristics.</li>
+<li>Set the provider explicitly when running CLI commands by passing <code>--provider gemini|openai|ollama</code>. To clear a stored provider, use <code>taskter agent update --provider none …</code>; new agent creation does not accept <code>none</code>. When no provider is stored Taskter falls back to model-name heuristics.</li>
 <li>Export the provider’s API key environment variable before running agents.
 <ul>
 <li>Gemini:
