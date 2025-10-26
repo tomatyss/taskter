@@ -266,22 +266,15 @@ In the interactive board, you can use the following keys:
 
 ### Agents
 
-Taskter now supports LLM-based agents that can be assigned to tasks. These agents can execute tasks using a mocked Gemini API for tool-calling.
+Taskter now supports LLM-based agents that can be assigned to tasks. These agents can execute tasks using the configured model provider and the tool registry described below.
 
 - **Add a new agent:**
   ```bash
-  taskter agent add --prompt "You are a helpful assistant." --tools "email" "calendar" --model "gemini-pro" --provider gemini
+  taskter agent add --prompt "You are a helpful assistant." --tools "email" "run_bash" --model "gemini-pro" --provider gemini
   ```
   The `--tools` option accepts either paths to JSON files describing a tool or
   the name of a built-in tool. Built-ins live under the `tools/` directory of
-  the repository. For example `email` resolves to `tools/send_email.json`.
-  Other built-ins include `taskter_task`, `taskter_agent`, `taskter_okrs`,
-  `taskter_tools`, `get_description`, `run_bash`, `run_python`, `file_ops`,
-  `send_email`, and `web_search`.
-  The `taskter_*` tools wrap the corresponding CLI subcommands. Example:
-  ```json
-  {"tool": "taskter_task", "args": {"args": ["list"]}}
-  ```
+  the repository. For example `email` resolves to `tools/send_email.json` (an alias for `send_email`).
 
 - **Assign an agent to a task:**
   ```bash
@@ -312,6 +305,30 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
 When a task is executed, the agent will attempt to perform the task. If successful, the task is marked as "Done". If it fails, the task is moved back to "To Do", unassigned, and a comment from the agent is added.
 
 In the interactive board (`taskter board`), tasks assigned to an agent will be marked with a `*`. You can view the assigned agent ID and any comments by selecting the task and pressing `Enter`.
+
+#### Agent Execution Flow
+
+1. Taskter builds a conversation history from the agent prompt and the selected task, then asks the configured provider for the next action.
+2. Providers return either a natural-language response or a tool call. Tool calls are executed locally through `tools::execute_tool`, and the result is appended back to the conversation before the next model request.
+3. Runs are logged to `.taskter/logs.log`. Raw provider payloads are mirrored to `.taskter/api_responses.log` to aid troubleshooting.
+4. If the provider requires an API key and none is supplied, Taskter falls back to an offline simulation: agents that include the `send_email` tool succeed with a stubbed response, while others return a failure comment. This behaviour keeps tests deterministic but is not intended for production runs.
+
+#### Built-in Tool Catalog
+
+| Tool name | Purpose | Required arguments | Notes |
+| --- | --- | --- | --- |
+| `run_bash` | Execute a shell command inside the project directory | `command` (string) | Returns trimmed stdout or fails with stderr |
+| `run_python` | Execute inline Python and return stdout | `code` (string) | Uses the system Python interpreter |
+| `project_files` | Read, create, update, or search text files | `action`; create/read/update: `path`; update: `content`; search: `query` | Uses paths verbatim (no sandbox); alias `file_ops` |
+| `get_description` | Retrieve the project description from `.taskter/description.md` | _none_ | Read-only helper for planning agents |
+| `send_email` / `email` | Send email via SMTP | `to`, `subject`, `body` | Requires `.taskter/email_config.json`; alias `email` is provided |
+| `taskter_task` | Proxy to `taskter task …` CLI | `args` (array of strings) | Supports add/list/assign/execute/etc. |
+| `taskter_agent` | Proxy to `taskter agent …` CLI | `args` (array of strings) | Manage agent roster programmatically |
+| `taskter_okrs` | Proxy to `taskter okrs …` CLI | `args` (array of strings) | Create or list OKRs |
+| `taskter_tools` | Proxy to `taskter tools list` | `args` (array of strings) | Typically called with `["list"]` |
+| `web_search` | Fetch a summary from DuckDuckGo | `query` (string) | Respects `SEARCH_API_ENDPOINT`; requires outbound network access |
+
+See [docs/src/agent_system.md](docs/src/agent_system.md) for a deeper dive into extending the agent loop and adding custom tools.
 
 #### Model Providers (Gemini + OpenAI + Ollama)
 
@@ -356,7 +373,7 @@ taskter agent add --prompt "Be helpful" --tools run_bash --model ollama:llama3 -
 
 Notes:
 - Agents using OpenAI tool‑calling support multi‑turn loops. Taskter selects Chat Completions or Responses automatically, and you can override the choice with `OPENAI_REQUEST_STYLE` if required.
-- Specify an agent's backend explicitly with `--provider` (use `--provider none` to return to auto-detection).
+- Specify an agent's backend explicitly with `--provider`. New agents accept only `gemini`, `openai`, or `ollama`; to revert an existing agent back to auto-detection, run `taskter agent update --provider none …` so the stored value is cleared.
 - Ollama agents run completely offline; no API key is required.
 - Debugging: Taskter writes raw provider requests and responses to `.taskter/api_responses.log`.
 

@@ -180,6 +180,9 @@
 agent loop to a specific LLM API. Providers convert between Taskter’s message
 history and the provider’s wire format, and translate responses into either a
 text completion or a tool call.</p>
+<p>All provider requests and responses are mirrored to <code>.taskter/api_responses.log</code>
+so that you can inspect the exact JSON being exchanged when debugging a new
+integration.</p>
 <h2 id="built-in-providers"><a class="header" href="#built-in-providers">Built-in Providers</a></h2>
 <ul>
 <li>Gemini (default): selected when <code>agent.model</code> starts with <code>gemini</code>.
@@ -219,7 +222,7 @@ text completion or a tool call.</p>
 <h2 id="configure-a-provider"><a class="header" href="#configure-a-provider">Configure a Provider</a></h2>
 <ul>
 <li>Choose a model string when creating/updating an agent (e.g. <code>gemini-2.5-pro</code>, <code>gpt-4.1</code>, <code>o1-mini</code>, or <code>ollama:llama3</code>).</li>
-<li>Set the provider explicitly when running CLI commands by passing <code>--provider gemini|openai|ollama</code>. Use <code>--provider none</code> to clear a previously stored value. When no provider is stored Taskter falls back to model-name heuristics.</li>
+<li>Set the provider explicitly when running CLI commands by passing <code>--provider gemini|openai|ollama</code>. To clear a stored provider, use <code>taskter agent update --provider none …</code>; new agent creation does not accept <code>none</code>. When no provider is stored Taskter falls back to model-name heuristics.</li>
 <li>Export the provider’s API key environment variable before running agents.
 <ul>
 <li>Gemini:

@@ -5,6 +5,10 @@ agent loop to a specific LLM API. Providers convert between Taskter’s message
 history and the provider’s wire format, and translate responses into either a
 text completion or a tool call.
 
+All provider requests and responses are mirrored to `.taskter/api_responses.log`
+so that you can inspect the exact JSON being exchanged when debugging a new
+integration.
+
 ## Built-in Providers
 
 - Gemini (default): selected when `agent.model` starts with `gemini`.
@@ -29,7 +33,7 @@ text completion or a tool call.
 ## Configure a Provider
 
 - Choose a model string when creating/updating an agent (e.g. `gemini-2.5-pro`, `gpt-4.1`, `o1-mini`, or `ollama:llama3`).
-- Set the provider explicitly when running CLI commands by passing `--provider gemini|openai|ollama`. Use `--provider none` to clear a previously stored value. When no provider is stored Taskter falls back to model-name heuristics.
+- Set the provider explicitly when running CLI commands by passing `--provider gemini|openai|ollama`. To clear a stored provider, use `taskter agent update --provider none …`; new agent creation does not accept `none`. When no provider is stored Taskter falls back to model-name heuristics.
 - Export the provider’s API key environment variable before running agents.
   - Gemini:
     ```bash
@@ -41,8 +45,10 @@ text completion or a tool call.
     ```
   - Ollama does not require an API key. Optionally set `OLLAMA_BASE_URL` if your daemon listens somewhere other than `http://localhost:11434`.
 
-If no valid API key is present, Taskter runs in offline mode and only executes
-built-in tools.
+If no valid API key is present, Taskter falls back to an offline simulation. No
+real tool calls are made: agents that include the `send_email` tool return a
+stubbed success comment, while all other agents are marked as failed so you can
+spot the missing credentials.
 
 ## Add a New Provider
 
