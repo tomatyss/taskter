@@ -433,17 +433,21 @@ progress monitoring and archiving. All of them use the `gemini-2.5-pro` model.
 
 ## Development
 
-Run the included helper script before committing changes to ensure the code is
-formatted, linted and all tests pass:
+Taskter ships a `justfile` with common maintenance workflows. Run `just` with
+no arguments to see the available recipes, then invoke the ones you need:
 
 ```bash
-./scripts/precommit.sh
+just                # list commands
+just precommit      # fmt + clippy + tests
+just lint           # clippy with pedantic warnings
+just test           # cargo test (pass extra args as needed)
+just test-ignored   # run the ignored suites
 ```
 
 To automatically format the project and apply Clippy suggestions, you can run:
 
 ```bash
-./scripts/fix_lints.sh
+just fix-lints
 ```
 
 If you want Git to run it automatically, create a pre-commit hook:
@@ -451,6 +455,10 @@ If you want Git to run it automatically, create a pre-commit hook:
 ```bash
 ln -s ../../scripts/precommit.sh .git/hooks/pre-commit
 ```
+
+All recipes map directly to scripts or cargo commands. You can still call the
+shell scripts (`./scripts/precommit.sh`, `./scripts/fix_lints.sh`, etc.) if you
+prefer invoking them explicitly.
 
 ## Documentation
 
