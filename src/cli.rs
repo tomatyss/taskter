@@ -2,9 +2,13 @@
 
 use clap::{Parser, Subcommand};
 
+use crate::config::ConfigOverrides;
+
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 pub struct Cli {
+    #[command(flatten)]
+    pub config: ConfigOverrides,
     #[command(subcommand)]
     pub command: Commands,
 }

@@ -60,7 +60,7 @@ pub struct Okr {
 /// Returns an error if the board file cannot be read or if it contains invalid
 /// JSON.
 pub fn load_board() -> anyhow::Result<Board> {
-    let path = config::board_path();
+    let path = config::board_path()?;
     if !path.exists() {
         return Ok(Board::default());
     }
@@ -77,7 +77,7 @@ pub fn load_board() -> anyhow::Result<Board> {
 /// Returns an error if the board cannot be serialized or if the file cannot be
 /// written.
 pub fn save_board(board: &Board) -> anyhow::Result<()> {
-    let path = config::board_path();
+    let path = config::board_path()?;
     let content = serde_json::to_string_pretty(board)?;
     fs::write(path, content)?;
     Ok(())
@@ -91,7 +91,7 @@ pub fn save_board(board: &Board) -> anyhow::Result<()> {
 ///
 /// Returns an error if the OKR file cannot be read or if its JSON is malformed.
 pub fn load_okrs() -> anyhow::Result<Vec<Okr>> {
-    let path = config::okrs_path();
+    let path = config::okrs_path()?;
     if !path.exists() {
         return Ok(Vec::new());
     }
@@ -108,7 +108,7 @@ pub fn load_okrs() -> anyhow::Result<Vec<Okr>> {
 /// Returns an error if the OKRs cannot be serialized or if the file cannot be
 /// written.
 pub fn save_okrs(okrs: &[Okr]) -> anyhow::Result<()> {
-    let path = config::okrs_path();
+    let path = config::okrs_path()?;
     let content = serde_json::to_string_pretty(okrs)?;
     fs::write(path, content)?;
     Ok(())

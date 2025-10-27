@@ -17,10 +17,9 @@ impl OllamaProvider {
     }
 
     fn base_url() -> String {
-        std::env::var("OLLAMA_BASE_URL")
-            .ok()
-            .filter(|s| !s.trim().is_empty())
-            .unwrap_or_else(|| "http://localhost:11434".to_string())
+        crate::config::ollama()
+            .map(|cfg| cfg.base_url)
+            .unwrap_or_else(|_| "http://localhost:11434".to_string())
     }
 
     fn endpoint_url() -> String {

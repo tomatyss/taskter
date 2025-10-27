@@ -1,6 +1,5 @@
 use anyhow::Result;
 use serde_json::{json, Value};
-use std::env;
 
 use super::{ModelAction, ModelProvider};
 use crate::agent::Agent;
@@ -344,8 +343,12 @@ impl OpenAIProvider {
     }
 
     fn request_style_override() -> Option<RequestStyle> {
-        let raw = env::var("OPENAI_REQUEST_STYLE").ok()?.to_lowercase();
-        match raw.as_str() {
+        let raw = match crate::config::openai() {
+            Ok(cfg) => cfg.request_style,
+            Err(_) => None,
+        }?;
+        let lowered = raw.to_lowercase();
+        match lowered.as_str() {
             "responses" | "responses_api" | "responses-api" => Some(RequestStyle::Responses),
             "chat" | "chat_completions" | "chat-completions" => Some(RequestStyle::ChatCompletions),
             _ => None,
@@ -370,43 +373,29 @@ impl OpenAIProvider {
     }
 
     fn responses_endpoint() -> String {
-        if let Ok(url) = env::var("OPENAI_RESPONSES_ENDPOINT") {
-            if !url.trim().is_empty() {
-                return url;
-            }
-        }
-        let base = env::var("OPENAI_BASE_URL")
-            .ok()
-            .filter(|s| !s.trim().is_empty())
-            .unwrap_or_else(|| "https://api.openai.com".to_string());
-        let trimmed = base.trim_end_matches('/');
-        format!("{trimmed}/v1/responses")
+        crate::config::openai()
+            .map(|cfg| cfg.responses_endpoint)
+            .unwrap_or_else(|_| "https://api.openai.com/v1/responses".to_string())
     }
 
     fn chat_endpoint() -> String {
-        if let Ok(url) = env::var("OPENAI_CHAT_ENDPOINT") {
-            if !url.trim().is_empty() {
-                return url;
-            }
-        }
-        let base = env::var("OPENAI_BASE_URL")
-            .ok()
-            .filter(|s| !s.trim().is_empty())
-            .unwrap_or_else(|| "https://api.openai.com".to_string());
-        let trimmed = base.trim_end_matches('/');
-        format!("{trimmed}/v1/chat/completions")
+        crate::config::openai()
+            .map(|cfg| cfg.chat_endpoint)
+            .unwrap_or_else(|_| "https://api.openai.com/v1/chat/completions".to_string())
     }
 
     fn response_format_override() -> Option<Value> {
-        let raw = env::var("OPENAI_RESPONSE_FORMAT").ok()?;
-        let trimmed = raw.trim();
-        if trimmed.is_empty() {
+        let raw = match crate::config::openai() {
+            Ok(cfg) => cfg.response_format,
+            Err(_) => None,
+        }?;
+        if raw.is_empty() {
             return None;
         }
-        if trimmed.starts_with('{') {
-            serde_json::from_str::<Value>(trimmed).ok()
+        if raw.starts_with('{') {
+            serde_json::from_str::<Value>(&raw).ok()
         } else {
-            Some(json!({ "type": trimmed }))
+            Some(json!({ "type": raw }))
         }
     }
 }
