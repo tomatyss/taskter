@@ -44,9 +44,11 @@ pub fn with_temp_dir<F: FnOnce() -> T, T>(test: F) -> T {
     let config_path = tmp.path().join("config.toml");
     std::fs::write(&config_path, b"").unwrap();
 
-    let mut overrides = ConfigOverrides::default();
-    overrides.config_file = Some(config_path);
-    overrides.data_dir = Some(data_dir);
+    let overrides = ConfigOverrides {
+        config_file: Some(config_path),
+        data_dir: Some(data_dir),
+        ..ConfigOverrides::default()
+    };
 
     config::init(&overrides).expect("failed to load config for test");
 

@@ -16,9 +16,11 @@ fn layering_respects_flag_env_and_file_order() {
         std::fs::write(&config_path, "[paths]\ndata_dir = \"./from-config\"\n")
             .expect("failed to write config file");
 
-        let mut overrides = ConfigOverrides::default();
-        overrides.config_file = Some(config_path.clone());
-        overrides.data_dir = Some(PathBuf::from("./from-flags"));
+        let mut overrides = ConfigOverrides {
+            config_file: Some(config_path.clone()),
+            data_dir: Some(PathBuf::from("./from-flags")),
+            ..ConfigOverrides::default()
+        };
 
         std::env::set_var("TASKTER__PATHS__DATA_DIR", "./from-env");
         config::init(&overrides).expect("init with overrides");

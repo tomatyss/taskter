@@ -96,19 +96,10 @@ pub struct ConfigOverrides {
     pub ollama_base_url: Option<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 struct ConfigState {
     overrides: ConfigOverrides,
     resolved: Option<ResolvedConfig>,
-}
-
-impl Default for ConfigState {
-    fn default() -> Self {
-        Self {
-            overrides: ConfigOverrides::default(),
-            resolved: None,
-        }
-    }
 }
 
 static CONFIG_STATE: OnceCell<RwLock<ConfigState>> = OnceCell::new();
@@ -121,15 +112,10 @@ fn env_flag(key: &str) -> bool {
     match std::env::var(key) {
         Ok(value) => {
             let trimmed = value.trim();
-            if trimmed.is_empty()
+            !(trimmed.is_empty()
                 || trimmed.eq_ignore_ascii_case("0")
                 || trimmed.eq_ignore_ascii_case("false")
-                || trimmed.eq_ignore_ascii_case("off")
-            {
-                false
-            } else {
-                true
-            }
+                || trimmed.eq_ignore_ascii_case("off"))
         }
         Err(_) => false,
     }
@@ -302,20 +288,11 @@ pub struct OllamaResolved {
     pub base_url: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Default)]
 #[serde(default)]
 struct RawConfig {
     paths: PathsSection,
     providers: ProvidersSection,
-}
-
-impl Default for RawConfig {
-    fn default() -> Self {
-        Self {
-            paths: PathsSection::default(),
-            providers: ProvidersSection::default(),
-        }
-    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -348,7 +325,7 @@ impl Default for PathsSection {
     }
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Default)]
 #[serde(default)]
 struct ProvidersSection {
     openai: OpenAiSection,
@@ -356,17 +333,7 @@ struct ProvidersSection {
     ollama: OllamaSection,
 }
 
-impl Default for ProvidersSection {
-    fn default() -> Self {
-        Self {
-            openai: OpenAiSection::default(),
-            gemini: GeminiSection::default(),
-            ollama: OllamaSection::default(),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Default)]
 #[serde(default)]
 struct OpenAiSection {
     api_key: Option<String>,
@@ -377,45 +344,17 @@ struct OpenAiSection {
     response_format: Option<String>,
 }
 
-impl Default for OpenAiSection {
-    fn default() -> Self {
-        Self {
-            api_key: None,
-            base_url: None,
-            responses_endpoint: None,
-            chat_endpoint: None,
-            request_style: None,
-            response_format: None,
-        }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Default)]
 #[serde(default)]
 struct GeminiSection {
     api_key: Option<String>,
 }
 
-impl Default for GeminiSection {
-    fn default() -> Self {
-        Self { api_key: None }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Default)]
 #[serde(default)]
 struct OllamaSection {
     api_key: Option<String>,
     base_url: Option<String>,
-}
-
-impl Default for OllamaSection {
-    fn default() -> Self {
-        Self {
-            api_key: None,
-            base_url: None,
-        }
-    }
 }
 
 fn load_config(overrides: &ConfigOverrides) -> Result<ResolvedConfig> {
@@ -651,9 +590,9 @@ fn resolve_openai(section: OpenAiSection) -> Result<OpenAiResolved> {
         .unwrap_or_else(|| "https://api.openai.com".to_string());
     let normalized_base = base_url.trim_end_matches('/').to_string();
     let responses_endpoint = clean_string(section.responses_endpoint)
-        .unwrap_or_else(|| format!("{}/v1/responses", normalized_base));
+        .unwrap_or_else(|| format!("{normalized_base}/v1/responses"));
     let chat_endpoint = clean_string(section.chat_endpoint)
-        .unwrap_or_else(|| format!("{}/v1/chat/completions", normalized_base));
+        .unwrap_or_else(|| format!("{normalized_base}/v1/chat/completions"));
 
     let response_format = clean_string(section.response_format);
     if let Some(ref raw) = response_format {

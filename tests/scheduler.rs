@@ -18,9 +18,11 @@ async fn scheduler_executes_agent_tasks() {
 
     let config_path = tmp.path().join("config.toml");
     std::fs::write(&config_path, b"").unwrap();
-    let mut overrides = ConfigOverrides::default();
-    overrides.config_file = Some(config_path);
-    overrides.data_dir = Some(data_dir);
+    let overrides = ConfigOverrides {
+        config_file: Some(config_path),
+        data_dir: Some(data_dir),
+        ..ConfigOverrides::default()
+    };
     config::init(&overrides).expect("config init");
 
     let send_email = tools::builtin_declaration("send_email").unwrap();
