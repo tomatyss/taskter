@@ -2,6 +2,7 @@ use clap::Parser;
 
 use taskter::cli::{Cli, Commands};
 use taskter::commands;
+use taskter::config;
 
 // A multi-threaded Tokio runtime is unnecessary for a command-line application that
 // mainly executes short-lived, mostly single-threaded tasks.  Using the default
@@ -19,6 +20,8 @@ use taskter::commands;
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
+
+    config::init(&cli.config)?;
 
     match &cli.command {
         Commands::Init => commands::init::run()?,

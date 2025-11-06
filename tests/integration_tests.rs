@@ -5,6 +5,7 @@ use taskter::agent::{self, Agent, ExecutionResult, FunctionDeclaration};
 use taskter::store::{self, Board, KeyResult, Okr, Task, TaskStatus};
 
 mod common;
+use common::disable_host_config_guard;
 pub use common::with_temp_dir;
 
 #[test]
@@ -81,7 +82,10 @@ fn comment_roundtrip_persists_changes() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn agent_executes_email_task_successfully() {
+    let _host_config_guard = disable_host_config_guard();
+    std::env::remove_var("TASKTER__PROVIDERS__GEMINI__API_KEY");
     std::env::remove_var("GEMINI_API_KEY");
+    taskter::config::force_reload().expect("failed to clear test config state");
     // Given
     let agent = Agent {
         id: 1,
@@ -117,6 +121,7 @@ async fn agent_executes_email_task_successfully() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn agent_execution_fails_without_tool() {
+    let _host_config_guard = disable_host_config_guard();
     // Given
     let agent = Agent {
         id: 1,
@@ -148,7 +153,9 @@ async fn agent_execution_fails_without_tool() {
 
 #[tokio::test(flavor = "current_thread")]
 async fn agent_execution_fails_on_network_error_without_tool() {
-    std::env::set_var("GEMINI_API_KEY", "dummy");
+    let _host_config_guard = disable_host_config_guard();
+    std::env::set_var("TASKTER__PROVIDERS__GEMINI__API_KEY", "dummy");
+    taskter::config::force_reload().expect("failed to apply test config overrides");
     std::env::set_var("https_proxy", "http://127.0.0.1:9");
 
     let agent = Agent {
@@ -176,12 +183,14 @@ async fn agent_execution_fails_on_network_error_without_tool() {
 
     assert!(matches!(result, ExecutionResult::Failure { .. }));
 
-    std::env::remove_var("GEMINI_API_KEY");
+    std::env::remove_var("TASKTER__PROVIDERS__GEMINI__API_KEY");
     std::env::remove_var("https_proxy");
+    taskter::config::force_reload().expect("failed to clear test config state");
 }
 
 #[test]
 fn run_python_tool_executes_code() {
+    let _host_config_guard = disable_host_config_guard();
     let result = taskter::tools::execute_tool("run_python", &json!({ "code": "print(40 + 2)" }))
         .expect("execution failed");
     assert_eq!(result.trim(), "42");

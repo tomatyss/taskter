@@ -20,7 +20,7 @@ pub fn declaration() -> FunctionDeclaration {
 ///
 /// Returns an error if the description file cannot be read.
 pub fn execute(_args: &Value) -> Result<String> {
-    let content = fs::read_to_string(config::description_path())?;
+    let content = fs::read_to_string(config::description_path()?)?;
     Ok(content)
 }
 

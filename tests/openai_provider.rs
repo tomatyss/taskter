@@ -5,6 +5,9 @@ use std::{env, ffi::OsString};
 use taskter::agent::{Agent, FunctionDeclaration};
 use taskter::providers::{openai::OpenAIProvider, select_provider, ModelAction, ModelProvider};
 
+mod common;
+use common::disable_host_config_guard;
+
 static ENV_LOCK: LazyLock<Mutex<()>> = LazyLock::new(|| Mutex::new(()));
 
 struct EnvGuard {
@@ -16,6 +19,7 @@ impl EnvGuard {
     fn set(key: &'static str, value: &str) -> Self {
         let previous = env::var_os(key);
         env::set_var(key, value);
+        taskter::config::force_reload().expect("failed to reload config for openai test");
         Self { key, previous }
     }
 }
@@ -27,6 +31,7 @@ impl Drop for EnvGuard {
         } else {
             env::remove_var(self.key);
         }
+        taskter::config::force_reload().expect("failed to reload config for openai test");
     }
 }
 
@@ -199,7 +204,8 @@ fn openai_responses_history_for_o_models() {
 #[test]
 fn openai_request_style_override_allows_chat() {
     let _guard = ENV_LOCK.lock().unwrap();
-    let _style_guard = EnvGuard::set("OPENAI_REQUEST_STYLE", "chat");
+    let _host_guard = disable_host_config_guard();
+    let _style_guard = EnvGuard::set("TASKTER__PROVIDERS__OPENAI__REQUEST_STYLE", "chat");
     let provider = OpenAIProvider;
     let agent = base_agent("gpt-5");
     let endpoint = provider.endpoint(&agent);
@@ -211,7 +217,8 @@ fn openai_request_style_override_allows_chat() {
 #[test]
 fn openai_response_format_override_applies() {
     let _guard = ENV_LOCK.lock().unwrap();
-    let _fmt_guard = EnvGuard::set("OPENAI_RESPONSE_FORMAT", "json_object");
+    let _host_guard = disable_host_config_guard();
+    let _fmt_guard = EnvGuard::set("TASKTER__PROVIDERS__OPENAI__RESPONSE_FORMAT", "json_object");
     let provider = OpenAIProvider;
     let agent = base_agent("gpt-4o");
     let history = provider.build_history(&agent, "List tools");
@@ -223,7 +230,11 @@ fn openai_response_format_override_applies() {
 #[test]
 fn openai_custom_base_url_is_used() {
     let _guard = ENV_LOCK.lock().unwrap();
-    let _base_guard = EnvGuard::set("OPENAI_BASE_URL", "https://example.com/custom");
+    let _host_guard = disable_host_config_guard();
+    let _base_guard = EnvGuard::set(
+        "TASKTER__PROVIDERS__OPENAI__BASE_URL",
+        "https://example.com/custom",
+    );
     let provider = OpenAIProvider;
     let agent = base_agent("o1-preview");
     let endpoint = provider.endpoint(&agent);

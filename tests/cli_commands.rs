@@ -1,4 +1,4 @@
-use assert_cmd::Command;
+use assert_cmd::cargo::cargo_bin_cmd;
 use predicates::prelude::*;
 use serde_json::Value;
 use std::fs;
@@ -10,23 +10,17 @@ pub use common::with_temp_dir;
 fn add_list_done_workflow() {
     with_temp_dir(|| {
         // Initialize board
-        Command::cargo_bin("taskter")
-            .unwrap()
-            .arg("init")
-            .assert()
-            .success();
+        cargo_bin_cmd!("taskter").arg("init").assert().success();
 
         // Add a task
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["task", "add", "--title", "Test task"])
             .assert()
             .success()
             .stdout(predicate::str::contains("Task added successfully"));
 
         // Verify list output contains the task
-        let out = Command::cargo_bin("taskter")
-            .unwrap()
+        let out = cargo_bin_cmd!("taskter")
             .args(["task", "list"])
             .assert()
             .success()
@@ -37,8 +31,7 @@ fn add_list_done_workflow() {
         assert!(output.contains("Test task"));
 
         // Mark the task as done
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["task", "complete", "--id", "1"])
             .assert()
             .success()
@@ -60,13 +53,9 @@ fn board_command_starts_and_quits() {
     use std::time::Duration;
 
     with_temp_dir(|| {
-        Command::cargo_bin("taskter")
-            .unwrap()
-            .arg("init")
-            .assert()
-            .success();
+        cargo_bin_cmd!("taskter").arg("init").assert().success();
 
-        let bin = Command::cargo_bin("taskter").unwrap();
+        let bin = cargo_bin_cmd!("taskter");
         let path = bin.get_program().to_owned();
 
         let mut cmd = PCommand::new(path);
@@ -83,22 +72,16 @@ fn board_command_starts_and_quits() {
 fn add_agent_and_execute_task() {
     with_temp_dir(|| {
         // prepare board
-        Command::cargo_bin("taskter")
-            .unwrap()
-            .arg("init")
-            .assert()
-            .success();
+        cargo_bin_cmd!("taskter").arg("init").assert().success();
 
         // add a task
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["task", "add", "--title", "Send email"])
             .assert()
             .success();
 
         // add agent with builtin tool
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args([
                 "agent",
                 "add",
@@ -113,15 +96,13 @@ fn add_agent_and_execute_task() {
             .success();
 
         // assign agent to task
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["task", "assign", "--task-id", "1", "--agent-id", "1"])
             .assert()
             .success();
 
         // execute the task
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["task", "execute", "--task-id", "1"])
             .assert()
             .success();
@@ -136,20 +117,14 @@ fn add_agent_and_execute_task() {
 #[test]
 fn unassign_removes_agent() {
     with_temp_dir(|| {
-        Command::cargo_bin("taskter")
-            .unwrap()
-            .arg("init")
-            .assert()
-            .success();
+        cargo_bin_cmd!("taskter").arg("init").assert().success();
 
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["task", "add", "--title", "Test task"])
             .assert()
             .success();
 
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args([
                 "agent",
                 "add",
@@ -163,14 +138,12 @@ fn unassign_removes_agent() {
             .assert()
             .success();
 
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["task", "assign", "--task-id", "1", "--agent-id", "1"])
             .assert()
             .success();
 
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["task", "unassign", "--task-id", "1"])
             .assert()
             .success()
@@ -185,15 +158,10 @@ fn unassign_removes_agent() {
 #[test]
 fn list_and_delete_agents() {
     with_temp_dir(|| {
-        Command::cargo_bin("taskter")
-            .unwrap()
-            .arg("init")
-            .assert()
-            .success();
+        cargo_bin_cmd!("taskter").arg("init").assert().success();
 
         // add an agent
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args([
                 "agent",
                 "add",
@@ -208,8 +176,7 @@ fn list_and_delete_agents() {
             .success();
 
         // list agents
-        let out = Command::cargo_bin("taskter")
-            .unwrap()
+        let out = cargo_bin_cmd!("taskter")
             .args(["agent", "list"])
             .assert()
             .success()
@@ -221,8 +188,7 @@ fn list_and_delete_agents() {
             .contains("1: helper (provider: gemini, model: gemini-2.5-flash, tools: send_email)"));
 
         // delete agent
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["agent", "remove", "--id", "1"])
             .assert()
             .success()
@@ -238,14 +204,9 @@ fn list_and_delete_agents() {
 #[test]
 fn agent_ids_increase_after_deletion() {
     with_temp_dir(|| {
-        Command::cargo_bin("taskter")
-            .unwrap()
-            .arg("init")
-            .assert()
-            .success();
+        cargo_bin_cmd!("taskter").arg("init").assert().success();
 
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args([
                 "agent",
                 "add",
@@ -259,8 +220,7 @@ fn agent_ids_increase_after_deletion() {
             .assert()
             .success();
 
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args([
                 "agent",
                 "add",
@@ -274,14 +234,12 @@ fn agent_ids_increase_after_deletion() {
             .assert()
             .success();
 
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["agent", "remove", "--id", "1"])
             .assert()
             .success();
 
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args([
                 "agent",
                 "add",
@@ -310,15 +268,10 @@ fn agent_ids_increase_after_deletion() {
 #[test]
 fn update_agent_changes_configuration() {
     with_temp_dir(|| {
-        Command::cargo_bin("taskter")
-            .unwrap()
-            .arg("init")
-            .assert()
-            .success();
+        cargo_bin_cmd!("taskter").arg("init").assert().success();
 
         // add an agent
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args([
                 "agent",
                 "add",
@@ -333,8 +286,7 @@ fn update_agent_changes_configuration() {
             .success();
 
         // update the agent's tools and model only
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args([
                 "agent",
                 "update",
@@ -358,8 +310,7 @@ fn update_agent_changes_configuration() {
         assert!(agents[0]["provider"].is_null());
 
         // update the agent's provider
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["agent", "update", "--id", "1", "--provider", "openai"])
             .assert()
             .success()
@@ -371,8 +322,7 @@ fn update_agent_changes_configuration() {
         assert_eq!(agents[0]["provider"], "openai");
 
         // update the agent's prompt only
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["agent", "update", "--id", "1", "--prompt", "new helper"])
             .assert()
             .success()
@@ -387,8 +337,7 @@ fn update_agent_changes_configuration() {
         assert_eq!(agents[0]["provider"], "openai");
 
         // remove the provider
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["agent", "update", "--id", "1", "--provider", "none"])
             .assert()
             .success()
@@ -404,15 +353,10 @@ fn update_agent_changes_configuration() {
 #[test]
 fn add_okr_log_and_description() {
     with_temp_dir(|| {
-        Command::cargo_bin("taskter")
-            .unwrap()
-            .arg("init")
-            .assert()
-            .success();
+        cargo_bin_cmd!("taskter").arg("init").assert().success();
 
         // add okr
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["okrs", "add", "-o", "Improve UI", "-k", "Faster", "Better"])
             .assert()
             .success()
@@ -424,8 +368,7 @@ fn add_okr_log_and_description() {
         assert_eq!(okrs[0]["objective"], "Improve UI");
 
         // add log entry
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["logs", "add", "Initial commit"])
             .assert()
             .success()
@@ -435,8 +378,7 @@ fn add_okr_log_and_description() {
         assert!(logs.contains("Initial commit"));
 
         // update description
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["description", "A great project"])
             .assert()
             .success()
@@ -452,14 +394,9 @@ fn add_okr_log_and_description() {
 #[test]
 fn show_tools_lists_builtins() {
     with_temp_dir(|| {
-        Command::cargo_bin("taskter")
-            .unwrap()
-            .arg("init")
-            .assert()
-            .success();
+        cargo_bin_cmd!("taskter").arg("init").assert().success();
 
-        let out = Command::cargo_bin("taskter")
-            .unwrap()
+        let out = cargo_bin_cmd!("taskter")
             .args(["tools", "list"])
             .assert()
             .success()
@@ -476,14 +413,9 @@ fn show_tools_lists_builtins() {
 #[test]
 fn schedule_agent_updates_file() {
     with_temp_dir(|| {
-        Command::cargo_bin("taskter")
-            .unwrap()
-            .arg("init")
-            .assert()
-            .success();
+        cargo_bin_cmd!("taskter").arg("init").assert().success();
 
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args([
                 "agent",
                 "add",
@@ -497,8 +429,7 @@ fn schedule_agent_updates_file() {
             .assert()
             .success();
 
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args([
                 "agent",
                 "schedule",
@@ -516,8 +447,7 @@ fn schedule_agent_updates_file() {
                 .unwrap();
         assert_eq!(agents[0]["schedule"], "*/5 * * * * *");
 
-        let out = Command::cargo_bin("taskter")
-            .unwrap()
+        let out = cargo_bin_cmd!("taskter")
             .args(["agent", "schedule", "list"])
             .assert()
             .success()
@@ -527,8 +457,7 @@ fn schedule_agent_updates_file() {
         let output = String::from_utf8(out).unwrap();
         assert!(output.contains("*/5 * * * * *"));
 
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["agent", "schedule", "remove", "--id", "1"])
             .assert()
             .success();

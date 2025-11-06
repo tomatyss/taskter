@@ -49,7 +49,7 @@ pub fn execute(args: &Value) -> Result<String> {
 /// Returns an error if the configuration file is missing or invalid, or if the
 /// email fails to send.
 fn send_email(to: &str, subject: &str, body: &str) -> Result<()> {
-    let config_path = config::email_config_path();
+    let config_path = config::email_config_path()?;
     let config_str = match fs::read_to_string(config_path) {
         Ok(content) => content,
         Err(_) => return Err(anyhow::anyhow!("Email configuration not found")),

@@ -60,7 +60,10 @@ pub trait ModelProvider {
             }
             // Best-effort debug logging of request
             let _ = (|| -> std::io::Result<()> {
-                let path = crate::config::responses_log_path();
+                let path = match crate::config::responses_log_path() {
+                    Ok(p) => p,
+                    Err(_) => return Ok(()),
+                };
                 if !path.exists() {
                     if let Some(parent) = path.parent() {
                         std::fs::create_dir_all(parent)?;
@@ -87,7 +90,10 @@ pub trait ModelProvider {
             let json = response.json::<Value>().await?;
             // Best-effort debug logging of raw responses
             let _ = (|| -> std::io::Result<()> {
-                let path = crate::config::responses_log_path();
+                let path = match crate::config::responses_log_path() {
+                    Ok(p) => p,
+                    Err(_) => return Ok(()),
+                };
                 if !path.exists() {
                     if let Some(parent) = path.parent() {
                         std::fs::create_dir_all(parent)?;
