@@ -1,6 +1,6 @@
 #![allow(clippy::used_underscore_binding)]
 
-use assert_cmd::Command;
+use assert_cmd::cargo::cargo_bin_cmd;
 use serde_json::json;
 use std::fs;
 
@@ -53,18 +53,13 @@ fn web_search_fetches_result() {
 #[test]
 fn taskter_task_tool_lists_tasks() {
     with_temp_dir(|| {
-        let cmd = Command::cargo_bin("taskter").unwrap();
+        let cmd = cargo_bin_cmd!("taskter");
         let bin = cmd.get_program().to_owned();
         std::env::set_var("TASKTER_BIN", &bin);
 
-        Command::cargo_bin("taskter")
-            .unwrap()
-            .arg("init")
-            .assert()
-            .success();
+        cargo_bin_cmd!("taskter").arg("init").assert().success();
 
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["task", "add", "--title", "Demo"])
             .assert()
             .success();
@@ -78,18 +73,13 @@ fn taskter_task_tool_lists_tasks() {
 #[test]
 fn taskter_agent_tool_lists_agents() {
     with_temp_dir(|| {
-        let cmd = Command::cargo_bin("taskter").unwrap();
+        let cmd = cargo_bin_cmd!("taskter");
         let bin = cmd.get_program().to_owned();
         std::env::set_var("TASKTER_BIN", &bin);
 
-        Command::cargo_bin("taskter")
-            .unwrap()
-            .arg("init")
-            .assert()
-            .success();
+        cargo_bin_cmd!("taskter").arg("init").assert().success();
 
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args([
                 "agent",
                 "add",
@@ -113,18 +103,13 @@ fn taskter_agent_tool_lists_agents() {
 #[test]
 fn taskter_okrs_tool_lists_okrs() {
     with_temp_dir(|| {
-        let cmd = Command::cargo_bin("taskter").unwrap();
+        let cmd = cargo_bin_cmd!("taskter");
         let bin = cmd.get_program().to_owned();
         std::env::set_var("TASKTER_BIN", &bin);
 
-        Command::cargo_bin("taskter")
-            .unwrap()
-            .arg("init")
-            .assert()
-            .success();
+        cargo_bin_cmd!("taskter").arg("init").assert().success();
 
-        Command::cargo_bin("taskter")
-            .unwrap()
+        cargo_bin_cmd!("taskter")
             .args(["okrs", "add", "-o", "Improve", "-k", "Speed"])
             .assert()
             .success();
@@ -138,15 +123,11 @@ fn taskter_okrs_tool_lists_okrs() {
 #[test]
 fn taskter_tools_tool_lists_builtins() {
     with_temp_dir(|| {
-        let cmd = Command::cargo_bin("taskter").unwrap();
+        let cmd = cargo_bin_cmd!("taskter");
         let bin = cmd.get_program().to_owned();
         std::env::set_var("TASKTER_BIN", &bin);
 
-        Command::cargo_bin("taskter")
-            .unwrap()
-            .arg("init")
-            .assert()
-            .success();
+        cargo_bin_cmd!("taskter").arg("init").assert().success();
 
         let out =
             taskter::tools::execute_tool("taskter_tools", &json!({"args": ["list"]})).unwrap();
