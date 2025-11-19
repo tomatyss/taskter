@@ -92,6 +92,22 @@ taskter board
 
 ![TUI example](tui_example.png)
 
+## Configuration
+
+Taskter merges configuration from four layers so you can balance sensible
+defaults with environment specific overrides:
+
+1. Code defaults – works out of the box.
+2. `config.toml` – stored in the OS-specific config directory (e.g.
+   `~/.config/taskter/config.toml`).
+3. Environment variables – namespaced as `TASKTER__SECTION__KEY`, also loaded
+   from a local `.env` file when present.
+4. CLI flags – switches such as `--data-dir`, `--openai-api-key`, etc. on a
+   per-run basis.
+
+See [docs/src/configuration.md](docs/src/configuration.md) for the full schema
+and examples.
+
 
 ## Build and Installation
 

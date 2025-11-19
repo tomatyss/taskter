@@ -1,14 +1,29 @@
 use std::time::Duration;
 use taskter::agent::Agent;
+use taskter::config::{self, ConfigOverrides};
 use taskter::store::{Board, Task, TaskStatus};
 use taskter::{agent, scheduler, store, tools};
 
+mod common;
+use common::disable_host_config_guard;
+
 #[tokio::test]
 async fn scheduler_executes_agent_tasks() {
+    let _host_config_guard = disable_host_config_guard();
     let tmp = tempfile::tempdir().expect("tmp");
     let orig = std::env::current_dir().unwrap();
     std::env::set_current_dir(tmp.path()).unwrap();
-    std::fs::create_dir(taskter::config::DIR).unwrap();
+    let data_dir = tmp.path().join(taskter::config::DIR);
+    std::fs::create_dir(&data_dir).unwrap();
+
+    let config_path = tmp.path().join("config.toml");
+    std::fs::write(&config_path, b"").unwrap();
+    let overrides = ConfigOverrides {
+        config_file: Some(config_path),
+        data_dir: Some(data_dir),
+        ..ConfigOverrides::default()
+    };
+    config::init(&overrides).expect("config init");
 
     let send_email = tools::builtin_declaration("send_email").unwrap();
     let agent = Agent {
@@ -53,4 +68,5 @@ async fn scheduler_executes_agent_tasks() {
     }
 
     std::env::set_current_dir(orig).unwrap();
+    config::init(&ConfigOverrides::default()).expect("reset config state");
 }

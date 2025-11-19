@@ -32,7 +32,7 @@ fn append_log(message: &str) -> anyhow::Result<()> {
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
-        .open(config::log_path())?;
+        .open(config::log_path()?)?;
     let timestamp = Local::now().format("%Y-%m-%d %H:%M:%S");
     writeln!(file, "[{timestamp}] {message}")?;
     Ok(())
@@ -81,13 +81,13 @@ pub async fn execute_task(agent: &Agent, task: Option<&Task>) -> Result<Executio
     let has_send_email_tool = agent.tools.iter().any(|t| t.name == "send_email");
 
     let requires_api_key = provider.requires_api_key();
-    let api_key = if requires_api_key {
-        std::env::var(provider.api_key_env())
+    let mut api_key = config::provider_api_key(provider.name())?;
+    if api_key.is_none() && requires_api_key {
+        // Backwards compatibility with legacy environment variables.
+        api_key = std::env::var(provider.api_key_env())
             .ok()
-            .filter(|k| !k.trim().is_empty())
-    } else {
-        Some(String::new())
-    };
+            .filter(|k| !k.trim().is_empty());
+    }
 
     if requires_api_key && api_key.is_none() {
         let _ = append_log("Executing without API key");
@@ -194,13 +194,15 @@ pub struct Agent {
 ///
 /// Returns an error if the file cannot be read, created or if the JSON is invalid.
 pub fn load_agents() -> anyhow::Result<Vec<Agent>> {
-    let path = config::agents_path();
+    let path = config::agents_path()?;
     if !path.exists() {
-        fs::create_dir_all(path.parent().unwrap())?;
-        fs::write(path, "[]")?;
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::write(&path, "[]")?;
     }
 
-    let content = fs::read_to_string(path)?;
+    let content = fs::read_to_string(&path)?;
     let agents: Vec<Agent> = serde_json::from_str(&content)?;
     Ok(agents)
 }
@@ -212,25 +214,27 @@ pub fn load_agents() -> anyhow::Result<Vec<Agent>> {
 /// Returns an error if the agents cannot be serialized or if the file cannot be
 /// written.
 pub fn save_agents(agents: &[Agent]) -> anyhow::Result<()> {
-    let path = config::agents_path();
+    let path = config::agents_path()?;
     let content = serde_json::to_string_pretty(agents)?;
     fs::write(path, content)?;
     Ok(())
 }
 
 pub fn load_running_agents() -> anyhow::Result<Vec<usize>> {
-    let path = config::running_agents_path();
+    let path = config::running_agents_path()?;
     if !path.exists() {
-        fs::create_dir_all(path.parent().unwrap())?;
-        fs::write(path, "[]")?;
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        fs::write(&path, "[]")?;
     }
-    let content = fs::read_to_string(path)?;
+    let content = fs::read_to_string(&path)?;
     let ids: Vec<usize> = serde_json::from_str(&content)?;
     Ok(ids)
 }
 
 pub fn save_running_agents(ids: &[usize]) -> anyhow::Result<()> {
-    let path = config::running_agents_path();
+    let path = config::running_agents_path()?;
     let content = serde_json::to_string_pretty(ids)?;
     fs::write(path, content)?;
     Ok(())
