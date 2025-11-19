@@ -174,30 +174,100 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="configuration"><a class="header" href="#configuration">Configuration</a></h1>
-<p>This chapter describes runtime configuration files and environment variables used by Taskter.</p>
+<p>Taskter now loads its settings from four layers, applied in order from lowest
+to highest precedence:</p>
+<ol>
+<li><strong>Code defaults</strong> – reasonable fallbacks baked into the binary so
+Taskter works out of the box.</li>
+<li><strong>Config file</strong> – user supplied values in a <code>config.toml</code> stored in the
+standard OS configuration directory.</li>
+<li><strong>Environment variables</strong> – namespaced variables for adhoc overrides or
+container deployments.</li>
+<li><strong>CLI flags</strong> – explicit switches on each invocation (e.g.
+<code>taskter --data-dir …</code>).</li>
+</ol>
+<p>The first value found in this chain wins. This makes it easy to keep global
+defaults in a file, override secrets via environment variables, and use CLI
+flags for one-off experiments.</p>
+<h2 id="config-file-configtoml"><a class="header" href="#config-file-configtoml">Config file (<code>config.toml</code>)</a></h2>
+<p>Taskter looks for a TOML file at the OS-specific configuration path returned by
+<a href="https://docs.rs/directories/latest/directories/struct.ProjectDirs.html"><code>directories::ProjectDirs</code></a>:</p>
+<div class="table-wrapper"><table><thead><tr><th>Platform</th><th>Directory</th></tr></thead><tbody>
+<tr><td>Linux, BSD, WSL</td><td><code>~/.config/taskter/config.toml</code></td></tr>
+<tr><td>macOS</td><td><code>~/Library/Application Support/taskter/config.toml</code></td></tr>
+<tr><td>Windows</td><td><code>%APPDATA%\taskter\config.toml</code></td></tr>
+</tbody></table>
+</div>
+<p>You can point to an explicit file with <code>--config-file /custom/path/config.toml</code>.</p>
+<p>The file accepts nested sections that mirror the runtime configuration
+structure. All keys are optional – omit anything you do not need.</p>
+<pre><code class="language-toml">[paths]
+data_dir = "./.taskter"                # project-specific storage
+responses_log_file = "./logs/responses.log"
+
+[providers.openai]
+api_key = "sk-live-…"
+base_url = "https://example.com/openai"
+request_style = "responses"            # or "chat"
+response_format = "json_object"        # string or raw JSON object
+
+[providers.gemini]
+api_key = "${GEMINI_KEY_FROM_ENV}"
+
+[providers.ollama]
+base_url = "http://ollama.myhost:11434"
+</code></pre>
+<p><code>paths.data_dir</code> controls where Taskter stores runtime artefacts. Every other
+path defaults to a file inside that directory unless explicitly overridden.</p>
+<h2 id="environment-variables"><a class="header" href="#environment-variables">Environment variables</a></h2>
+<p>Taskter reads environment overrides using the pattern:</p>
+<pre><code>TASKTER__SECTION__SUBSECTION__KEY=value
+</code></pre>
+<p>Each double underscore (<code>__</code>) descends one level into the configuration
+structure. Examples:</p>
+<ul>
+<li><code>TASKTER__PROVIDERS__OPENAI__API_KEY</code></li>
+<li><code>TASKTER__PROVIDERS__OPENAI__BASE_URL</code></li>
+<li><code>TASKTER__PROVIDERS__GEMINI__API_KEY</code></li>
+<li><code>TASKTER__PATHS__DATA_DIR</code></li>
+</ul>
+<p>Values are trimmed before use. If you prefer storing sensitive settings in a
+<code>.env</code> file for local development, Taskter automatically loads it via
+<a href="https://crates.io/crates/dotenvy"><code>dotenvy</code></a> when present.</p>
+<p>For backwards compatibility, legacy variables such as <code>OPENAI_BASE_URL</code> and
+<code>GEMINI_API_KEY</code> are still honoured, but the namespaced form should be used for
+new deployments.</p>
+<h2 id="cli-overrides"><a class="header" href="#cli-overrides">CLI overrides</a></h2>
+<p>Every invocation accepts a set of optional flags that sit at the top of the
+precedence chain:</p>
+<ul>
+<li><code>--config-file &lt;path&gt;</code> – load configuration from a custom TOML file.</li>
+<li><code>--data-dir &lt;path&gt;</code> – change the storage root (defaults to <code>.taskter</code>).</li>
+<li>Path-specific overrides such as <code>--board-file</code>, <code>--log-file</code>,
+<code>--email-config-file</code>, etc.</li>
+<li>Provider-specific overrides, e.g. <code>--openai-api-key</code>, <code>--openai-base-url</code>,
+<code>--openai-request-style</code>, <code>--gemini-api-key</code>, <code>--ollama-base-url</code>.</li>
+</ul>
+<p>Run <code>taskter --help</code> to see the full flag list. Because flags sit at the top of
+the precedence order they are ideal for CI jobs or scripted runs that need a
+temporary override without touching files or long-lived environment variables.</p>
 <h2 id="email-configuration-file"><a class="header" href="#email-configuration-file">Email configuration file</a></h2>
-<p>Email-based tools expect credentials in <code>.taskter/email_config.json</code> inside your project. Every agent reads the same file.</p>
+<p>Email-based tools continue to read credentials from
+<code>paths.email_config_file</code>, which defaults to <code>${data_dir}/email_config.json</code>.
+Every agent loads the same file. A minimal configuration looks like:</p>
 <pre><code class="language-json">{
   "smtp_server": "smtp.example.com",
   "smtp_port": 587,
   "username": "user@example.com",
   "password": "secret",
-  "imap_server": "imap.example.com",  // optional
-  "imap_port": 993                    // optional
+  "imap_server": "imap.example.com",
+  "imap_port": 993
 }
 </code></pre>
-<p>Currently only the SMTP fields are used by the <code>send_email</code> tool. The IMAP keys are accepted for future extensions. No default values are provided, so fill in the details that match your mail provider.</p>
-<p>If the file is missing the tool outputs <code>Email configuration not found</code>. When Taskter runs without a <code>GEMINI_API_KEY</code>, email tools are skipped entirely so the file is not required for tests.</p>
-<h2 id="environment-variables"><a class="header" href="#environment-variables">Environment variables</a></h2>
-<p>Agents use a provider abstraction. Each provider defines its own API key env var:</p>
-<ul>
-<li><code>GEMINI_API_KEY</code> — API key for the Gemini provider.</li>
-<li><code>OPENAI_API_KEY</code> — API key when using an OpenAI provider (if added).</li>
-<li><code>SEARCH_API_ENDPOINT</code> — custom endpoint for the <code>web_search</code> tool. Defaults to <code>https://api.duckduckgo.com</code>.</li>
-</ul>
-<p>Export the relevant variable directly in your shell or via Docker Compose. For Gemini:</p>
-<pre><code class="language-bash">export GEMINI_API_KEY=your_key_here
-</code></pre>
+<p>Only the SMTP fields are required today. When the file is missing the
+<code>send_email</code> tool returns <code>Email configuration not found</code>. If you run Taskter
+without a Gemini API key the email tool is skipped entirely, so the JSON file is
+optional for smoke tests.</p>
 
                     </main>
 
