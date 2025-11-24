@@ -28,6 +28,7 @@ pub mod agent;
 pub mod cli;
 pub mod commands;
 pub mod config;
+pub mod mcp;
 pub mod providers;
 pub mod scheduler;
 pub mod store;
