@@ -80,3 +80,13 @@ The agent will now run the task. If it's successful, the task will be marked as 
 ```bash
 taskter board
 ```
+
+### MCP server
+
+To expose Taskter's tool surface to MCP-compatible clients, run the stdio server:
+
+```bash
+taskter mcp serve
+```
+
+The server uses MCP JSON-RPC framing with `Content-Length` headers and supports `initialize`, `ping`, `tools/list`, `tools/call`, and `shutdown`. See [mcp.md](mcp.md) for a deeper walk-through.

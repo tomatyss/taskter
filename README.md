@@ -18,6 +18,7 @@ Taskter is a terminal Kanban board CLI tool built with Rust.
 - OKRs (Objectives and Key Results)
 - Agent scheduler with cron expressions (see [scheduling.md](docs/src/scheduling.md) for details)
 - Parallel task execution when running the scheduler
+- Minimal MCP server over stdio to expose Taskter tools to MCP clients
 
 ## Quick Start
 
@@ -317,6 +318,16 @@ Taskter now supports LLM-based agents that can be assigned to tasks. These agent
   ```bash
   taskter agent remove --id 1
   ```
+
+### MCP server
+
+Expose Taskter's built-in tools to MCP clients (IDEs, agent hosts, etc.) over stdio:
+
+```bash
+taskter mcp serve
+```
+
+The server speaks MCP JSON-RPC with `Content-Length` framing and currently implements `initialize`, `ping`, `tools/list`, `tools/call`, and `shutdown`. See [docs/src/mcp.md](docs/src/mcp.md) for details and client integration tips.
 
 When a task is executed, the agent will attempt to perform the task. If successful, the task is marked as "Done". If it fails, the task is moved back to "To Do", unassigned, and a comment from the agent is added.
 
