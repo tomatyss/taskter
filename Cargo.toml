@@ -28,7 +28,7 @@ tokio-cron-scheduler = "0.15"
 futures = "0.3"
 walkdir = "2"
 chrono-tz = "0.10"
-config = { version = "0.14", default-features = false, features = ["toml"] }
+config = { version = "0.15", default-features = false, features = ["toml"] }
 directories = "5"
 dotenvy = "0.15"
 [features]
