@@ -1,8 +1,10 @@
 //! Application state and logic for the terminal UI.
 
 use crate::agent::Agent;
+use crate::config;
 use crate::store::{self, Board, Okr, Task, TaskStatus};
 use ratatui::widgets::ListState;
+use std::fs;
 use std::sync::{Arc, Mutex};
 
 #[derive(Clone, Copy)]
@@ -54,7 +56,10 @@ impl App {
             new_task_title: String::new(),
             new_task_description: String::new(),
             editing_description: false,
-            logs: std::fs::read_to_string(".taskter/logs.log").unwrap_or_default(),
+            logs: config::log_path()
+                .ok()
+                .and_then(|path| fs::read_to_string(path).ok())
+                .unwrap_or_default(),
             okrs: store::load_okrs().unwrap_or_default(),
             popup_scroll: 0,
         };
