@@ -29,7 +29,7 @@ futures = "0.3"
 walkdir = "2"
 chrono-tz = "0.10"
 config = { version = "0.15", default-features = false, features = ["toml"] }
-directories = "5"
+directories = "6"
 dotenvy = "0.15"
 [features]
 default = ["tui"]
