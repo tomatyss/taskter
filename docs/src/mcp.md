@@ -25,6 +25,7 @@ The process stays attached to your terminal. MCP clients should launch Taskter w
 
 - Ensure your client sends `Content-Length` headers and newline delimiters per MCP framing.
 - For compatibility with some MCP clients, Taskter also accepts a single line-delimited JSON-RPC request (no `Content-Length` header).
+- Responses are framed with `Content-Length` by default. To force line-delimited responses for legacy clients, set `TASKTER_MCP_LINE_DELIMITED_RESPONSE=1`.
 - Tool arguments are passed through as JSON; Taskter returns tool output as plain text content blocks.
 - Use `shutdown` to request a clean exit; EOF also ends the server loop.
 

@@ -6,7 +6,7 @@
 //! added incrementally on top of this module.
 
 use anyhow::{anyhow, Context, Result};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::io::Write;
 use tokio::io::{
@@ -38,15 +38,15 @@ impl RpcRequest {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct RpcError {
     code: i64,
     message: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize, Serialize)]
 struct RpcResponse {
-    jsonrpc: &'static str,
+    jsonrpc: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     id: Option<Value>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -57,7 +57,7 @@ struct RpcResponse {
 
 fn rpc_ok(id: Option<&Value>, result: Value) -> RpcResponse {
     RpcResponse {
-        jsonrpc: JSONRPC,
+        jsonrpc: JSONRPC.to_string(),
         id: id.cloned(),
         result: Some(result),
         error: None,
@@ -66,7 +66,7 @@ fn rpc_ok(id: Option<&Value>, result: Value) -> RpcResponse {
 
 fn rpc_err(id: Option<&Value>, code: i64, message: impl Into<String>) -> RpcResponse {
     RpcResponse {
-        jsonrpc: JSONRPC,
+        jsonrpc: JSONRPC.to_string(),
         id: id.cloned(),
         result: None,
         error: Some(RpcError {
@@ -132,6 +132,19 @@ fn trace_stderr_enabled() -> bool {
     }
 }
 
+fn line_delimited_response_enabled() -> bool {
+    match std::env::var("TASKTER_MCP_LINE_DELIMITED_RESPONSE") {
+        Ok(value) => {
+            let trimmed = value.trim();
+            !(trimmed.is_empty()
+                || trimmed.eq_ignore_ascii_case("0")
+                || trimmed.eq_ignore_ascii_case("false")
+                || trimmed.eq_ignore_ascii_case("off"))
+        }
+        Err(_) => false,
+    }
+}
+
 struct TraceLogger {
     sink: Option<Box<dyn Write + Send>>,
 }
@@ -156,10 +169,7 @@ impl TraceLogger {
                 if trace_stderr_enabled() {
                     Ok(Box::new(std::io::stderr()) as Box<dyn Write + Send>)
                 } else {
-                    Err(std::io::Error::new(
-                        std::io::ErrorKind::Other,
-                        "trace disabled",
-                    ))
+                    Err(std::io::Error::other("trace disabled"))
                 }
             })
             .ok();
@@ -320,7 +330,10 @@ async fn handle_line(line: &str) -> (Option<RpcResponse>, bool) {
     let parsed = match parse_request(line) {
         Ok(req) => req,
         Err(err) => {
-            return (Some(rpc_err(None, -32700, format!("Invalid JSON: {err}"))), false);
+            return (
+                Some(rpc_err(None, -32700, format!("Invalid JSON: {err}"))),
+                false,
+            );
         }
     };
 
@@ -447,9 +460,9 @@ where
     if trace.enabled() {
         let cwd = std::env::current_dir().unwrap_or_else(|_| std::path::PathBuf::from("<unknown>"));
         trace.log(format!(
-            "MCP server started (pid={}, cwd={:?})",
+            "MCP server started (pid={}, cwd={})",
             std::process::id(),
-            cwd
+            cwd.display()
         ));
     }
 
@@ -466,13 +479,13 @@ where
         };
         let body_str = std::str::from_utf8(&body).context("MCP body not valid UTF-8")?;
 
-        let response_as_line = headers.is_empty();
+        let response_as_line = line_delimited_response_enabled();
         let (response, should_shutdown) = handle_line(body_str).await;
         if trace.enabled() {
             if headers.is_empty() {
                 trace.log("MCP <- headers: (none, line-delimited request)");
             } else {
-                trace.log(format!("MCP <- headers: {:?}", headers));
+                trace.log(format!("MCP <- headers: {headers:?}"));
             }
             trace.log(format!("MCP <- body: {body_str}"));
         }
@@ -530,7 +543,47 @@ pub async fn serve_stdio() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use once_cell::sync::Lazy;
+    use std::sync::Mutex;
     use tokio::io::{duplex, AsyncReadExt};
+
+    static ENV_MUTEX: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
+
+    struct EnvVarGuard {
+        name: &'static str,
+        previous: Option<String>,
+    }
+
+    impl Drop for EnvVarGuard {
+        fn drop(&mut self) {
+            match &self.previous {
+                Some(value) => std::env::set_var(self.name, value),
+                None => std::env::remove_var(self.name),
+            }
+        }
+    }
+
+    fn set_env_var(name: &'static str, value: Option<&str>) -> EnvVarGuard {
+        let previous = std::env::var(name).ok();
+        match value {
+            Some(value) => std::env::set_var(name, value),
+            None => std::env::remove_var(name),
+        }
+        EnvVarGuard { name, previous }
+    }
+
+    fn parse_content_length_response(response: &str) -> (usize, &str) {
+        let (headers, body) = response
+            .split_once("\r\n\r\n")
+            .expect("response missing header terminator");
+        let content_length = headers
+            .lines()
+            .filter_map(|line| line.split_once(':'))
+            .find(|(key, _)| key.trim().eq_ignore_ascii_case("content-length"))
+            .and_then(|(_, value)| value.trim().parse::<usize>().ok())
+            .expect("response missing Content-Length header");
+        (content_length, body)
+    }
 
     #[tokio::test]
     async fn tools_list_contains_builtin() {
@@ -554,6 +607,81 @@ mod tests {
 
     #[tokio::test]
     async fn content_length_round_trip() {
+        let _guard = ENV_MUTEX.lock().unwrap();
+        let _env_guard = set_env_var("TASKTER_MCP_LINE_DELIMITED_RESPONSE", Some("0"));
+        let (client, server) = duplex(4096);
+        let (server_read, server_write) = tokio::io::split(server);
+        let server_reader = BufReader::new(server_read);
+        let (mut client_reader, mut client_writer) = tokio::io::split(client);
+
+        let server_task =
+            tokio::spawn(async move { serve_stream(server_reader, server_write).await });
+
+        let request_body = r#"{"jsonrpc":"2.0","id":1,"method":"ping","params":{}}"#;
+        let request = format!(
+            "Content-Length: {}\r\n\r\n{}",
+            request_body.len(),
+            request_body
+        );
+        client_writer.write_all(request.as_bytes()).await.unwrap();
+        client_writer.shutdown().await.unwrap();
+
+        let mut response_raw = Vec::new();
+        client_reader.read_to_end(&mut response_raw).await.unwrap();
+        let response = String::from_utf8(response_raw).unwrap();
+
+        let (content_length, body) = parse_content_length_response(&response);
+        assert_eq!(
+            content_length,
+            body.len(),
+            "Content-Length should match response body"
+        );
+        let parsed: RpcResponse = serde_json::from_str(body).unwrap();
+        assert_eq!(parsed.result, Some(json!({})));
+
+        server_task.await.unwrap().unwrap();
+    }
+
+    #[tokio::test]
+    async fn line_delimited_request_round_trip() {
+        let _guard = ENV_MUTEX.lock().unwrap();
+        let _env_guard = set_env_var("TASKTER_MCP_LINE_DELIMITED_RESPONSE", Some("0"));
+        let (client, server) = duplex(4096);
+        let (server_read, server_write) = tokio::io::split(server);
+        let server_reader = BufReader::new(server_read);
+        let (mut client_reader, mut client_writer) = tokio::io::split(client);
+
+        let server_task =
+            tokio::spawn(async move { serve_stream(server_reader, server_write).await });
+
+        let request_body = r#"{"jsonrpc":"2.0","id":1,"method":"ping","params":{}}"#;
+        let request = format!("{request_body}\n");
+        client_writer.write_all(request.as_bytes()).await.unwrap();
+        client_writer.shutdown().await.unwrap();
+
+        let mut response_raw = Vec::new();
+        client_reader.read_to_end(&mut response_raw).await.unwrap();
+        let response = String::from_utf8(response_raw).unwrap();
+
+        let (content_length, body) = parse_content_length_response(&response);
+        assert_eq!(
+            content_length,
+            body.len(),
+            "Content-Length should match response body"
+        );
+        assert!(
+            body.contains(r#""result":{}"#),
+            "ping response should contain empty result object"
+        );
+
+        server_task.await.unwrap().unwrap();
+    }
+
+    #[tokio::test]
+    async fn line_delimited_response_forced_by_env() {
+        let _guard = ENV_MUTEX.lock().unwrap();
+        let _env_guard = set_env_var("TASKTER_MCP_LINE_DELIMITED_RESPONSE", Some("1"));
+
         let (client, server) = duplex(4096);
         let (server_read, server_write) = tokio::io::split(server);
         let server_reader = BufReader::new(server_read);
@@ -577,47 +705,17 @@ mod tests {
 
         assert!(
             !response.contains("Content-Length:"),
-            "line-delimited response should not include headers"
+            "forced line-delimited responses should not include headers"
         );
         assert!(
             response.ends_with('\n'),
-            "line-delimited response should end with newline"
+            "forced line-delimited responses should end with newline"
         );
         let trimmed = response.trim_end();
         let parsed: RpcResponse = serde_json::from_str(trimmed).unwrap();
         assert_eq!(parsed.result, Some(json!({})));
 
         server_task.await.unwrap().unwrap();
-    }
 
-    #[tokio::test]
-    async fn line_delimited_request_round_trip() {
-        let (client, server) = duplex(4096);
-        let (server_read, server_write) = tokio::io::split(server);
-        let server_reader = BufReader::new(server_read);
-        let (mut client_reader, mut client_writer) = tokio::io::split(client);
-
-        let server_task =
-            tokio::spawn(async move { serve_stream(server_reader, server_write).await });
-
-        let request_body = r#"{"jsonrpc":"2.0","id":1,"method":"ping","params":{}}"#;
-        let request = format!("{request_body}\n");
-        client_writer.write_all(request.as_bytes()).await.unwrap();
-        client_writer.shutdown().await.unwrap();
-
-        let mut response_raw = Vec::new();
-        client_reader.read_to_end(&mut response_raw).await.unwrap();
-        let response = String::from_utf8(response_raw).unwrap();
-
-        assert!(
-            response.contains("Content-Length:"),
-            "response missing Content-Length header"
-        );
-        assert!(
-            response.contains(r#""result":{}"#),
-            "ping response should contain empty result object"
-        );
-
-        server_task.await.unwrap().unwrap();
     }
 }

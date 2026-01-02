@@ -89,4 +89,4 @@ To expose Taskter's tool surface to MCP-compatible clients, run the stdio server
 taskter mcp serve
 ```
 
-The server uses MCP JSON-RPC framing with `Content-Length` headers and supports `initialize`, `ping`, `tools/list`, `tools/call`, and `shutdown`. See [mcp.md](mcp.md) for a deeper walk-through.
+The server uses MCP JSON-RPC framing with `Content-Length` headers and supports `initialize`, `ping`, `tools/list`, `tools/call`, and `shutdown`. Line-delimited requests are accepted for compatibility; responses stay `Content-Length` framed unless `TASKTER_MCP_LINE_DELIMITED_RESPONSE=1`. See [mcp.md](mcp.md) for a deeper walk-through.

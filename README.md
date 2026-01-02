@@ -327,7 +327,7 @@ Expose Taskter's built-in tools to MCP clients (IDEs, agent hosts, etc.) over st
 taskter mcp serve
 ```
 
-The server speaks MCP JSON-RPC with `Content-Length` framing and currently implements `initialize`, `ping`, `tools/list`, `tools/call`, and `shutdown`. See [docs/src/mcp.md](docs/src/mcp.md) for details and client integration tips.
+The server speaks MCP JSON-RPC with `Content-Length` framing and currently implements `initialize`, `ping`, `tools/list`, `tools/call`, and `shutdown`. Line-delimited requests are accepted for compatibility; responses stay `Content-Length` framed unless `TASKTER_MCP_LINE_DELIMITED_RESPONSE=1`. See [docs/src/mcp.md](docs/src/mcp.md) for details and client integration tips.
 
 When a task is executed, the agent will attempt to perform the task. If successful, the task is marked as "Done". If it fails, the task is moved back to "To Do", unassigned, and a comment from the agent is added.
 
