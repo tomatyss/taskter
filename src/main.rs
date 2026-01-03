@@ -21,7 +21,13 @@ use taskter::config;
 async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
-    config::init(&cli.config)?;
+    if let Err(err) = config::init(&cli.config) {
+        if matches!(cli.command, Commands::Mcp { .. }) {
+            eprintln!("Taskter config warning (MCP will continue): {err}");
+        } else {
+            return Err(err);
+        }
+    }
 
     match &cli.command {
         Commands::Init => commands::init::run()?,
@@ -34,6 +40,7 @@ async fn main() -> anyhow::Result<()> {
         Commands::Scheduler { action } => commands::scheduler::handle(action).await?,
         Commands::Board => commands::board::run()?,
         Commands::Description { description } => commands::description::set(description)?,
+        Commands::Mcp { action } => commands::mcp::handle(action).await?,
     }
 
     Ok(())

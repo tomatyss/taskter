@@ -1,6 +1,7 @@
 use super::app::{App, View};
 use super::render::ui;
 use crate::agent::{self};
+use crate::config;
 use crate::store::{self, Task, TaskStatus};
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode},
@@ -9,8 +10,9 @@ use crossterm::{
 };
 use notify::{recommended_watcher, RecursiveMode, Watcher};
 use ratatui::prelude::*;
+use std::fs;
 use std::io;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::{mpsc::channel, Arc};
 use std::time::Duration;
 
@@ -47,6 +49,22 @@ pub fn run_tui() -> anyhow::Result<()> {
     Ok(())
 }
 
+fn ensure_file(path: &Path, contents: &str) -> io::Result<()> {
+    if let Some(parent) = path.parent() {
+        fs::create_dir_all(parent)?;
+    }
+    if !path.exists() {
+        fs::write(path, contents)?;
+    }
+    Ok(())
+}
+
+fn file_tail(path: &Path, fallback: &str) -> PathBuf {
+    path.file_name()
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(fallback))
+}
+
 fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<()> {
     let (tx, rx) = channel();
     let mut watcher = recommended_watcher(move |res| {
@@ -54,15 +72,32 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
     })
     .map_err(io::Error::other)?;
 
+    let board_path = config::board_path().map_err(io::Error::other)?;
+    let okrs_path = config::okrs_path().map_err(io::Error::other)?;
+    let log_path = config::log_path().map_err(io::Error::other)?;
+    let agents_path = config::agents_path().map_err(io::Error::other)?;
+    let running_agents_path = config::running_agents_path().map_err(io::Error::other)?;
+    let board_tail = file_tail(&board_path, "board.json");
+    let okrs_tail = file_tail(&okrs_path, "okrs.json");
+    let log_tail = file_tail(&log_path, "logs.log");
+    let agents_tail = file_tail(&agents_path, "agents.json");
+    let running_agents_tail = file_tail(&running_agents_path, "running_agents.json");
+
+    ensure_file(&board_path, r#"{ "tasks": [] }"#)?;
+    ensure_file(&okrs_path, "[]")?;
+    ensure_file(&log_path, "")?;
+    ensure_file(&agents_path, "[]")?;
+    ensure_file(&running_agents_path, "[]")?;
+
     for path in [
-        ".taskter/board.json",
-        ".taskter/okrs.json",
-        ".taskter/logs.log",
-        ".taskter/agents.json",
-        ".taskter/running_agents.json",
+        &board_path,
+        &okrs_path,
+        &log_path,
+        &agents_path,
+        &running_agents_path,
     ] {
         watcher
-            .watch(Path::new(path), RecursiveMode::NonRecursive)
+            .watch(path, RecursiveMode::NonRecursive)
             .map_err(io::Error::other)?;
     }
 
@@ -70,23 +105,23 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
         while let Ok(res) = rx.try_recv() {
             if let Ok(event) = res {
                 for p in event.paths {
-                    if p.ends_with("board.json") {
+                    if p.ends_with(&board_tail) {
                         if let Ok(board) = store::load_board() {
                             *app.board.lock().unwrap() = board;
                         }
-                    } else if p.ends_with("okrs.json") {
+                    } else if p.ends_with(&okrs_tail) {
                         if let Ok(okrs) = store::load_okrs() {
                             app.okrs = okrs;
                         }
-                    } else if p.ends_with("logs.log") {
-                        if let Ok(logs) = std::fs::read_to_string(".taskter/logs.log") {
+                    } else if p.ends_with(&log_tail) {
+                        if let Ok(logs) = fs::read_to_string(&log_path) {
                             app.logs = logs;
                         }
-                    } else if p.ends_with("agents.json") {
+                    } else if p.ends_with(&agents_tail) {
                         if let Ok(agents) = crate::agent::load_agents() {
                             app.agents = agents;
                         }
-                    } else if p.ends_with("running_agents.json") {
+                    } else if p.ends_with(&running_agents_tail) {
                         if let Ok(running) = crate::agent::load_running_agents() {
                             app.running_agents = running;
                         }
@@ -163,8 +198,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, mut app: App) -> io::Result<(
                             }
                         }
                         KeyCode::Char('L') => {
-                            app.logs =
-                                std::fs::read_to_string(".taskter/logs.log").unwrap_or_default();
+                            app.logs = fs::read_to_string(&log_path).unwrap_or_default();
                             app.current_view = View::Logs;
                             app.popup_scroll = 0;
                         }

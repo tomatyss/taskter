@@ -64,6 +64,11 @@ pub enum Commands {
         /// The project description
         description: String,
     },
+    /// Run the MCP (Model Context Protocol) server
+    Mcp {
+        #[command(subcommand)]
+        action: McpCommands,
+    },
 }
 
 #[derive(Subcommand)]
@@ -239,4 +244,11 @@ pub enum TaskCommands {
         #[arg(short, long)]
         task_id: usize,
     },
+}
+
+#[derive(Subcommand)]
+#[command(rename_all = "kebab-case")]
+pub enum McpCommands {
+    /// Serve MCP over stdio
+    Serve,
 }

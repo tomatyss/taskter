@@ -3,6 +3,7 @@
 - [Overview](overview.md)
 - [Installation](installation.md)
 - [CLI Usage](cli_usage.md)
+- [MCP Server](mcp.md)
 - [TUI Guide](tui_guide.md)
 - [Agent System](agent_system.md)
 - [Scheduling Agents](scheduling.md)
