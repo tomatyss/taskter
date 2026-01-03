@@ -544,8 +544,8 @@ pub async fn serve_stdio() -> Result<()> {
 mod tests {
     use super::*;
     use once_cell::sync::Lazy;
-    use std::sync::Mutex;
     use tokio::io::{duplex, AsyncReadExt};
+    use tokio::sync::Mutex;
 
     static ENV_MUTEX: Lazy<Mutex<()>> = Lazy::new(|| Mutex::new(()));
 
@@ -607,7 +607,7 @@ mod tests {
 
     #[tokio::test]
     async fn content_length_round_trip() {
-        let _guard = ENV_MUTEX.lock().unwrap();
+        let _guard = ENV_MUTEX.lock().await;
         let _env_guard = set_env_var("TASKTER_MCP_LINE_DELIMITED_RESPONSE", Some("0"));
         let (client, server) = duplex(4096);
         let (server_read, server_write) = tokio::io::split(server);
@@ -644,7 +644,7 @@ mod tests {
 
     #[tokio::test]
     async fn line_delimited_request_round_trip() {
-        let _guard = ENV_MUTEX.lock().unwrap();
+        let _guard = ENV_MUTEX.lock().await;
         let _env_guard = set_env_var("TASKTER_MCP_LINE_DELIMITED_RESPONSE", Some("0"));
         let (client, server) = duplex(4096);
         let (server_read, server_write) = tokio::io::split(server);
@@ -679,7 +679,7 @@ mod tests {
 
     #[tokio::test]
     async fn line_delimited_response_forced_by_env() {
-        let _guard = ENV_MUTEX.lock().unwrap();
+        let _guard = ENV_MUTEX.lock().await;
         let _env_guard = set_env_var("TASKTER_MCP_LINE_DELIMITED_RESPONSE", Some("1"));
 
         let (client, server) = duplex(4096);
@@ -716,6 +716,5 @@ mod tests {
         assert_eq!(parsed.result, Some(json!({})));
 
         server_task.await.unwrap().unwrap();
-
     }
 }
