@@ -89,7 +89,7 @@
 
         <nav id="sidebar" class="sidebar" aria-label="Table of contents">
             <div class="sidebar-scrollbox">
-                <ol class="chapter"><li class="chapter-item expanded "><a href="overview.html"><strong aria-hidden="true">1.</strong> Overview</a></li><li class="chapter-item expanded "><a href="installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="cli_usage.html"><strong aria-hidden="true">3.</strong> CLI Usage</a></li><li class="chapter-item expanded "><a href="tui_guide.html"><strong aria-hidden="true">4.</strong> TUI Guide</a></li><li class="chapter-item expanded "><a href="agent_system.html"><strong aria-hidden="true">5.</strong> Agent System</a></li><li class="chapter-item expanded "><a href="scheduling.html"><strong aria-hidden="true">6.</strong> Scheduling Agents</a></li><li class="chapter-item expanded "><a href="providers.html"><strong aria-hidden="true">7.</strong> Model Providers</a></li><li class="chapter-item expanded "><a href="data_files.html"><strong aria-hidden="true">8.</strong> Data Files</a></li><li class="chapter-item expanded "><a href="configuration.html"><strong aria-hidden="true">9.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="contributing.html"><strong aria-hidden="true">10.</strong> Contributing</a></li></ol>
+                <ol class="chapter"><li class="chapter-item expanded "><a href="overview.html"><strong aria-hidden="true">1.</strong> Overview</a></li><li class="chapter-item expanded "><a href="installation.html"><strong aria-hidden="true">2.</strong> Installation</a></li><li class="chapter-item expanded "><a href="cli_usage.html"><strong aria-hidden="true">3.</strong> CLI Usage</a></li><li class="chapter-item expanded "><a href="mcp.html"><strong aria-hidden="true">4.</strong> MCP Server</a></li><li class="chapter-item expanded "><a href="tui_guide.html"><strong aria-hidden="true">5.</strong> TUI Guide</a></li><li class="chapter-item expanded "><a href="agent_system.html"><strong aria-hidden="true">6.</strong> Agent System</a></li><li class="chapter-item expanded "><a href="scheduling.html"><strong aria-hidden="true">7.</strong> Scheduling Agents</a></li><li class="chapter-item expanded "><a href="providers.html"><strong aria-hidden="true">8.</strong> Model Providers</a></li><li class="chapter-item expanded "><a href="data_files.html"><strong aria-hidden="true">9.</strong> Data Files</a></li><li class="chapter-item expanded "><a href="configuration.html"><strong aria-hidden="true">10.</strong> Configuration</a></li><li class="chapter-item expanded "><a href="contributing.html"><strong aria-hidden="true">11.</strong> Contributing</a></li></ol>
             </div>
             <div id="sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -284,6 +284,39 @@ or run <code>taskter logs list</code> to view the history.</p>
 <p>The agent will now run the task. If it's successful, the task will be marked as "Done". You can view the board at any time using the interactive UI:</p>
 <pre><code class="language-bash">taskter board
 </code></pre>
+<h3 id="mcp-server"><a class="header" href="#mcp-server">MCP server</a></h3>
+<p>To expose Taskter's tool surface to MCP-compatible clients, run the stdio server:</p>
+<pre><code class="language-bash">taskter mcp serve
+</code></pre>
+<p>The server uses MCP JSON-RPC framing with <code>Content-Length</code> headers and supports <code>initialize</code>, <code>ping</code>, <code>tools/list</code>, <code>tools/call</code>, and <code>shutdown</code>. Line-delimited requests are accepted for compatibility; responses stay <code>Content-Length</code> framed unless <code>TASKTER_MCP_LINE_DELIMITED_RESPONSE=1</code>. See <a href="mcp.html">mcp.md</a> for a deeper walk-through.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="model-context-protocol-mcp-server"><a class="header" href="#model-context-protocol-mcp-server">Model Context Protocol (MCP) server</a></h1>
+<p>Taskter ships a minimal MCP server so you can expose its built-in tools to MCP-capable clients (e.g., IDE copilots or agent runtimes).</p>
+<h2 id="what-it-supports"><a class="header" href="#what-it-supports">What it supports</a></h2>
+<ul>
+<li>Transport: stdio with <code>Content-Length</code> framing</li>
+<li>Methods: <code>initialize</code>, <code>ping</code>, <code>tools/list</code>, <code>tools/call</code>, <code>shutdown</code></li>
+<li>Tools: every Taskter built-in tool is surfaced as an MCP tool descriptor; calls are forwarded to <code>tools/call</code></li>
+<li>Protocol version: <code>2025-06-18</code></li>
+</ul>
+<p>Resources and alternate transports (HTTP/SSE) are not implemented yet.</p>
+<h2 id="running-the-server"><a class="header" href="#running-the-server">Running the server</a></h2>
+<p>From any initialized Taskter project, start the MCP server over stdio:</p>
+<pre><code class="language-bash">taskter mcp serve
+</code></pre>
+<p>The process stays attached to your terminal. MCP clients should launch Taskter with this command and communicate via stdin/stdout using the standard MCP JSON-RPC framing.</p>
+<h3 id="tips"><a class="header" href="#tips">Tips</a></h3>
+<ul>
+<li>Ensure your client sends <code>Content-Length</code> headers and newline delimiters per MCP framing.</li>
+<li>For compatibility with some MCP clients, Taskter also accepts a single line-delimited JSON-RPC request (no <code>Content-Length</code> header).</li>
+<li>Responses are framed with <code>Content-Length</code> by default. To force line-delimited responses for legacy clients, set <code>TASKTER_MCP_LINE_DELIMITED_RESPONSE=1</code>.</li>
+<li>Tool arguments are passed through as JSON; Taskter returns tool output as plain text content blocks.</li>
+<li>Use <code>shutdown</code> to request a clean exit; EOF also ends the server loop.</li>
+</ul>
+<h3 id="tracing"><a class="header" href="#tracing">Tracing</a></h3>
+<p>Set <code>TASKTER_MCP_TRACE=1</code> to capture MCP traffic. By default logs are written to a temp file
+(<code>taskter_mcp_trace.log</code> in your system temp directory) to avoid polluting the MCP stdout stream.
+You can override the output path with <code>TASKTER_MCP_TRACE_FILE=/path/to/file</code>. If you explicitly
+want stderr output (for local debugging), set <code>TASKTER_MCP_TRACE_STDERR=1</code>.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="tui-guide"><a class="header" href="#tui-guide">TUI Guide</a></h1>
 <p>Taskter's interactive Terminal User Interface (TUI) provides a visual way to manage your Kanban board. To launch it, run:</p>
 <pre><code class="language-bash">taskter board
