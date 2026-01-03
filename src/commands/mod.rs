@@ -5,6 +5,7 @@ pub mod board;
 pub mod description;
 pub mod init;
 pub mod logs;
+pub mod mcp;
 pub mod okrs;
 pub mod scheduler;
 pub mod show;
