@@ -127,7 +127,7 @@ Prebuilt `.deb` archives are generated with `cargo deb` and published on the
 GitHub release page.  You can install them with:
 
 ```
-sudo dpkg -i taskter_0.1.0_amd64.deb
+sudo dpkg -i taskter_0.1.1_amd64.deb
 ```
 
 For Alpine Linux an `APKBUILD` script is provided under `packaging/apk/`.  Run

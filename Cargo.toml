@@ -1,6 +1,6 @@
 [package]
 name = "taskter"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 description = "Taskter is a terminal Kanban board CLI tool built with Rust."
 license = "MIT"

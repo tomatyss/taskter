@@ -15,7 +15,7 @@ Prebuilt `.deb` archives are generated using `cargo deb` and can be downloaded
 from the GitHub release page. Install them with `dpkg -i`:
 
 ```bash
-sudo dpkg -i taskter_0.1.0_amd64.deb
+sudo dpkg -i taskter_0.1.1_amd64.deb
 ```
 
 For Alpine Linux there is an `APKBUILD` script in `packaging/apk/` which can be
@@ -65,4 +65,3 @@ If you prefer to use Docker, you can build and run Taskter without installing Ru
     ```bash
     GEMINI_API_KEY=<your_key> docker compose run --rm taskter --help
     ```
-
